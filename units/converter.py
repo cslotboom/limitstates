@@ -19,15 +19,15 @@ class Unit:
 class UnitConverter(ABC):
     unitDict = {}
     
-    def _unsupportedException(self):
-        raise Exception('Unit is unspported, expected one of '\
-                        f'{self.unitDict.keys()}')
+    def _unsupportedException(self, unit):
+        raise Exception(f'Unit {unit} is unspported, expected one of '\
+                        f'{list(self.unitDict.keys())}')
     
     def _checkInDict(self, unit):
         if unit in self.unitDict:
             return True
         else:
-            self._unsupportedException()
+            self._unsupportedException(unit)
     
     def convert(self, inputUnit:str, outputUnit:str, value:float):
         """
@@ -93,10 +93,12 @@ class ConverterForce(UnitConverter):
         
 class ConverterStress(UnitConverter):
     type = 'stress'
-    unitDict = {'Pa':1, 'kPa':1000, 'MPa':10e6, 'GPa':10e9, 
+    unitDict = {'Pa':1, 'kPa':1000, 'MPa':1e6, 'GPa':1e9, 
                 'psi':0.0001450377, 'psf':0.020885434273039}
         
 class ConverterDensity(UnitConverter):
     type = 'mass'
     unitDict = {'kg/m3':1, 'lbm/ft3':0.062427960576145, 'N/m3':9.8066500286389, 
                 'kN/m3':9.8066500286389 / 1000}
+
+

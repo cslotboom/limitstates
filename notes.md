@@ -13,7 +13,7 @@ material is generally coupled with design and design databases.
 for example, CLT and glulam have code related propreties.
 
 
-Members
+Elements
 - represents a physical member in space
   - has a line
   - has a section
