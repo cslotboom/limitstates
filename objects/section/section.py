@@ -9,10 +9,10 @@ For example, a csao86 CLT section will store it's information.
 """
 
 from abc import ABC, abstractmethod
-from .. material import MaterialAbstract
+from .. material import MaterialAbstract, MaterialElastic
 from ... units import ConverterLength
 
-__all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionUser', 
+__all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
            'SectionRectangle']
 
 class SectionAbstract(ABC):
@@ -62,63 +62,70 @@ class SectionMonolithic(SectionAbstract):
     These sections have propreties that are consistent 
     """
     
+    def __len__(self):
+        return 1
+    
     def _getCfactors(self, sunit='Pa', lunit='m'):
         return self.mat.sConvert(sunit), self.lConvert(lunit)
     
     def getEA(self, sunit='Pa', lunit='m'):
         sfactor, lfactor = self._getCfactors(sunit, lunit)
-        return self.mat.E * sfactor  * self.A * lfactor**2
+        return self.mat.E * sfactor * self.A * lfactor**2
         
     def getEIx(self, sunit='Pa', lunit='m'):
         sfactor, lfactor = self._getCfactors(sunit, lunit)
-        return self.mat.E * sfactor  * self.Ix * lfactor**4        
+        return self.mat.E * sfactor * self.Ix * lfactor**4        
     
     def getEIy(self, sunit='Pa', lunit='m'):
         sfactor, lfactor = self._getCfactors(sunit, lunit)
-        return self.mat.E * sfactor  * self.Iy * lfactor**4
+        return self.mat.E * sfactor * self.Iy * lfactor**4
     
     def getGAx(self, sunit='Pa', lunit='m'):
         sfactor, lfactor = self._getCfactors(sunit, lunit)
-        return self.mat.E * sfactor  * self.Avx * lfactor**2
+        return self.mat.E * sfactor * self.Avx * lfactor**2
          
     def getGAy(self, sunit='Pa', lunit='m'):
         sfactor, lfactor = self._getCfactors(sunit, lunit)
-        return self.mat.E * sfactor  * self.Avy * lfactor**2        
+        return self.mat.E * sfactor * self.Avy * lfactor**2        
     
-class SectionUser(SectionMonolithic):
+    def _initMat(self, mat):
+        self.mat = mat
     
-    def __init__(self, mat:MaterialAbstract, Ix = 1, A = 1, Iy = 1, J = 1, 
+class SectionGeneric(SectionMonolithic):
+    """
+    The user section is unique in that it has no base geometry.
+    All section propreties are set by the user, not infered from geometry!
+
+    Parameters
+    ----------
+    mat : MaterialAbstract
+        The material to use in the section.
+    Ix : float, optional
+        The moment of interia of the section about it's local x axis. 
+        The default is 1.
+    A : float, optional
+        The area of the section about it's local. The default is 1.
+    Iy : float, optional
+        The moment of interia of the section about it's local y axis. 
+        The default is 1.
+    J : float, optional
+        The torsion constant for the section. The default is 1.
+    Ax : float, optional
+        The area in the shear direction x. The default is None.
+    Ay : float, optional
+        The area in the shear direction y. The default is None.
+    lunits : str, optional
+        The units for length used in the section. The default is 'mm'.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    def __init__(self, mat:MaterialElastic, Ix = 1, A = 1, Iy = 1, J = 1, 
                  Avx = None, Avy = None, lunits='mm'):
-        """
-        The user section is unique in that it has no base geometry.
-        All section propreties are set by the user, not infered from geometry!
 
-        Parameters
-        ----------
-        mat : MaterialAbstract
-            The material to use in the section.
-        Ix : float, optional
-            The moment of interia of the section about it's local x axis. 
-            The default is 1.
-        A : float, optional
-            The area of the section about it's local. The default is 1.
-        Iy : float, optional
-            The moment of interia of the section about it's local y axis. 
-            The default is 1.
-        J : float, optional
-            The torsion constant for the section. The default is 1.
-        Ax : float, optional
-            The area in the shear direction x. The default is None.
-        Ay : float, optional
-            The area in the shear direction y. The default is None.
-        lunits : str, optional
-            The units for length used in the section. The default is 'mm'.
-
-        Returns
-        -------
-        None.
-
-        """
         
         self.mat:MaterialAbstract = mat
         self.Ix = Ix
@@ -130,7 +137,7 @@ class SectionUser(SectionMonolithic):
 
 class SectionRectangle(SectionMonolithic):
 
-    def __init__(self, mat:MaterialAbstract, b:float, d:float, lunits='mm'):
+    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits='mm'):
         
         self._initUnits(lunits)
         self.mat = mat
@@ -151,6 +158,34 @@ class SectionRectangle(SectionMonolithic):
         # Radius of Gyration
         self.rx = (self.Ix / self.A)**0.5
         self.ry = (self.Ix / self.A)**0.5
+
+class SectionDatabase(SectionMonolithic):
+    """
+    A section that is defined from a database. Generally used for steel or more
+    complex shapes where section geometry requires a large number of parameters
+    to define.
+
+    Parameters
+    ----------
+    mat : MaterialAbstract
+        The material to use in the section.
+    sectionDict : dict
+        A dictionary containing all of the information necessary to define
+        the section.
+    lunits : str, optional
+        The units for length used in the section. The default is 'mm'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits='mm'):
+        
+        self.__dict__.update(sectionDict)
+        self._initMat(mat)
+        self._initUnits(lunits)
 
 
 class SectionComposite(SectionAbstract):

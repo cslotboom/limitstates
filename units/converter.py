@@ -1,4 +1,3 @@
-
 """
 A unit converter that can both represent units and convert between units of
 different types.
@@ -9,7 +8,6 @@ from dataclasses import dataclass
 
 __all__= ["UnitConverter","ConverterLength", "ConverterLengthImperialinch",
           "ConverterForce","ConverterStress","ConverterDensity"]
-
 
 @dataclass
 class Unit:

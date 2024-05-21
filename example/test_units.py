@@ -2,34 +2,48 @@
 Tests if the unit library is working correctly.
 """
 
+import limitstats as ls
 
-from limitstates import ConverterLength, ConverterForce
-import pytest
+mm = 0.001
+m = 1
+width = 356*mm
+depth = 600*mm
 
-def test_convert_length_metric():
-    lconvert = ConverterLength()
-    lfactor = lconvert.getConversionFactor('mm','m')
-    lfactor2 = lconvert.getConversionFactor('mm','in')
-    lfactor3 = lconvert.getConversionFactor('in','ft')
-    
-    assert lfactor == 0.001
-    assert abs(lfactor2 / 0.03937 - 1) <0.0002
-    assert abs(lfactor3 / (1/12) - 1)  <0.0002
- 
-def test_notIn_length():
-    with pytest.raises(Exception) as e_info:
-        lconvert = ConverterLength()
-        lfactor = lconvert.getConversionFactor('nothing','m')   
-        
-def test_convert_force_metric():
-    fconvert = ConverterForce()
-    ffactor =  fconvert.getConversionFactor('N','kN')
-    ffactor2 = fconvert.getConversionFactor('lbf','kN')
-    
-    assert ffactor == 0.001
-    assert abs(ffactor2 / 0.00444822 - 1) <0.0002
+Length = 6*m
 
-if __name__ == '__main__':
-    test_convert_length_metric()
-    test_notIn_length()
-    test_convert_force_metric()
+# Define Element
+myMat       = ls.MatGlulamCSA19()
+mySection   = ls.SectionRectangle(width, depth, myMat)
+myElement   = ls.BeamColumn(Length, mySection)
+myGlulamEle = ls.BeamColumnGlulamCSA19(myElement)
+
+
+Mr = myGlulamEle
+
+
+# =============================================================================
+# 
+# =============================================================================
+
+import limitstates.design.code.csa.o86.c19 as code
+
+mat = code.getGlulamMat('matString')
+section = code.getGlulamSection('matString', width, depth)
+designElement = code.getGlulamElement(Length, section)
+
+
+
+
+# =============================================================================
+# 
+# =============================================================================
+
+
+import limitstats as ls
+
+E = 9.5
+G = E/16
+
+myMat = ls.MatElastic(E, G)
+mySection = ls.SectionRectangle(width, depth, myMat)
+myElement = ls.BeamColumn(Length, mySection)

@@ -17,7 +17,6 @@ def test_node_lengths():
     assert L3 == pytest.approx(((1+2*2**2)**0.5))
     assert L4 == pytest.approx((3*2**2)**0.5)
 
-
 def test_line_fromNodes():
     L1 = getLineFromNodes(n1, n2)
     L2 = getLineFromNodes(n1, n3)

@@ -1,12 +1,11 @@
 """
-Stores information relevant to all materials.
-Design dependant material information will be present in 
-Material are relevant to design.
-
+The material library contains material models
 """
 
 from ... units import ConverterStress, ConverterDensity
 from functools import partial
+
+__all__ = ["MaterialAbstract", "MaterialElastic"]
 
 class MaterialAbstract:
     
@@ -16,13 +15,13 @@ class MaterialAbstract:
     """
     E:float
     
-    def _initUnits(self, sunit:str='MPa', rhounit='kg/m3'):
+    def _initUnits(self, sUnit:str='MPa', rhoUnit='kg/m3'):
         """
         Inititiates the unite of the material.
         """
-        self.sUnit      = sunit
+        self.sUnit      = sUnit
         self.sConverter = ConverterStress()
-        self.rhoUnit  = rhounit
+        self.rhoUnit  = rhoUnit
         self.rhoConverter = ConverterDensity()
     
     def sConvert(self, outputUnit:str):
@@ -39,19 +38,35 @@ class MaterialAbstract:
         """        
         return self.rhoConverter.getConversionFactor(self.rhoUnit, outputUnit)
 
-
 class MaterialElastic(MaterialAbstract):
 
+    """
+    Represents a generic Isotropic elastic material. This material is code 
+    agnostic.
+    """
     def __init__(self, E:float, G:float=None, rho=None, 
-                 sunit:str='MPa', rhounit='kg/m3'):
-        """
-        Represents a generic elastic material. This material is code agnostic
-        and generally not used in design.
-        """
-        self._initUnits(sunit,rhounit)
+                 sUnit:str='MPa', rhoUnit='kg/m3'):
+        self._initUnits(sUnit, rhoUnit)
         self.E = E
         self.G = G
         self.rho = rho
 
-        
-        
+class MaterialElasticIso(MaterialElastic):
+    """
+    Represents a generic Isotropic elastic material. This material is code 
+    agnostic.
+    """
+    pass
+
+class MaterialElastic(MaterialAbstract):
+
+    """
+    Represents a generic Isotropic elastic material. This material is code 
+    agnostic.
+    """
+    def __init__(self, E:float, G:float=None, rho=None, 
+                 sunit:str='MPa', rhounit='kg/m3'):
+        self._initUnits(sunit, rhounit)
+        self.E = E
+        self.G = G
+        self.rho = rho     
