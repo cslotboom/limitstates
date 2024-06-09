@@ -58,15 +58,3 @@ class MaterialElasticIso(MaterialElastic):
     """
     pass
 
-class MaterialElastic(MaterialAbstract):
-
-    """
-    Represents a generic Isotropic elastic material. This material is code 
-    agnostic.
-    """
-    def __init__(self, E:float, G:float=None, rho=None, 
-                 sunit:str='MPa', rhounit='kg/m3'):
-        self._initUnits(sunit, rhounit)
-        self.E = E
-        self.G = G
-        self.rho = rho     

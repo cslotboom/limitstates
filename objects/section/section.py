@@ -15,27 +15,28 @@ from ... units import ConverterLength
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
            'SectionRectangle']
 
+#Rename this to SectionArchetype?
 class SectionAbstract(ABC):
     """
     Contains interfaces relevant to all sections
     """
     
     @abstractmethod
-    def getEIx(sunit='Pa', lunit='m'):
+    def getEIx(lunit='m', sunit='Pa' ):
         """
         IE about the sections local x axis
         """
         pass
     
     @abstractmethod
-    def getEIy(sunit='Pa', lunit='m'):
+    def getEIy(lunit='m', sunit='Pa'):
         """
         IE about the sections local y axis
         """
         pass
     
     @abstractmethod
-    def getGAx(sunit='Pa', lunit='m'):
+    def getGAx(lunit='m', sunit='Pa'):
         pass
     
     @abstractmethod
@@ -65,27 +66,27 @@ class SectionMonolithic(SectionAbstract):
     def __len__(self):
         return 1
     
-    def _getCfactors(self, sunit='Pa', lunit='m'):
+    def _getCfactors(self, lunit='m', sunit='Pa'):
         return self.mat.sConvert(sunit), self.lConvert(lunit)
     
-    def getEA(self, sunit='Pa', lunit='m'):
-        sfactor, lfactor = self._getCfactors(sunit, lunit)
+    def getEA(self, lunit='m', sunit='Pa'):
+        sfactor, lfactor = self._getCfactors(lunit, sunit)
         return self.mat.E * sfactor * self.A * lfactor**2
         
-    def getEIx(self, sunit='Pa', lunit='m'):
-        sfactor, lfactor = self._getCfactors(sunit, lunit)
+    def getEIx(self, lunit='m', sunit='Pa'):
+        sfactor, lfactor = self._getCfactors(lunit, sunit)
         return self.mat.E * sfactor * self.Ix * lfactor**4        
     
-    def getEIy(self, sunit='Pa', lunit='m'):
-        sfactor, lfactor = self._getCfactors(sunit, lunit)
+    def getEIy(self, lunit='m', sunit='Pa'):
+        sfactor, lfactor = self._getCfactors(lunit, sunit)
         return self.mat.E * sfactor * self.Iy * lfactor**4
     
-    def getGAx(self, sunit='Pa', lunit='m'):
-        sfactor, lfactor = self._getCfactors(sunit, lunit)
+    def getGAx(self, lunit='m', sunit='Pa'):
+        sfactor, lfactor = self._getCfactors(lunit, sunit)
         return self.mat.E * sfactor * self.Avx * lfactor**2
          
-    def getGAy(self, sunit='Pa', lunit='m'):
-        sfactor, lfactor = self._getCfactors(sunit, lunit)
+    def getGAy(self, lunit='m', sunit='Pa'):
+        sfactor, lfactor = self._getCfactors(lunit, sunit)
         return self.mat.E * sfactor * self.Avy * lfactor**2        
     
     def _initMat(self, mat):
@@ -116,15 +117,19 @@ class SectionGeneric(SectionMonolithic):
         The area in the shear direction y. The default is None.
     lunits : str, optional
         The units for length used in the section. The default is 'mm'.
-
+    designProps : dict, optional
+        An optional dictionary that represents design propreties the section
+        may have.
+        
     Returns
     -------
     None.
 
     """
     
-    def __init__(self, mat:MaterialElastic, Ix = 1, A = 1, Iy = 1, J = 1, 
-                 Avx = None, Avy = None, lunits='mm'):
+    def __init__(self, mat:MaterialElastic, Ix:float = 1, A:float = 1, 
+                 Iy:float = 1, J:float = 1, Avx:float = None, Avy:float = None, 
+                 lunits:str='mm', designProps:dict = None):
 
         
         self.mat:MaterialAbstract = mat
@@ -134,21 +139,57 @@ class SectionGeneric(SectionMonolithic):
         self.J = J
         self.Avx = Avx
         self.Avy = Avy
+        
+        self.designProps:dict = designProps
 
 class SectionRectangle(SectionMonolithic):
 
-    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits='mm'):
+    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm',
+                 designProps:dict = None):
+        """
+        A rectangular monolitihic section.
         
+        The section can be defined by either, or by inputing a dictionary
+        for the section.
+
+        Parameters
+        ----------
+        mat : MaterialElastic
+            The material to use for the section.
+        b : float
+            The section width.
+        d : float
+            The section depth.
+        lunits : str, optional
+            The length units. The default is 'mm'.
+        sectionDict : TYPE, optional
+            A optional section dictionary. The default is None.
+        designProps : dict, optional
+            An optional dictionary that represents design propreties the section
+            may have.
+                
+        Returns
+        -------
+        None.
+
+        """
         self._initUnits(lunits)
         self.mat = mat
+        self.designProps:dict = designProps
+        
         self.d = d
         self.b = b
+        self._setupSectionProps()
+    
+    def _setupSectionProps(self):
+        b = self.b
+        d = self.d
         
-        self.A   = self.d*self.b
+        self.A   = d*b
         self.Avx = self.A * (5/6)
         self.Avy = self.A * (5/6)
-        self.Ix  = self.b*self.d**3 / 12
-        self.Iy  = self.d*self.b**3 / 12
+        self.Ix  = b*d**3 / 12
+        self.Iy  = d*b**3 / 12
         
         # Torsion modulus
         a = max(b, d)
@@ -157,7 +198,50 @@ class SectionRectangle(SectionMonolithic):
         
         # Radius of Gyration
         self.rx = (self.Ix / self.A)**0.5
-        self.ry = (self.Ix / self.A)**0.5
+        self.ry = (self.Iy / self.A)**0.5
+        
+    def convertUnits(self, lUnit:str):
+        """
+        Converts the section from one set of units to another.
+
+        Parameters
+        ----------
+        lUnit : string
+            Converts the section units.
+
+        Returns
+        -------
+        None.
+
+        """
+        cfactor = self.lConvert(lUnit)
+        self.lUnit = lUnit
+        self.b = self.b*cfactor
+        self.d = self.d*cfactor
+        self._setupSectionProps()
+    
+    @property
+    def name(self):
+        return f"{self.b}{self.lUnit}x{self.d}{self.lUnit} Rectangle"
+    
+    def __repr__(self):
+        return f"<limitstates {self.name} Section.>"
+
+
+class SectionSteelW(SectionMonolithic):
+    """A class that represents geometry for a steel W section."""
+    
+    
+class SectionSteelHSS(SectionMonolithic):
+    """A class that represents geometry for a steel HSS section."""
+
+    
+class SectionSteelAngle(SectionMonolithic):
+    """A class that represents a standard steel W section."""
+
+
+
+
 
 class SectionDatabase(SectionMonolithic):
     """
