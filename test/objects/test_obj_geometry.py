@@ -1,4 +1,4 @@
-from limitstates import Node, getLengthNodes, getLineFromNodes, getLineFromLength
+from limitstates import Node, getLengthNodes, getLineFromNodes, getLineFromLength, Support
 import pytest
 
 n1 = Node([0,0,0])
@@ -34,7 +34,22 @@ def test_line_fromlengths():
     assert line.length == 5
     assert line.n2.getx() == 5
 
+
+def test_support_init():
+    """ Ensures supports have been initialized properly """
+    assert n1.support.fixity == (0,0,0)
+
+def test_support_set():
+    """ Ensures supports canbe updated properly """
+    pin = Support('pinned', (1,1,0))
+    n1.setSupportType(pin)
+    assert n1.support.fixity == (1,1,0)
+
+
+
 if __name__ == '__main__':
     test_node_lengths()
     test_line_fromNodes()
     test_line_fromlengths()
+    test_support_init()
+    test_support_set()

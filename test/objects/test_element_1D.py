@@ -15,7 +15,7 @@ def test_getBeam():
     section = SectionRectangle(myMat, b, d)
     myBeam = getBeamColumn(L,section,'m')
     
-    assert myBeam.L == L
+    assert myBeam.getLength() == L
     
     
     

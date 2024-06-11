@@ -12,8 +12,8 @@ import limitstates.design.csa.o86.c19 as o86
     
 # mydict = _loadMaterialDBDict('csa','o86', 'c19', "glulam_csa.csv")
 def test_matLoad():
-    mats=o86.loadGlulamMaterials()
-
+    mats=o86.loadGlulamMaterialDB()
+    
     myMat = mats[0]
     assert myMat.fb == 30.6
     assert myMat.fv == 2.0

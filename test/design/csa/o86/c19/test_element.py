@@ -32,7 +32,7 @@ def test_GlulamInits():
     None.
 
     """
-    myElement = o86.GlulamBeamCSA19(line, mySection, 'm')
+    myElement = o86.GlulamBeamColumnCSA19(line, mySection, 'm')
     
     assert hasattr(myElement.designProps, 'firePortection')
     assert hasattr(myElement.designProps, 'fireSection')

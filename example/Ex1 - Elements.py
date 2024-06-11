@@ -46,6 +46,21 @@ myElement = csa.getBeamColumnGlulamCSA19(Length, mySection, 'm')
 # Mr = csa.getGlulamMr(designElement)
 
 
+
+# =============================================================================
+# Annex D calculations
+# =============================================================================
+
+myMat = csa.loadGlulamMaterial('SPF', '20f-E')
+mySection   = ls.SectionRectangle(myMat, width, depth)   
+myElement = csa.getBeamColumnGlulamCSA19(Length, mySection, 'm')
+
+FRR         = csa.getFireDemands(60, csa.FireConditions.beamColumn)
+gypsum      = csa.getGypsumFirePortection(csa.FireConditions.beamColumn, "12.7mm")
+
+fireSection = myElement.designProps.fireSection
+
+
 # =============================================================================
 # 
 # =============================================================================
