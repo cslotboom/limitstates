@@ -9,31 +9,30 @@ import pytest
 
 E = 9500
 myMat = MaterialElastic(E)
+myMat.E90 = E/30
 myMat.name = 'testing'
 t = 35
 myLayer = LayerClt(35, myMat)
 myLayer2 = LayerClt(35, myMat, 90)
-myLayer3 = LayerClt(35, myMat)
-
-layers = [myLayer, myLayer2, myLayer]
-# layerGroup = LayerGroupClt([myLayer, myLayer2, myLayer3])
-# layerGroup.setLayerPosition()
+myLayer3 = LayerClt(15, myMat)
 
 
 def test_layerRepr():
     assert "35mm" in str(myLayer)
 
-
 def test_getLayerAttr():
+    layers = [myLayer, myLayer2, myLayer]
+
     layerGroup = LayerGroupClt(layers)
     out1 = layerGroup.getLayerAttr('t')
     assert np.all(out1 == [35,35,35])
     assert np.all(layerGroup.d == 105)
 
 def test_layerGroup_Boundaries():
-    layerGroup = LayerGroupClt(layers)
+    layers = [myLayer, myLayer2, myLayer]
 
-    layerGroup._setLayerBoundaries()
+    # layer boundaries are set on init
+    layerGroup = LayerGroupClt(layers)
     
     output = layerGroup.lBoundaries
     solution = np.array([0, 35, 70, 105])
@@ -43,8 +42,6 @@ def test_layerGroup_Boundaries():
 def test_layerGroup_Position():
     layers = [myLayer, myLayer2, myLayer]
     layerGroup = LayerGroupClt(layers)
-    layerGroup._setLayerBoundaries()
-    layerGroup._setLayerPositions()
     
     output = layerGroup.lMidpointsAbs
     solution = np.array([17.5, 52.5, 87.5])
@@ -55,17 +52,29 @@ def test_layerGroup_Position():
 def test_layerGroup_ybar():
     layers = [myLayer, myLayer2, myLayer]
     layerGroup = LayerGroupClt(layers)
-    layerGroup._setLayerBoundaries()
-    layerGroup._setLayerPositions()
-    layerGroup._setYbar()
-    
-    output = layerGroup.ybar
+
+    output = layerGroup.getYbar()
     solution = 105/2
+    assert output == pytest.approx(solution)
+
+def test_layerGroup_ybar2():
+    layers = [myLayer, myLayer2, myLayer, myLayer2, myLayer3]
+    layerGroup = LayerGroupClt(layers)
     
-    assert output == solution
+    ybarout = layerGroup.getYbar()
+    rmaxOut = layerGroup.getYmax()
+    
+    yA = 35*((17.5) + (17.5+35)/30 + (17.5+70) + (17.5+105)/30) + 15*(15/2+140)
+    A = (35 + 35/30 + 35 + 35/30 + 15)
+    ybarSol = yA / A
+    
+    rmaxSol = max(ybarSol, ((35*4 + 15) - ybarSol))
+    assert ybarout == pytest.approx(ybarSol)
+    assert rmaxOut == pytest.approx(rmaxSol)
 
 
-_getLayerE(isStrongAxis, layer)
+
+# _getLayerE(isStrongAxis, layer)
 
 
 
@@ -75,4 +84,8 @@ if __name__ == '__main__':
     test_getLayerAttr()
     test_layerGroup_Boundaries()
     test_layerGroup_Position()
+    
     test_layerGroup_ybar()
+    test_layerGroup_ybar2()
+
+    

@@ -91,7 +91,7 @@ def getLineFromLength(L:float, units = 'm') -> Line:
 
     """  
     n1 = Node(np.array([0.,0.,0.]),units)
-    n2 = Node(np.array([L,0.,0.]),units)
+    n2 = Node(np.array([L, 0.,0.]),units)
     
     line    = Line(n1, n2)
     line.L  = L
@@ -164,3 +164,48 @@ def initSimplySupportedMember(L:float, lUnit:str):
     line.n2.setSupportType(SupportTypes2D.ROLLER.value)
     nodes = [line.n1, line.n2]
     return Member(nodes, [line], lUnit)
+
+@dataclass(slots=True)
+class Surface:
+    """
+    Surfaces are flat planes that are defined between a set of nodes.
+    
+    They do not have width/length.
+        
+    """
+    nodes:list[Node] = None
+    lUnit:str = 'm'
+    label:str = None
+    loadData:dict = None
+    analysisData:dict = None
+    lConverter:ConverterLength = None
+
+    def __post_init__(self):
+        self._initUnits(self.lUnit)
+        
+    def _initUnits(self, lunit:str='m'):
+        """
+        Inititiates the unit of the section.
+        """
+        self.lUnit      = lunit
+        self.lConverter = ConverterLength()
+    
+    def lConvert(self, outputUnit:str):
+        """
+        Get the conversion factor from the current unit to the output unit
+        for length units
+        """
+        return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
+
+    #TODO: add this!
+    def convertLunit(self):
+        pass
+    
+
+class Panel(Surface):
+    """
+    A panel is an element that is a rectangular plane, with width and length.
+        
+    """
+    def __init__(self):
+        super().__init__()

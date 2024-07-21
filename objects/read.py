@@ -10,26 +10,15 @@ Some section files are intended for user by users.
 
 import pandas as pd
 import os
+from math import isnan
+
 from .material import MaterialAbstract
-from .section import SectionAbstract, SectionRectangle
+from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt
 from dataclasses import dataclass
 
 filepath = os.path.realpath(__file__)
 basedir = os.path.dirname(filepath)
 matBaseDir = os.path.join(os.path.dirname(basedir), 'design')
-
-# class AbstractDatabaseLoader:
-#     type:str = None
-#     def __init__(self, code:str, matStandard:str, year:str, fileName:str):
-#         base = os.path.join(basedir, code, matStandard, year)
-#         self.dbPath = os.path.join(base, self.type, 'databases', fileName) 
-    
-#     def loadDict(self):
-#         matdb = pd.read_csv(self.dbPath)
-#         matDict = matdb.to_dict(orient='index')    
-
-#     def loadObjects(self):
-#         pass
 
 @dataclass
 class MaterialDBConfig:
@@ -65,7 +54,7 @@ def _loadMaterialDB(config:MaterialDBConfig,
     return materials
 
 # =============================================================================
-# 
+# Section read files
 # =============================================================================
 
 @dataclass
@@ -128,7 +117,7 @@ def getRectangularSections(mat:MaterialAbstract,
     code : str
         The code to use, can be one of 'csa' or 'us'.
     sectionType : str
-        The type of section to use. Can be one of 'glulam', 'clt', steel.
+        The type of section to use. 
     fileName : str
         The specific database file to read from.
     lunits : str, optional
@@ -151,3 +140,168 @@ def getRectangularSections(mat:MaterialAbstract,
 
 
 
+# =============================================================================
+# 
+# =============================================================================
+
+
+def _sortCLTMatDict(cltMatDBDict:dict)->list[[dict,dict]]:
+    """
+    A function used by other internal client functions to sort a material data
+    base into other funcitons
+    A function that is used to sort through a material database. The material
+    database will have information for two materials
+    
+    Sorts the CLT dictionary so it has a list for each of the two materials
+    in the clt section, i.e. the strong and weak layer
+    """
+    matDicts = {}
+    for key in cltMatDBDict.keys():
+        subDict = cltMatDBDict[key]
+        dictStrong   = {}
+        dictWeak  = {}
+        for subKey in subDict.keys():
+            val = subDict[subKey]
+            
+            # Set the weak axis
+            if 'W' in subKey:
+                subKeyMod = subKey.replace('W','')
+                dictWeak[subKeyMod] = val
+            
+            # Set the strong axis
+            elif 'S' in subKey:
+                subKeyMod = subKey.replace('S','')
+                dictStrong[subKeyMod] = val        
+            
+            # set propreties common to both materials, e.g. rho.
+            else:
+                dictStrong[subKey] = val
+                dictWeak[subKey] = val
+            
+        matDicts[subDict['grade']] = [dictStrong, dictWeak]
+    return matDicts
+
+def _parseCLTDataFrame(matDfDict):
+    """
+    Modfies the orginal raw dataframe dictionary, converting thickneses and 
+    layer orientations into a list for each variable.
+    All other attributes will remain the same.
+    """
+    newMatDict = {}    
+    for key in matDfDict.keys():
+        tTemp = []
+        oTemp = []
+        parsedMatDict = {}
+        
+        matDict = matDfDict[key]
+        for matKey in matDict.keys():
+            val = matDict[matKey]
+            
+            if matKey[0] == 't' and not isnan(val):
+                tTemp.append(val)
+                continue
+            
+            #collect orientation to lists.
+            elif matKey[0] == 'o' and not isnan(val):
+                oTemp.append(val)    
+                continue
+            
+            # store standard values without modifying them.
+            elif (not matKey[0] == 't') and (not matKey[0] == 'o'):
+                parsedMatDict[matKey] = val
+            
+        parsedMatDict['t'] = tTemp
+        parsedMatDict['o'] = oTemp
+        
+        newMatDict[key] = parsedMatDict
+        
+    return newMatDict
+
+
+def _getLayerInd(cltGrade, mats):
+    """
+    Finds the index of the clt grade to use.
+    """
+    for ii in range(len(mats)):
+        if mats[ii][0].grade == cltGrade:
+            return ii
+    
+
+def _getCLTSectionLayers(sectionDict:dict, mats:list) -> list[LayerClt]:
+    """
+    Creates the group of layers for the CLT section.
+
+    Parameters
+    ----------
+    sectionDict : dict
+        The input section dictionary containing geometry information.
+    mats : list
+        The input material list containing all possible materials.
+
+    Returns
+    -------
+    layerMats : list[LayerClt]
+        A list of the output layers, with the correct materials assigned..
+
+    """
+    
+    
+    layerThicknesses = sectionDict['t']
+    layerOrientations = sectionDict['o']
+    cltGrade = sectionDict['grade']
+    
+    Nlayer = len(layerThicknesses)
+    
+    ind = _getLayerInd(cltGrade, mats)
+    strongMat, weakMat = mats[ind]
+    
+    layerMats = []
+    for ii in range(Nlayer):
+        o = layerOrientations[ii]       
+        if o == 0:
+            mat = strongMat
+        elif o == 90:
+            mat = weakMat
+        else:
+            raise Exception(f"Recieved layer orientation of {o}, \
+                            expected 0 or 90")
+        
+        layerMats.append(LayerClt(layerThicknesses[ii], mat, o==0))
+    return layerMats
+
+
+
+def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]], 
+                    config:SectionDBConfig, 
+                    lUnit = 'mm') -> list[SectionCLT]:
+    """
+    An internal function that can be used to load a set of CLT sections given
+    input materials that correspond to the grades of each section type.
+    
+    Parameters
+    ----------
+    mats : list[[MaterialAbstract, MaterialAbstract]]
+        DESCRIPTION.
+    config : SectionDBConfig
+        DESCRIPTION.
+    lUnit : TYPE, optional
+        DESCRIPTION. The default is 'mm'.
+
+    Returns
+    -------
+    list[SectionCLT]
+        DESCRIPTION.
+
+    """
+
+    tempDict = _loadSectionDBDict(config)
+    sectionsDict = _parseCLTDataFrame(tempDict)
+   
+    sections = []
+    for key in sectionsDict.keys():
+        sectionDict = sectionsDict[key]
+        layerMats = LayerGroupClt(_getCLTSectionLayers(sectionDict, mats))
+        sections.append(SectionCLT(layerMats, sectionDict))
+
+    return sections
+    

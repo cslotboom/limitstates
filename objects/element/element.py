@@ -114,3 +114,38 @@ def getBeamColumn(L:float, section:SectionAbstract, lUnit:str='m',
 
 
 
+# class Element2D:
+#     points:
+#     designProps:DefaultDesignProps
+#     userProps:UserProps
+    
+#     @property
+#     def mat(self):
+#         return self.section.mat
+     
+#     def getEIx(self, lUnit:str='m', sUnit:str='Pa'):
+#         return self.section.getEIx(sUnit, lUnit)  
+
+#     def getEIy(self, lUnit:str='m', sUnit:str='Pa'):
+#         """Returns EIy, i.e EI in the secondary axis"""             
+#         return self.section.getEIy(sUnit, lUnit)
+
+#     def getGAx(self, lUnit:str='m', sUnit:str='Pa'):
+#         """ Returns GA for the section """
+#         return self.section.getGAx(sUnit, lUnit)
+
+#     def getGAy(self, lUnit:str='m', sUnit:str='Pa'):
+#         """ Returns GA for the section """
+#         return self.section.getGAy(sUnit, lUnit)    
+    
+#     def getLength(self):
+#         return self.member.length
+    
+#     def getVolume(self, lUnit='m'):
+#         """
+#         Returns the volume of the element.
+#         """
+#         slconvert = self.section.lConvert.convert(lUnit)
+#         blconvert = self.member.lConvert.convert(lUnit)        
+#         return self.member.L * self.section.A* slconvert**2 * blconvert
+

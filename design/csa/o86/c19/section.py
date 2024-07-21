@@ -2,9 +2,9 @@
 Contains functions for managing sections specific to CSAo86-19
 """
 
-from limitstates.objects.read import _loadSectionRectangular, SectionDBConfig
-from .material import MaterialGlulamCSA19
-from limitstates import SectionRectangle
+from limitstates.objects.read import _loadSectionRectangular, SectionDBConfig, _loadSectionsCLT
+from .material import MaterialGlulamCSA19, loadCltMatDB
+from limitstates import SectionRectangle, SectionCLT
 
 
 def loadGlulamSections(mat:MaterialGlulamCSA19, 
@@ -15,8 +15,8 @@ def loadGlulamSections(mat:MaterialGlulamCSA19,
 
     Parameters
     ----------
-    mat : MatCLTLayer_c19
-        The material to be used.
+    mat : MaterialGlulamCSA19
+        The material to be applied to the section.
 
     Returns
     -------
@@ -26,3 +26,27 @@ def loadGlulamSections(mat:MaterialGlulamCSA19,
     """
     config = SectionDBConfig('csa', 'glulam', db)
     return _loadSectionRectangular(mat, config, lUnit = 'mm')
+
+def loadCltSections(db:str = 'clt_prg320_2019.csv') -> list[SectionCLT]:
+    """
+    Loads all CLT sections in the given database.
+
+    Parameters
+    ----------
+    dbType : str
+        The type of database to read from, can be 'si', or 'us'.
+
+    Returns
+    -------
+    sections : list
+        A list of the desired steel sections.
+
+    """
+    
+    # Load the material dictionary
+    mats = loadCltMatDB(db)
+    
+    # Set up the config and load the raw dictionary.
+    config = SectionDBConfig('csa', 'clt', db)
+        
+    return _loadSectionsCLT(mats, config, lUnit = 'mm')

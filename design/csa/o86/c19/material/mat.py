@@ -3,12 +3,13 @@ The material library contains material models
 """
 
 from limitstates import MaterialElastic
-from limitstates.objects.read import _loadMaterialDB, MaterialDBConfig
+from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, MaterialDBConfig, _sortCLTMatDict
 
 __all__ = ["MaterialGlulamCSA19", "MaterialCLTLayerCSA19", 
-           "loadGlulamMaterialDB", "loadGlulamMaterial"]
+           "loadGlulamMaterialDB", "loadGlulamMaterial", "loadCltMatDB"]
 
 _glulamConfig = MaterialDBConfig('csa', 'o86', 'c19', "glulam_csa.csv")
+_cltConfig = MaterialDBConfig('csa', 'o86', 'c19', "clt_csa.csv")
 
 class MaterialGlulamCSA19(MaterialElastic):
 
@@ -53,6 +54,8 @@ class MaterialGlulamCSA19(MaterialElastic):
 class MaterialCLTLayerCSA19(MaterialElastic):
     """
     Material is loaded as file
+    See table 8.2 for standard values. Transverse layers are approximated per
+    suggestions from notes in the table..
     """
     type:str='clt'
     code:str = "csa086-19"
@@ -77,14 +80,17 @@ class MaterialCLTLayerCSA19(MaterialElastic):
         if 'G90' not in self.__dict__:
             self.setG90()
     
-    #TODO: where do these estimates come from?!
     def setE90(self):
+        """ See Table 8.2 note 3"""
         self.E90 = self.E / 30   
         
     def setG0(self):
+        """ See Table 8.2 note 4"""
+
         self.G = self.E / 16     
         
     def setG90(self):
+        """ See Table 8.2 note 5"""
         self.G90 = self.G / 10     
 
 def loadGlulamMaterialDB() -> list[MaterialGlulamCSA19]:
@@ -140,3 +146,40 @@ def loadGlulamMaterial(species:str, grade:str) -> MaterialGlulamCSA19:
         raise Exception(f"No material with species {species} and grade {grade} found in database.")
     
     return matOut
+
+def loadCltMatDB(cltDBname:str = "clt_prg320_2019.csv") -> list[[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]:
+    """
+    Loads a set of CLT material from a database. For each material grade, two
+    seperate CLT materials are loaded, one for the strong axis, and one for 
+    the weak axis.
+    
+    Loads materials for each layer of CLT from a supplier database in 
+    the form [strong, weak].
+    
+    Materials propreties will be loaded in 'MPa' and 'kg/m3'
+
+    Parameters
+    ----------
+    cltDBname : str, optional
+        The name of the database to load. The default is 'prg320_2019.csv'.
+
+    Returns
+    -------
+    mats : list[[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]
+        A list of the desired CLT materials in the form 
+        [strongAxisMat, weakAxisMat] sections.
+
+    """
+    
+    _cltConfig = MaterialDBConfig('csa', 'o86', 'c19', cltDBname)
+    
+    # Load the material dictionary.
+    rawMatDict = _loadMaterialDBDict(_cltConfig)
+    sortedMatDict = _sortCLTMatDict(rawMatDict)
+    
+    mats = []
+    for cltGrade in sortedMatDict.keys():
+        tempMatDict = sortedMatDict[cltGrade]
+        mats.append([MaterialCLTLayerCSA19(tempMatDict[0], 'MPa', 'kg/m3'), 
+                     MaterialCLTLayerCSA19(tempMatDict[1], 'MPa', 'kg/m3')])
+    return mats
