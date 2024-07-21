@@ -71,13 +71,47 @@ def test_kzbg():
     
 
 
+def test_table_1():
+    """
+    Tests results using glulam selecton tables in CSA o86
+    """
+    
+    mat = mats[3]
+    mySection = ls.SectionRectangle(mat, 365, 836)
+    
+    L = 6
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')
+    
+    
+    kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
+    
+    Mr = o86.checkMrGlulamSimple(myElement, 1) / 1000
+    Vr = o86.checkVrGlulamSimple(myElement, 1) / 1000
+    
+    EI = mySection.getEIx('mm', 'MPa')
+    
+    Mrsol = 980 * kzbg
+    Vrsol = 366
+    EIsol = 220000*10**9
+    
+    myElement = o86.getBeamColumnGlulamCSA19(12, mySection, 'm')
+    kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
+
+    Wr = o86.checkWrGlulamSimple(myElement, 1) / 1000
+
+    WrSol = 1200 * 12**-0.18
+    
+    assert Mr == pytest.approx(Mrsol, rel = 0.01)
+    assert Vr == pytest.approx(Vrsol, rel = 0.01)
+    assert EI == pytest.approx(EIsol, rel = 0.01)
+    assert Wr == pytest.approx(WrSol, rel = 0.01)
+
 
 if __name__ == "__main__":
     test_Cb()
     test_kLa()
     test_kLb()
     test_kLc2()
+    test_table_1()
     
     
-    
-# def test_kL

@@ -186,7 +186,7 @@ def checkMrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     
     # Calculate kzbg
     lfactor = element.member.lConvert('mm')
-    slfactor = element.member.lConvert('mm')
+    slfactor = element.section.lConvert('mm')
     
     dmm = element.section.d*slfactor
     bmm = element.section.b*slfactor
@@ -198,7 +198,7 @@ def checkMrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     else:
         raise Exception('Weak axis bending currently is not supported by limitstates')
         
-    return checkGlulamMr(Smm, section.mat.Fb*knet, kzbg, kL, kx)
+    return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx)
 
 
 def checkMrMultispanBeamColumn():
@@ -224,10 +224,6 @@ def checkGlulamShearSimple(Ag:float, Fv:float):
         The shear factored by knet.
     Ag : float
         The Area of the cross section.
-    Lbeam : float
-        The beams's length in mm.
-    Cv : TYPE, optional
-        The Shear-load coefficient. The default is 3.69.
 
     Returns
     -------
@@ -237,9 +233,9 @@ def checkGlulamShearSimple(Ag:float, Fv:float):
     
     phi = 0.9
     return phi*Fv*Ag*(2/3)
-  
 
     
+     
 def checkGlulamNetLoad(Ag:float, Fv:float, Lbeam:float, Cv = 3.69):
     """
     Checks 7.5.7.3a, for net load
@@ -263,7 +259,7 @@ def checkGlulamNetLoad(Ag:float, Fv:float, Lbeam:float, Cv = 3.69):
     """
     
     phi = 0.9
-    return phi*Fv*0.48*Ag*Cv*(Ag*Lbeam/1000)**-0.18    
+    return phi*Fv*0.48*Ag*Cv*(Ag*Lbeam/1e9)**-0.18    
 
 def checkVrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
                         useFire:bool = False) -> float:
@@ -300,15 +296,15 @@ def checkVrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     section = _getSection(element, useFire)   
 
     # check for volume support
-    lconvert = element.member.convertLunit('mm')
-    slconvert = element.section.convertLunit('mm')
-    Amm = element.section.Ag *slconvert**2
+    lconvert = element.member.lConvert('mm')
+    slconvert = element.section.lConvert('mm')
+    Amm = element.section.A *slconvert**2
     Lmm = element.member.L*lconvert
     Z = Amm* Lmm
     if  2.0*1e9 < Z:
         print('Element length is greater than 2 m^3. Check does not apply for beams, see c.l. 7.5.7.3')
   
-    return checkGlulamShearSimple(section.Ag, section.mat.Fv*knet)
+    return checkGlulamShearSimple(section.A, section.mat.fv*knet)
 
 
 
@@ -347,15 +343,16 @@ def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     section = _getSection(element, useFire)   
 
     # check for volume support
-    lconvert = element.member.convertLunit('mm')
-    slconvert = element.section.convertLunit('mm')
-    Amm = element.section.Ag *slconvert**2
+    lconvert = element.member.lConvert('mm')
+    slconvert = element.section.lConvert('mm')
+    Amm = element.section.A *slconvert**2
     Lmm = element.member.L*lconvert
-    Z = Amm* Lmm
-    if  2.0*1e9 < Z:
+    Z = Amm * Lmm
+    if  Z < 2.0*1e9:
         print('Element length is greater than 2 m^3. Check does not apply for beams, see c.l. 7.5.7.3')
+        
     
-    return checkGlulamNetLoad(Amm, section.mat.Fv*knet, Lmm, Cv)
+    return checkGlulamNetLoad(Amm, section.mat.fv*knet, Lmm, Cv)
 
 
 # =============================================================================

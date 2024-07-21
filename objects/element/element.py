@@ -43,7 +43,7 @@ class Element1D:
         return self.section.getGAy(sUnit, lUnit)    
     
     def getLength(self):
-        return self.member.length
+        return self.member.L
     
     def getVolume(self, lUnit='m'):
         """

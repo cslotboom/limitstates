@@ -190,6 +190,9 @@ class SectionRectangle(SectionMonolithic):
         self.Avy = self.A * (5/6)
         self.Ix  = b*d**3 / 12
         self.Iy  = d*b**3 / 12
+        self.Sx  = b*d**2 / 6
+        self.Sy  = (b**2)*d / 6
+        
         
         # Torsion modulus
         a = max(b, d)
