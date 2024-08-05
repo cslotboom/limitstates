@@ -29,7 +29,7 @@ class FirePortection:
     def _validateInput(self, portectionTypes):
         NsideIn = len(portectionTypes)
         if self.Nside != NsideIn:
-            raise Exception('Input fire porection has {NsideIn}, but {self.Nside} is required.')
+            raise Exception(f'Input fire porection has {NsideIn} entries, but {self.Nside} is required.')
 
 
 

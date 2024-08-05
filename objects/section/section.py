@@ -24,7 +24,7 @@ class SectionAbstract(ABC):
     @abstractmethod
     def getEIx(lunit='m', sunit='Pa' ):
         """
-        IE about the sections local x axis
+        EI about the sections local x axis
         """
         pass
     
@@ -117,9 +117,6 @@ class SectionGeneric(SectionMonolithic):
         The area in the shear direction y. The default is None.
     lunits : str, optional
         The units for length used in the section. The default is 'mm'.
-    designProps : dict, optional
-        An optional dictionary that represents design propreties the section
-        may have.
         
     Returns
     -------
@@ -129,7 +126,7 @@ class SectionGeneric(SectionMonolithic):
     
     def __init__(self, mat:MaterialElastic, Ix:float = 1, A:float = 1, 
                  Iy:float = 1, J:float = 1, Avx:float = None, Avy:float = None, 
-                 lunits:str='mm', designProps:dict = None):
+                 lunits:str='mm'):
 
         
         self.mat:MaterialAbstract = mat
@@ -140,12 +137,10 @@ class SectionGeneric(SectionMonolithic):
         self.Avx = Avx
         self.Avy = Avy
         
-        self.designProps:dict = designProps
 
 class SectionRectangle(SectionMonolithic):
 
-    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm',
-                 designProps:dict = None):
+    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm'):
         """
         A rectangular monolitihic section.
         
@@ -164,9 +159,7 @@ class SectionRectangle(SectionMonolithic):
             The length units. The default is 'mm'.
         sectionDict : TYPE, optional
             A optional section dictionary. The default is None.
-        designProps : dict, optional
-            An optional dictionary that represents design propreties the section
-            may have.
+
                 
         Returns
         -------
@@ -175,7 +168,6 @@ class SectionRectangle(SectionMonolithic):
         """
         self._initUnits(lunits)
         self.mat = mat
-        self.designProps:dict = designProps
         
         self.d = d
         self.b = b

@@ -80,6 +80,9 @@ class MaterialCLTLayerCSA19(MaterialElastic):
         if 'G90' not in self.__dict__:
             self.setG90()
     
+    def __repr__(self):
+        return f'<limitstates {self.code} {self.grade} {self.lamGrade} {self.type}>'
+    
     def setE90(self):
         """ See Table 8.2 note 3"""
         self.E90 = self.E / 30   

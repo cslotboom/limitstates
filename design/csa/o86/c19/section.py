@@ -27,7 +27,7 @@ def loadGlulamSections(mat:MaterialGlulamCSA19,
     config = SectionDBConfig('csa', 'glulam', db)
     return _loadSectionRectangular(mat, config, lUnit = 'mm')
 
-def loadCltSections(db:str = 'clt_prg320_2019.csv') -> list[SectionCLT]:
+def loadCltSections(db:str = 'clt_prg320_2019.csv', **sectionkwargs) -> list[SectionCLT]:
     """
     Loads all CLT sections in the given database.
 
@@ -49,4 +49,4 @@ def loadCltSections(db:str = 'clt_prg320_2019.csv') -> list[SectionCLT]:
     # Set up the config and load the raw dictionary.
     config = SectionDBConfig('csa', 'clt', db)
         
-    return _loadSectionsCLT(mats, config, lUnit = 'mm')
+    return _loadSectionsCLT(mats, config, lUnit = 'mm', **sectionkwargs)

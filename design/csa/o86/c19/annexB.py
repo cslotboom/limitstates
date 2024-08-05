@@ -4,18 +4,18 @@ to CSA o86 Annex B.
 """
 
 #TODO: add panel once it's complete
-from .....objects import BeamColumn, SectionRectangle
+from .....objects import BeamColumn, SectionRectangle, SectionCLT, LayerClt, LayerGroupClt
 from .....objects.fireportection import FirePortection
 from .fireportection import GypusmFlatCSA19, GypusmRectangleCSA19
-from .element import GlulamBeamColumnCSA19
+from .element import GlulamBeamColumnCSA19, CltBeamColumnCSA19
 from enum import IntEnum
 
 import numpy as np
 from numpy import ndarray
+from copy import deepcopy
 
-
-__all__ = ["FireConditions", "getFireDemands", "getGypsumFirePortection", "AssignFirePortection","getNetBurnTime",
-           "getBurntRectangularDims", "getBurntRectangularSection", "setFireSectionGlulamCSA"]
+# __all__ = ["FireConditions", "getFireDemands", "getGypsumFirePortection", "AssignFirePortection","getNetBurnTime",
+#            "getBurntRectangularDims", "getBurntRectangularSection", "setFireSectionGlulamCSA"]
 
 # =============================================================================
 # Constants
@@ -263,6 +263,100 @@ def getBurntRectangularDims(netBurnTime:ndarray[float], width:float,
     dfire = max(depth - sum(burnDimensions[0::2]),0)
     return wfire, dfire
 
+def getCLTBurnDims(netBurnTime:ndarray[float], sectionCLT:SectionCLT, Bn:float = 0.8):
+    """
+    Gets the burn dimensions for a CLTSection. 
+    The CLT section MUST have units of mm.
+    
+    Calculates the amount burned on each face of a section using clauses B.4 
+    and B.5.
+    
+    The zero-strength layer is culated according to B5, and uses 7mm or a 
+    linear interpolation if the burn time is less than 20min
+    Time units are in minutes, length units are in mm.
+    
+
+    Parameters
+    ----------
+    netBurnTime : float
+        The burn time on each face in minutes.
+        This is a ndarray with one entry in it for compatibility purposes.
+    width : float
+        The input section width as a float.
+    depth : float
+        The input section depth as a float.
+    Bn : float, optional
+        The char rate for the section. The default is 0.8.
+
+    Returns
+    -------
+    fireWidth: float
+        The width of the fire section.
+    fireWidth: float
+        The depth of the fire section.
+    """
+    
+    burnAmount = float(getBurnDimensions(netBurnTime, Bn))
+    burntLayers = _getRemainingCLTLayers(sectionCLT, burnAmount)
+
+    return burntLayers
+
+
+
+def _getRemainingCLTLayers(sectionCLT:SectionCLT, burnAmount):
+    """
+    Creates a set of burnt CLT layers. Assumes the section and burnt amount
+    have the same units.
+    """
+    
+    ii = 0
+    # !!!: assumes that the strong axis layers are alwyas the full layer group.
+    layers = sectionCLT.sLayers
+    Nlayer = len(layers)
+    intLayer = None
+    
+    # Iterate through layers starting at the bottom.
+    for layer in layers[::-1]:
+        burnAmount -= layer.t
+        if burnAmount <= 0:
+            t = abs(burnAmount)
+            intLayer = LayerClt(t, layer.mat, layer.parallelToStrong, layer.lUnit)
+            ii += 1
+            break
+        else:
+            ii += 1
+    end = Nlayer - ii
+    outputLayers = deepcopy(layers[:end])
+    
+    # If there are no layers, add on empty layer so the layer group can still do stuff
+    if end == 0:
+        layer = layers[0]
+        outputLayers = [LayerClt(0, layer.mat, layer.parallelToStrong, layer.lUnit)]
+    
+    # If there is an intermediate layer, return a 
+    if intLayer:
+        outputLayers.append(intLayer) 
+            
+    return LayerGroupClt(outputLayers)
+
+
+# =============================================================================
+# 
+# =============================================================================
+
+def _convertUnits(section):
+    convertBack = False
+    oldUnits = 'mm'
+    if section.lUnit != 'mm':
+        convertBack = True
+        oldUnits = section.lUnit
+        section.convertUnits('mm')
+    return convertBack, oldUnits
+
+def _convertBack(section, burnSection,  oldUnits):
+    section.convertUnits(oldUnits)
+    burnSection.convertUnits(oldUnits)
+
 def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float], 
                                portection:GypusmRectangleCSA19, 
                                Bn:float = 0.7) -> SectionRectangle:
@@ -299,21 +393,64 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     netBurnTime = getNetBurnTime(FRR, portectionTime)
     
     # If section not in mm, convert to mm then convert back later.
-    
-    convertBack = False
-    if section.lUnit != 'mm':
-        convertBack = True
-        oldUnits = section.lUnit
-        section.convertUnits('mm')
+    convertBack, oldUnits = _convertUnits(section)
     
     burnDimensions = getBurntRectangularDims(netBurnTime, section.b, section.d, Bn)
     burnSection = SectionRectangle(section.mat, *burnDimensions, section.lUnit)
-    burnSection.designProps = section.designProps
+    # burnSection.designProps = section.designProps
     
     # Convert the section back to mm.
     if convertBack:
-        section.convertUnits(oldUnits)
-        burnSection.convertUnits(oldUnits)
+        _convertBack(section, burnSection, oldUnits)
+    
+    return burnSection
+
+def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float], 
+                       portection:GypusmFlatCSA19, 
+                       Bn:float = 0.8) -> SectionCLT:
+    """
+    Returns a burnt rectangular section, with burn dimensions for a rectangle 
+    from a input burn time.
+    
+    Calculates the amount burned on each face of a section using clauses B.4 
+    and B.5.
+    The zero-strength layer is calculated according to B5, and uses 7mm or a 
+    linear interpolation if the exposed time is less than 20min
+    Time units are in minutes.
+    
+
+    Parameters
+    ----------
+    section : SectionRectangle
+        The input rectangular section to burn.
+    FRR : ndarray[float]
+        The burn demands in FRR in minutes on each face. For a rectangular 
+        section fire portection is input in: [top, right, bottom, left]    
+    portection : GypusmRectangleCSA19
+        The fire portection object applied to the section.
+    Bn : float, optional
+        The char rate for the section. 
+        The default is 0.7, which is the notional char rate.
+
+    Returns
+    -------
+    SectionRectangle
+        The burn section with dimensions equal to the output section.
+    """
+    portectionTime = portection.getPortectionTime()
+    netBurnTime = getNetBurnTime(FRR, portectionTime)
+    
+    # If section not in mm, convert to mm then convert back later.
+    convertBack, oldUnits = _convertUnits(section)
+
+    # make the new section and convert it to 
+    burnLayers = getCLTBurnDims(netBurnTime, section, Bn)
+    burnSection = SectionCLT(burnLayers, section.w, section.wWeak, 
+                             section.lUnit, section.NlayerTotal)
+    
+    # Convert the section back to mm.
+    if convertBack:
+        _convertBack(section, burnSection, oldUnits)
     
     return burnSection
 
@@ -326,7 +463,7 @@ The majority of functions exposed to the user are in this section.
 """
 
 def setFireSectionGlulamCSA(element:GlulamBeamColumnCSA19, 
-                            FRR:list[float]|ndarray[float],
+                            FRR:float|list[float]|ndarray[float],
                             Bn:float = 0.7):
     """
     Sets the burnt section for a glulam element.
@@ -362,22 +499,75 @@ def setFireSectionGlulamCSA(element:GlulamBeamColumnCSA19,
     
     # If the section is not set, assume the beam is exposed.
     if not firePort:
-        firePort = GypusmRectangleCSA19(0)
+        firePort = GypusmRectangleCSA19('exposed')
+    
+    if isinstance(FRR, int) or isinstance(FRR, float):
+        FRR = np.array([0,FRR,FRR,FRR])
     
     fireSection = getBurntRectangularSection(section, FRR, firePort)    
-    firePort = element.designProps.fireSection = fireSection
+    element.designProps.fireSection = fireSection
+
+def setFireSectionCltCSA(element:GlulamBeamColumnCSA19, 
+                         FRR:float|list[float]|ndarray[float],
+                         Bn:float = 0.8):
+    """
+    Sets the burnt section for a clt element.
+    By default Bn = 0.8, which assumes that the first CLT layer has been 
+    burnt through. Set Bn = 0.65 if the bottom layer isn't burnt through. 
+    
+    Calculates the amount burned on each face of a section using clauses B.4 and 
+    B.5.
+    The zero-strength layer is calculated according to B5, and uses 7mm or a 
+    linear interpolation if the exposed time is less than 20min.
+    
+    Time units is in minutes.
+
+    Parameters
+    ----------
+    element : GlulamBeamColumnCSA19
+        The Glulam element to burn.
+    FRR : list[float]|ndarray[float]
+        For a rectangular section fire portection is input 
+        in: [top, right, bottom, left]  
+    Bn : float, optional
+        The burn rate for the section. 
+        The default is 0.7, which is the notional char rate.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    section = element.section
+    firePort = element.designProps.firePortection
+    
+    # If the section is not set, assume the beam is exposed.
+    if not firePort:
+        firePort = GypusmFlatCSA19('exposed')
+    
+    if isinstance(FRR, int) or isinstance(FRR, float):
+        FRR = np.array([FRR])
+    
+    fireSection = getBurntCLTSection(section, FRR, firePort, Bn)    
+    # fireSection.NlayerTotal = len(section.sLayers)
+    element.designProps.fireSection = fireSection
+    
+
 
 
 
 # TODO! add panel once it's complete
-def setBurntSection(element:GlulamBeamColumnCSA19, FRR:list[float], ):
+def setBurntSection(element:GlulamBeamColumnCSA19, 
+                    FRR:float|list[float]|ndarray[float], 
+                    Bn:float = 0.7):
     
     if isinstance(element, GlulamBeamColumnCSA19):
-        pass
+        setFireSectionGlulamCSA(element, FRR, Bn)
     elif isinstance(element, BeamColumn):
-        pass
-    else:
-        pass
+        setFireSectionGlulamCSA(element, FRR, Bn)
+    elif isinstance(element, CltBeamColumnCSA19):
+        setFireSectionCltCSA(element, FRR, Bn)
     
 
 
