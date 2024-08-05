@@ -165,12 +165,24 @@ def initSimplySupportedMember(L:float, lUnit:str):
     nodes = [line.n1, line.n2]
     return Member(nodes, [line], lUnit)
 
+
+
+# =============================================================================
+# Experimental classes, 
+# =============================================================================
+
 @dataclass(slots=True)
 class Surface:
     """
-    Surfaces are flat planes that are defined between a set of nodes.
+    !!!EXPERIMENTAL!!!
+
+    This class is experimental and may not be supported in the full release
+
+
+    Surfaces are flat elements that are defined between a set of nodes.
     
     They do not have width/length.
+    
         
     """
     nodes:list[Node] = None
@@ -202,10 +214,17 @@ class Surface:
         pass
     
 
-class Panel(Surface):
+class SurfaceRectangular(Surface):
     """
+    !!!EXPERIMENTAL!!!
+
+    This class is experimental and may not be supported in the full release
+    
     A panel is an element that is a rectangular plane, with width and length.
         
     """
-    def __init__(self):
+    def __init__(self, nodes:list[Node]):
         super().__init__()
+        
+        
+        

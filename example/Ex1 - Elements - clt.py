@@ -38,7 +38,7 @@ myMatS = ls.MaterialElastic(Es, Gs)
 myMatS.E90 = Es/30
 myMatS.G90 = Gs/13
 myMatS.fb = 28*MPa
-myMatS.name = 'strong axis'
+myMatS.grade = 'strong axis'
 
 Ew = 9000
 Gw = 731
@@ -46,7 +46,7 @@ myMatW = ls.MaterialElastic(Es, Gs)
 myMatW.E90 = Ew/30
 myMatW.G90 = Gw/13
 myMatS.fb = 11*MPa
-myMatW.name = 'weak axis'
+myMatW.grade = 'weak axis'
 
 # t = 35
 layer1 = ls.LayerClt(35, myMatS)

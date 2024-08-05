@@ -11,14 +11,14 @@ def _init():
     myMatS = MaterialElastic(Es, Gs)
     myMatS.E90 = Es/30
     myMatS.G90 = Gs/13
-    myMatS.name = 'strong axis'
+    myMatS.grade = 'strong axis'
     
     Ew = 9000
     Gw = 731
     myMatW = MaterialElastic(Es, Gs)
     myMatW.E90 = Ew/30
     myMatW.G90 = Gw/13
-    myMatW.name = 'weak axis'
+    myMatW.grade = 'weak axis'
     
     # t = 35
     myLayer1 = LayerClt(35, myMatS)

@@ -10,7 +10,8 @@ import pytest
 E = 9500
 myMat = MaterialElastic(E)
 myMat.E90 = E/30
-myMat.name = 'testing'
+myMat.grade = 'testing'
+myMat.lamGrade = 'testing'
 t = 35
 myLayer = LayerClt(35, myMat)
 myLayer2 = LayerClt(35, myMat, 90)

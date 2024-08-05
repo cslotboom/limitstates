@@ -65,13 +65,10 @@ def test_kLc2():
     
     assert kL == pytest.approx(0.65*E / (Cb**2*Fb*0.6))
 
-def test_kzbg():
-    
-    kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L)
-    
 
 
-def test_table_1():
+
+def test_bending_table_1():
     """
     Tests results using glulam selecton tables in CSA o86
     """
@@ -85,8 +82,8 @@ def test_table_1():
     
     kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
     
-    Mr = o86.checkMrGlulamSimple(myElement, 1) / 1000
-    Vr = o86.checkVrGlulamSimple(myElement, 1) / 1000
+    Mr = o86.checkMrGlulamBeamSimple(myElement, 1) / 1000
+    Vr = o86.checkVrGlulamBeamSimple(myElement, 1) / 1000
     
     EI = mySection.getEIx('mm', 'MPa')
     
@@ -97,7 +94,7 @@ def test_table_1():
     myElement = o86.getBeamColumnGlulamCSA19(12, mySection, 'm')
     kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
 
-    Wr = o86.checkWrGlulamSimple(myElement, 1) / 1000
+    Wr = o86.checkWrGlulamBeamSimple(myElement, 1) / 1000
 
     WrSol = 1200 * 12**-0.18
     
@@ -107,11 +104,117 @@ def test_table_1():
     assert Wr == pytest.approx(WrSol, rel = 0.01)
 
 
+
+
+def test_compression_Design_Example_Cc():
+    """
+    Tests results using the design example form column checklists in the 
+    wood design manual.
+    
+    Use 175x228 column.
+    
+    """
+    
+    mat = mats[-3]
+    mySection = ls.SectionRectangle(mat, 175, 228)
+    
+    Lex = 7
+    Ley = 3.5
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    
+    Cx, Cy = o86.checkColumnCc(myElement)
+    CxSol = 30.7
+    CySol = 20
+    
+    assert Cx == pytest.approx(CxSol, rel = 0.01)
+    assert Cy == pytest.approx(CySol, rel = 0.01)
+
+
+def test_compression_Design_Example_Pr():
+    """
+    Tests results using the design example form column checklists in the 
+    wood design manual.
+    
+    Use 175x228 column.
+    
+    """
+    
+    mat = mats[-3]
+    mySection = ls.SectionRectangle(mat, 175, 228)
+    
+    Lex = 7
+    Ley = 3.5
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    
+    Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
+        
+    Prsol = 217 
+    
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+
+
+def test_compression_Table():
+    """
+    Tests results using the design example form column checklists in the 
+    wood design manual.
+    
+    Use 265x342 column.
+    
+    """
+    
+    mat = mats[5]
+    mySection = ls.SectionRectangle(mat, 265, 342)
+    
+    L = 4.5
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')    
+    Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
+    Prsol = 1290 
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+
+    L = 13
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')    
+    Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
+    Prsol = 200 
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+    
+
+
+def test_Interaction():
+    """
+    See wood handbook, 5.3 Ex 3 2020
+    """
+    
+    d = 190
+    b = 130
+    L = 4
+    mat2 = mats[2]
+
+    mySection = ls.SectionRectangle(mat2, b, d)
+    
+    myElement = o86.getBeamColumnGlulamCSA19(L, mySection)    
+    
+    Pr = o86.checkPrGlulamColumn(myElement)
+    Prsol = 175*1000
+    
+    # assert inTol(pr, prsol)
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+
+    # e = d / 2 + 60
+    # knet = 1
+    # Pf = 72.5*1000
+    # interSol = 0.79
+    # inter = o86.checkBeamInteractionEccTop(myElement, knet, Pf, Pf*e)
+    # assert inTol(inter, interSol)
+
 if __name__ == "__main__":
     test_Cb()
     test_kLa()
     test_kLb()
     test_kLc2()
-    test_table_1()
+    test_bending_table_1()
     
+    test_compression_Design_Example_Cc()
+    test_compression_Design_Example_Pr()
+    test_compression_Table()
     
+    test_Interaction()
