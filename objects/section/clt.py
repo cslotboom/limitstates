@@ -13,6 +13,8 @@ import numpy as np
 
 from typing import Protocol
 
+
+
 class AbstractMaterialTimber(Protocol):
     fb: float
     fb90: float
@@ -38,7 +40,7 @@ class LayerClt:
     mat:AbstractMaterialTimber
     ymidfloat = None
     parallelToStrong:bool = True   
-    lUnit = 'mm'
+    lUnit:str = 'mm'
 
     def __post_init__(self):
         self._initUnits(self.lUnit)
@@ -56,7 +58,7 @@ class LayerClt:
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
             
     def __repr__(self):
-        return f"<limitstates CLT layer {self.t}{self.lUnit} {self.mat.name}.>"
+        return f"<limitstates CLT layer {self.t}{self.lUnit} {self.mat.lamGrade}.>"
     
     def getLayerE(self, checkInStrong:bool =True):
         """
@@ -101,6 +103,7 @@ class LayerGroupClt:
     layers:list[LayerClt]
     ybar:float
     dnet:float
+    grade:str
        
     def __init__(self, layers:list[LayerClt]):
         """
@@ -127,6 +130,7 @@ class LayerGroupClt:
         self.lunit = self.layers[0].lUnit
         self.lConvert = self.layers[0].lConvert
         self.sConvert = self.layers[0].mat.sConvert
+        self.grade = self.layers[0].mat.grade
 
     def getLayerAttr(self, attr:str) -> np.ndarray:
         out = []
@@ -142,6 +146,20 @@ class LayerGroupClt:
     
     def __getitem__(self, ii):
         return self.layers[ii]   
+     
+    def updateUnits(self, lUnit:str):
+        """
+        Updates all the layers to have the new unit.
+        """
+        self.lunit = lUnit
+        scaleFactor = self.layers[0].lConvert(lUnit)
+        for layer in self.layers:
+            layer.lUnit = lUnit
+            layer.t = layer.t* scaleFactor
+            
+        self._setLayerBoundaries()
+        self._setLayerMidpointsAbs()        
+        self.d = self.lBoundaries[-1]
      
     def _setLayerBoundaries(self):
         y0 = 0
@@ -183,10 +201,11 @@ class LayerGroupClt:
         r2 = abs(ybar  - self.lBoundaries[-1]) 
         return max(r1, r2)
     
-    def getEI(self, parallelToStrong:bool = True, 
-              lunits:str = 'm', sunits:str = 'Pa'):
+    def getEI(self, parallelToStrong:bool = True, sunits:str = 'Pa', 
+              lunits:str = 'm'):
         """
         Gets EI for the layer group in the given global orientation.
+        returns per unit, not net.
 
         Parameters
         ----------
@@ -199,8 +218,8 @@ class LayerGroupClt:
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
+        float
+            EI for the section.
 
         """
         
@@ -218,12 +237,12 @@ class LayerGroupClt:
     def getGA(self, parallelToStrong:bool = True, NlayerNet:int = None,
               lunits:str = 'm', sunits:str = 'Pa'):
         """
-        Gets GA for the layer group in the given globabl orientation.
+        Gets GA for the layer group orientation.
 
         Parameters
         ----------
-        globalOrientation : float
-            The orientation of the global direction to get EI in.
+        parallelToStrong : bool
+            A flag that si set to true if we are looking in the strong axis.
         lunits : str, optional
             The length units for EI. The default is 'm'.
         sunits : str, optional
@@ -385,33 +404,91 @@ class SectionCLT(SectionLayered):
 
     sLayers:LayerGroupClt
     wLayers:LayerGroupClt
-    def __init__(self, layers:LayerGroupClt, lUnit = 'mm'):
+    def __init__(self, layers:LayerGroupClt, w:float = 1000, wWeak:float = None,
+                 lUnit = 'default', NlayerTotal = None):
         """
+        
+        Units are the same as the layers used.
         Represents a layered CLT object. Layers can have strong axis direction
         and weak axis direction.
+        
+        If the length unit, lUnit is set be differnt than default, then the
+        units of the layers will be updates as well.
 
         Assumes that the input layer group has the same units as the section.
-
 
         Parameters
         ----------
         layers : list[LayerClt]
-            DESCRIPTION.
+            The group of CLT layers to use for the section.
         w : float, optional
-            DESCRIPTION. The default is 1000.
-        lUnit : TYPE, optional
-            DESCRIPTION. The default is 'mm'.
-
+            The width of the section to use for design propreties. 
+            The default is a unit width, or 1000.
+        w : float, optional
+            The width of the section to use for it's weak axis design p
+            ropreties. The default is to use the same width as the strong axis.
+        lUnit : string, optional
+            The width units to use for the section. The default is the same
+            unit as the clt layers, which is in 'mm'.
+        NlayerTotal : int, optional
+            The total number of layers in the original section, pre-fire.
+            GA is dependant on not just the layers that are active, but 
+            the total number of layers in the CLT.
+            
         Returns
         -------
         None.
 
         """
         
+        # set the weak axis width equal to w if it's not set.
+        if not wWeak:
+            wWeak = w
+        
+        # use the same units as the layers if not set.
+        if lUnit == 'default':
+            self.lUnit = layers[0].lUnit
+            self._initUnits(layers[0].lUnit)
+        else:
+            self.lUnit = lUnit
+            self._initUnits(lUnit)
+            layers.updateUnits(lUnit)
+        self.w = w / self.lConvert('mm')
+        self.wWeak = wWeak / self.lConvert('mm')
+        
+        if not NlayerTotal:
+            NlayerTotal = len(layers)
+        self.NlayerTotal = NlayerTotal
+            
         self.sLayers = LayerGroupClt(getActiveLayers(layers,True))
         self.wLayers = LayerGroupClt(getActiveLayers(layers,False))
-        
+
+    
+    def _initUnits(self, lUnit):
+        """Initiates the length unit used for the layer"""
         self.lUnit = lUnit
+        self.lConverter = ConverterLength()
+        
+    def __repr__(self):
+        return f'<limitstates CLT {self.sLayers.grade} {int(self.sLayers.d)} Section>'
+        
+    
+    def lConvert(self, outputUnit:str):
+        """
+        Get the conversion factor from the current unit to the output unit
+        for length units
+        """
+        return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
+    
+     
+    def _convertUnits(self, lUnit):
+        """Initiates the length unit used for the layer"""
+        self.lUnit = lUnit
+        factor = self.lConvert('mm')
+        self.w = self.w / factor
+        self.wWeak = self.wWeak / factor
+        self.sLayers.updateUnits(lUnit)
+        self.wLayers.updateUnits(lUnit)
     
     def getEAs(self, sunit='Pa', lunit='m'):
         raise NotImplementedError('EA has not been defined yet')
@@ -420,14 +497,26 @@ class SectionCLT(SectionLayered):
         raise NotImplementedError('EA has not been defined yet')
     
     def getEIs(self, sunit='Pa', lunit='m'):
-        return self.sLayers.getEI(True, sunit, lunit)
+        """
+        Gets EI in units of sunit * lunit ^ 4
+        """
+        lconvertWidth = self.w*self.lConvert(lunit)
+        return self.sLayers.getEI(True, sunit, lunit)*lconvertWidth
     
     def getEIw(self, sunit='Pa', lunit='m'):
-        return self.wLayers.getEI(False, sunit, lunit)
+        """
+        Gets EI in units of sunit * lunit ^ 4
+        """
+        lconvertWidth = self.w*self.lConvert(lunit)
+        return self.wLayers.getEI(False, sunit, lunit)*lconvertWidth
     
     def getGAs(self, sunit='Pa', lunit='m'):
-        return self.sLayers.getGA(True, sunit, lunit)
+        lconvertWidth = self.w*self.lConvert(lunit)
+        Nlayer = self.NlayerTotal
+        return self.sLayers.getGA(True, Nlayer, lunit, sunit)*lconvertWidth
     
     def getGAw(self, sunit='Pa', lunit='m'):
-        return self.sLayers.getGA(False, sunit, lunit)
+        lconvertWidth = self.w*self.lConvert(lunit)
+        Nlayer = self.NlayerTotal
+        return self.sLayers.getGA(False, Nlayer, lunit, sunit)*lconvertWidth
 

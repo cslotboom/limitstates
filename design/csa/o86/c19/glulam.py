@@ -2,17 +2,8 @@
 Contains the code designc clauses
 """
 
-from .element import GlulamBeamColumnCSA19
-
-def _getSection(element:GlulamBeamColumnCSA19, useFire:bool):
-    """
-    Gets the correct section to be used.
-    """
-    if useFire:
-        return element.designProps.fireSection
-    else:
-        return element.section
-    
+from .element import GlulamBeamColumnCSA19,  _getSection, _getphi, _getphiCr
+from numpy import pi
 
 def checkCb(Le, d, b):
     """
@@ -103,7 +94,8 @@ def checkKzbg(b:float, d:float, LM0:float):
     return min(1.3, kzbg)
 
 
-def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1):
+def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
+                  phi = 0.9):
     """
     Calcualtes Mr for a beam or beam segment.
 
@@ -112,7 +104,7 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1):
     S : float
         The section modulus in mm3.
     Fb : float
-        The factored bendings strength in MPa.
+        The factored bending strength in MPa.
     kzbg : float
         The size factor.
     kL : float, optional
@@ -126,14 +118,13 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1):
         Mr in Nm.
 
     """
-    phi = 0.9
     Mr0 = phi*Fb*S
     Mr1 = Mr0*kzbg*kx
     Mr2 = Mr0*kL*kx
     return min(Mr1, Mr2) / 1000
     
    
-def checkMrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkMrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
                         useFire:bool = False, useX = True) -> float:
     """
     Checks the Mr for a beamcolumn, where there are not points of inflection 
@@ -169,7 +160,8 @@ def checkMrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     """
     section = _getSection(element, useFire)   
-
+    phi = _getphi(useFire)
+    
     # check for lateral support
     if element.designProps.lateralSupport:
         kL = 1
@@ -186,19 +178,20 @@ def checkMrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     
     # Calculate kzbg
     lfactor = element.member.lConvert('mm')
-    slfactor = element.section.lConvert('mm')
+    slfactor = section.lConvert('mm')
     
+    # Note, kzbg is based on the ORIGINAL element size.
     dmm = element.section.d*slfactor
     bmm = element.section.b*slfactor
     Lmm = element.getLength()*lfactor
     kzbg = checkKzbg(bmm, dmm, Lmm)
 
     if useX:
-        Smm = element.section.Sx*slfactor**3
+        Smm = section.Sx*slfactor**3
     else:
         raise Exception('Weak axis bending currently is not supported by limitstates')
-        
-    return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx)
+    
+    return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
 
 
 def checkMrMultispanBeamColumn():
@@ -213,7 +206,7 @@ def checkMrMultispanBeamColumn():
     
 
     
-def checkGlulamShearSimple(Ag:float, Fv:float):
+def checkGlulamShearSimple(Ag:float, Fv:float, phi = 0.9):
     """
     Checks 7.5.7.3b, and only applies if a beam with volume less than 2.0m^3.
     Other member types, i.e. columns, do not have this restriction.
@@ -231,12 +224,11 @@ def checkGlulamShearSimple(Ag:float, Fv:float):
 
     """
     
-    phi = 0.9
     return phi*Fv*Ag*(2/3)
 
     
      
-def checkGlulamNetLoad(Ag:float, Fv:float, Lbeam:float, Cv = 3.69):
+def checkGlulamWr(Ag:float, Fv:float, Lbeam:float, Cv = 3.69, phi = 0.9):
     """
     Checks 7.5.7.3a, for net load
     Cv should be calculated according to c.l. 7.5.7.6 
@@ -258,10 +250,9 @@ def checkGlulamNetLoad(Ag:float, Fv:float, Lbeam:float, Cv = 3.69):
 
     """
     
-    phi = 0.9
     return phi*Fv*0.48*Ag*Cv*(Ag*Lbeam/1e9)**-0.18    
 
-def checkVrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkVrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
                         useFire:bool = False) -> float:
     """
     Checks the Wr for a beamcolumn, where there are no notches and no positive
@@ -294,6 +285,7 @@ def checkVrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     """
     section = _getSection(element, useFire)   
+    phi = _getphi(useFire)
 
     # check for volume support
     lconvert = element.member.lConvert('mm')
@@ -304,11 +296,11 @@ def checkVrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
     if  2.0*1e9 < Z:
         print('Element length is greater than 2 m^3. Check does not apply for beams, see c.l. 7.5.7.3')
   
-    return checkGlulamShearSimple(section.A, section.mat.fv*knet)
+    return checkGlulamShearSimple(section.A, section.mat.fv*knet,phi)
 
 
 
-def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkWrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
                         useFire:bool = False, Cv:float = 3.69) -> float:
     """
     Checks the Vr for a beamcolumn, where there are no notches and no positive
@@ -331,7 +323,7 @@ def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
         The default is 1.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
+        The default is False, which uses no fire section.
 
 
     Returns
@@ -341,6 +333,7 @@ def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     """
     section = _getSection(element, useFire)   
+    phi = _getphi(useFire)
 
     # check for volume support
     lconvert = element.member.lConvert('mm')
@@ -352,7 +345,7 @@ def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
         print('Element length is greater than 2 m^3. Check does not apply for beams, see c.l. 7.5.7.3')
         
     
-    return checkGlulamNetLoad(Amm, section.mat.fv*knet, Lmm, Cv)
+    return checkGlulamWr(Amm, section.mat.fv*knet, Lmm, Cv, phi)
 
 
 # =============================================================================
@@ -361,9 +354,319 @@ def checkWrGlulamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
 
 
-def checkSlenderness(Le, r):
+def _checkSlenderness(Le, r):
     return Le / r
 
-def getColumnSlenderness(element:GlulamBeamColumnCSA19):
-    pass
+def checkColumnCc(element:GlulamBeamColumnCSA19, useFire:bool = False):
+    """
+    Returns the slenderness factors for a column in each direction.
+    Requires Lex and Ley to be set.
 
+    Parameters
+    ----------
+    element : GlulamBeamColumnCSA19
+        The beamcolumn element to check.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire section.
+
+    Returns
+    -------
+    Cx : float
+        The effectice slenderness in the strong axis.
+    Cy : float
+        The effectice slenderness in the weak axis.
+
+    """
+    
+    section = _getSection(element, useFire)
+
+    # convert to the same unit.
+    lfactor = element.member.lConvert(element.section.lUnit)
+
+    Cx = _checkSlenderness(element.designProps.Lex*lfactor, section.d)
+    Cy = _checkSlenderness(element.designProps.Ley*lfactor, section.b)
+    
+    return Cx, Cy
+
+
+
+def checkKci(Fc:float, kzcg:float, Ci:float, E:float, kSE:float = 1, 
+           kT:float = 1):
+    """
+    get Kci in direction i
+    """
+    
+    return (1 + ((Fc*kzcg*Ci**3) / (35*0.87*E*kSE*kT)))**-1
+    
+
+def checkKzcg(Ag:float, L:float):
+    """
+    get Kci in direction i
+    """
+    
+    return min(0.68*(Ag*L)**-0.13, 1)
+    
+
+
+def checkGlulamPr(Ag:float, Fc:float, kzcg:float, kc:float, phi = 0.8):
+    """
+    Calcualtes Pr for a column according to 7.5.8.5.
+
+    Parameters
+    ----------
+    Ag : float
+        The section modulus in mm2.
+    Fc : float
+        The factored compression strength in MPa.
+    kzcg : float
+        The size factor.
+    phi : float
+        The phi factor for the beamcolumn.
+
+    Returns
+    -------
+    float
+        Pr in N.
+
+    """
+
+    return phi*Ag*Fc*kzcg*kc
+
+   
+def checkPrGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1, 
+                            useFire:bool = False, kSE = 1, kT = 1) -> float:
+    """
+    Checks the Pr for a beamcolumn.
+    
+    Pr and kzbg is calculated according to 7.5.8.5, and     
+    kc is calculated according to 7.5.8.6
+    
+    If KSE or KT are not equal to one, they must be included in the equation,
+    in addition to knet. knet should still be the product of all k factors.
+    These terms are seperated out due to clause 7.5.8.6, which seperates
+    kSE and KT when calcualting the factor Kc.
+
+    Parameters
+    ----------
+    element : GlulamBeamColumnCSA19
+        The glulam element to check.
+    knet : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire sectio.
+    kSE : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+
+    Returns
+    -------
+    Pr
+        The output in N.
+
+    """
+    section = _getSection(element, useFire)   
+    phi = _getphiCr(useFire)
+    
+    # check for lateral support
+    Cx, Cy = checkColumnCc(element, useFire)
+    
+    # Calculate kzcg
+    lfactor = element.member.lConvert('m')
+    slfactor = section.lConvert('m')
+    
+    # Note, kzcg is based on the ORIGINAL element size.
+    dmm = element.section.d*slfactor
+    bmm = element.section.b*slfactor
+    Lmm = element.getLength()*lfactor
+    kzcg = checkKzcg(bmm*dmm, Lmm)
+    
+    Fc = section.mat.fc*knet
+    E = section.mat.E
+    
+    # there is probably a way to reduce the computational effort here.
+    kcx = checkKci(Fc, kzcg, Cx, E, kSE, kT)
+    kcy = checkKci(Fc, kzcg, Cy, E, kSE, kT)
+    
+    kc = min(kcx, kcy)
+
+    return checkGlulamPr(section.A, Fc, kzcg,  kc, phi)
+
+# =============================================================================
+# Interaction
+# =============================================================================
+
+
+def checkPE(E:float, I:float, Lei:float, kSE:float = 1, kT:float = 1):
+    """
+    Calculates the critical buckling load for a typical column based on the
+    critical buckling length.
+
+    Parameters
+    ----------
+    E : float
+        The elastic modulus.
+    I : float
+        The moment of Inertia in the direction i.
+    Lei : float
+        The effectice buckling length in the direction i.
+    kSE : float, optional
+        The service k factor. The default is 1.
+    kT : float, optional
+        The treatment k factor. The default is 1.
+
+    Returns
+    -------
+    float
+        The critical buckling load in N.
+
+    """
+    
+    return (pi)**2*0.87*E*kSE*kT*I / Lei**2
+
+   
+def checkPEGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1, 
+                        useFire:bool = False, kSE = 1, kT = 1) -> float:
+    """
+    Checks the Pr for a beamcolumn.
+    
+    Pr and kzbg is calculated according to 7.5.8.5, and     
+    kc is calculated according to 7.5.8.6
+    
+    If KSE or KT are not equal to one, they must be included in the equation,
+    in addition to knet. knet should still be the product of all k factors.
+    These terms are seperated out due to clause 7.5.8.6, which seperates
+    kSE and KT when calcualting the factor Kc.
+
+    Parameters
+    ----------
+    element : GlulamBeamColumnCSA19
+        The glulam element to check.
+    knet : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire sectio.
+    kSE : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+
+    Returns
+    -------
+    Pr
+        The output in N.
+
+    """
+    section = _getSection(element, useFire)   
+    
+    # check for lateral support
+    Cx, Cy = checkColumnCc(element, useFire)
+    
+    # Calculate kzcg
+    slfactor = (section.lConvert('mm'))**4
+    
+    # Note, kzcg is based on the ORIGINAL element size.
+    E = section.mat.E
+    PEx = checkPE(E, section.Ix*slfactor, element.designProps.Lex, kSE, kT)
+    PEy = checkPE(E, section.Ix*slfactor, element.designProps.Ley, kSE, kT)
+    
+    return PEx, PEy
+
+def checkInteractionGlulamColumn(Pf:float, Pr:float, Mf:float, Mr:float, PE:float) -> float:
+    """
+    Checks the column for .
+    
+    Pr and kzbg is calculated according to 7.5.8.5, and     
+    kc is calculated according to 7.5.8.6
+    
+    If KSE or KT are not equal to one, they must be included in the equation,
+    in addition to knet. knet should still be the product of all k factors.
+    These terms are seperated out due to clause 7.5.8.6, which seperates
+    kSE and KT when calcualting the factor Kc.
+
+    Parameters
+    ----------
+    element : GlulamBeamColumnCSA19
+        The glulam element to check.
+    knet : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire sectio.
+    kSE : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+
+    Returns
+    -------
+    Pr
+        The output in N.
+
+    """
+    
+    return (Pf/Pr)**2 + (Mf/Mr) * (1 - (1-Pf/PE))
+
+
+# def checkPrGlulamBeam(element:GlulamBeamColumnCSA19, knet:float = 1, 
+#                             useFire:bool = False, kSE = 1, kT = 1) -> float:
+#     """
+#     Checks the Pr for a beamcolumn.
+    
+#     Pr and kzbg is calculated according to 7.5.8.5, and     
+#     kc is calculated according to 7.5.8.6
+    
+#     If KSE or KT are not equal to one, they must be included in the equation,
+#     in addition to knet. knet should still be the product of all k factors.
+#     These terms are seperated out due to clause 7.5.8.6, which seperates
+#     kSE and KT when calcualting the factor Kc.
+
+#     Parameters
+#     ----------
+#     element : GlulamBeamColumnCSA19
+#         The glulam element to check.
+#     knet : flaot, optional
+#         The product of all standard k factors, including kd, kse, etc. 
+#         The default is 1.
+#     useFire : bool, optional
+#         A toggle that makes the beam use it's fire section when selected. 
+#         The default is False, which uses no fire sectio.
+#     kSE : flaot, optional
+#         The product of all standard k factors, including kd, kse, etc. 
+#         The default is 1.
+
+#     Returns
+#     -------
+#     Pr
+#         The output in N.
+
+#     """
+#     section = _getSection(element, useFire)   
+#     phi = _getphiCr(useFire)
+    
+#     # check for lateral support
+#     Cx, Cy = checkColumnCc(element, useFire)
+    
+#     # Calculate kzcg
+#     lfactor = element.member.lConvert('m')
+#     slfactor = section.lConvert('m')
+    
+#     # Note, kzcg is based on the ORIGINAL element size.
+#     dmm = element.section.d*slfactor
+#     bmm = element.section.b*slfactor
+#     Lmm = element.getLength()*lfactor
+#     kzcg = checkKzcg(bmm*dmm, Lmm)
+    
+#     Fc = section.mat.fc*knet
+#     E = section.mat.E
+    
+#     # there is probably a way to reduce the computational effort here.
+#     kcx = checkKci(Fc, kzcg, Cx, E, kSE, kT)
+#     kcy = checkKci(Fc, kzcg, Cy, E, kSE, kT)
+    
+#     kc = min(kcx, kcy)
+
+#     return checkGlulamPr(section.A, Fc, kzcg,  kc, phi)

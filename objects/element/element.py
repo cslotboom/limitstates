@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from .. geometry import Member, initSimplySupportedMember
 from .. section import SectionAbstract
 
-__all__ = ["BeamColumn", "getBeamColumn"]
+__all__ = ["BeamColumn", "getBeamColumn", "DisplayProps"]
 
 
 @dataclass
@@ -18,10 +18,28 @@ class DefaultDesignProps:
     def __repr__(self):
         "<limitStates Design Propreties Dataclass>"
 
+
+@dataclass
+class DisplayProps:
+    section:SectionAbstract
+    geometry:Member
+        
+    def __repr__(self):
+        "<limitStates output Propreties Dataclass>"
+
+    def getVerticies(self):
+        pass
+
+
+
+
+
+
 class Element1D:
     length:float
     designProps:DefaultDesignProps
     userProps:UserProps
+    displyProps:DisplayProps
     
     @property
     def mat(self):
@@ -53,13 +71,11 @@ class Element1D:
         blconvert = self.member.lConvert.convert(lUnit)        
         return self.member.L * self.section.A* slconvert**2 * blconvert
 
-class BeamColumn(Element1D):
-    
-    def __init__(self, member:Member, section:SectionAbstract, 
-                 designProps:dataclass = None, userProps:dataclass = None):
-        
-        self._initMain(member, section)
-        
+
+    def _initProps(self, designProps, userProps, displayProps):
+        """ Initializes the main propreties of the element.
+        """
+                
         if designProps is None:
             designProps = DefaultDesignProps()
         self.designProps = designProps
@@ -67,15 +83,34 @@ class BeamColumn(Element1D):
         if userProps is None:
             userProps = UserProps()
         self.userProps = userProps
+        
+        if displayProps is None:
+            displayProps = DisplayProps(self.section, self.member)
+        self.displayProps = displayProps
+        
+
+class BeamColumn(Element1D):
     
+    def __init__(self, member:Member, section:SectionAbstract, 
+                 designProps:dataclass = None, userProps:dataclass = None,
+                 geomProps:dataclass = None):
+        
+        self._initMain(member, section)
+        self._initProps(designProps, userProps, geomProps)
+
+      
     def _initMain(self, member:Member, section:SectionAbstract, lUnit:str='m'):
         self.member:Member = member
         self.section:SectionAbstract = section
-        
-    def _initUserProps(self, userProps:dataclass = None):
-        if userProps is None:
-            userProps = UserProps()
-        self.userProps = userProps
+    
+    # def _initProps():
+    #     pass
+    
+    
+    # def _initUserProps(self, userProps:dataclass = None):
+    #     if userProps is None:
+    #         userProps = UserProps()
+    #     self.userProps = userProps
         
     def __repr__(self):
         return f"<limitstates {self.member.L}{self.member.lUnit} BeamColumn>"
@@ -83,7 +118,7 @@ class BeamColumn(Element1D):
     
 
 def getBeamColumn(L:float, section:SectionAbstract, lUnit:str='m', 
-                  designProps:dict=None) -> BeamColumn:
+                  designProps:dict=None, **kwargs) -> BeamColumn:
     """
     A function used to return a beamcolumn based on an input length.
     The default beamcolumn is assumed to have a simply supported beam.
@@ -108,7 +143,7 @@ def getBeamColumn(L:float, section:SectionAbstract, lUnit:str='m',
     
     member = initSimplySupportedMember(L, lUnit)
     
-    return BeamColumn(member, section, designProps)
+    return BeamColumn(member, section, designProps, **kwargs)
 
 
 

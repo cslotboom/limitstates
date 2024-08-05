@@ -98,7 +98,7 @@ def _loadSectionRectangular(mat:MaterialAbstract, config:SectionDBConfig, lUnit)
     sections = []
     for key in sectionDict.keys():
         tmpD = sectionDict[key]
-        sections.append(SectionRectangle(mat, tmpD['b'], tmpD['d'], lUnit,tmpD))
+        sections.append(SectionRectangle(mat, tmpD['b'], tmpD['d'], lUnit))
     return sections
     
     
@@ -227,7 +227,8 @@ def _getLayerInd(cltGrade, mats):
             return ii
     
 
-def _getCLTSectionLayers(sectionDict:dict, mats:list) -> list[LayerClt]:
+def _getCLTSectionLayers(sectionDict:dict, mats:list, 
+                         lUnit:str) -> list[LayerClt]:
     """
     Creates the group of layers for the CLT section.
 
@@ -266,14 +267,14 @@ def _getCLTSectionLayers(sectionDict:dict, mats:list) -> list[LayerClt]:
             raise Exception(f"Recieved layer orientation of {o}, \
                             expected 0 or 90")
         
-        layerMats.append(LayerClt(layerThicknesses[ii], mat, o==0))
+        layerMats.append(LayerClt(layerThicknesses[ii], mat, o==0, lUnit))
     return layerMats
 
 
 
 def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]], 
                     config:SectionDBConfig, 
-                    lUnit = 'mm') -> list[SectionCLT]:
+                    lUnit = 'mm', **sectionkwargs) -> list[SectionCLT]:
     """
     An internal function that can be used to load a set of CLT sections given
     input materials that correspond to the grades of each section type.
@@ -281,16 +282,18 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
     Parameters
     ----------
     mats : list[[MaterialAbstract, MaterialAbstract]]
-        DESCRIPTION.
+        The materials to assign to the strong and weak axis respectively.
     config : SectionDBConfig
-        DESCRIPTION.
-    lUnit : TYPE, optional
-        DESCRIPTION. The default is 'mm'.
+        A config object that contains the database file to read from.
+    lUnit : string, optional
+        The units to use in the section. The default is 'mm'.
+    kwargs : dict
+        The units to use in the section. The default is 'mm'.
 
     Returns
     -------
     list[SectionCLT]
-        DESCRIPTION.
+        A list of loaded sections.
 
     """
 
@@ -300,8 +303,8 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
     sections = []
     for key in sectionsDict.keys():
         sectionDict = sectionsDict[key]
-        layerMats = LayerGroupClt(_getCLTSectionLayers(sectionDict, mats))
-        sections.append(SectionCLT(layerMats, sectionDict))
+        layers = LayerGroupClt(_getCLTSectionLayers(sectionDict, mats, lUnit))
+        sections.append(SectionCLT(layers, **sectionkwargs))
 
     return sections
     
