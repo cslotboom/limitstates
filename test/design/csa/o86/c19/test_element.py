@@ -54,9 +54,7 @@ def test_getGlulamBeamColumn():
     assert hasattr(myElement.designProps, 'fireSection')
 
  
-# myMat = ls.MaterialElastic(9.5*1000)
 
-# sections = getRectangularSections(myMat, 'csa', 'glulam', 'csa-19.csv')
 if __name__ == "__main__":
     test_GlulamInits()
     test_getGlulamBeamColumn()

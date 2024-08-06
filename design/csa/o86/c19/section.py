@@ -39,7 +39,7 @@ def loadCltSections(db:str = 'clt_prg320_2019.csv', **sectionkwargs) -> list[Sec
     Returns
     -------
     sections : list
-        A list of the desired steel sections.
+        A list of the desired clt sections.
 
     """
     

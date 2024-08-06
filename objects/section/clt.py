@@ -452,7 +452,10 @@ class SectionCLT(SectionLayered):
         else:
             self.lUnit = lUnit
             self._initUnits(lUnit)
-            layers.updateUnits(lUnit)
+            # If the layers don't match, update them.
+            if layers[0].lUnit != lUnit:
+                layers.updateUnits(lUnit)
+                
         self.w = w / self.lConvert('mm')
         self.wWeak = wWeak / self.lConvert('mm')
         

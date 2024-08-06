@@ -13,7 +13,7 @@ from .. material import MaterialAbstract, MaterialElastic
 from ... units import ConverterLength
 
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
-           'SectionRectangle']
+           'SectionRectangle', 'SectionSteelW']
 
 #Rename this to SectionArchetype?
 class SectionAbstract(ABC):
@@ -139,33 +139,27 @@ class SectionGeneric(SectionMonolithic):
         
 
 class SectionRectangle(SectionMonolithic):
+    """
+    A rectangular monolitihic section.
+    
+    The section can be defined by either, or by inputing a dictionary
+    for the section.
 
+    Parameters
+    ----------
+    mat : MaterialElastic
+        The material to use for the section.
+    b : float
+        The section width.
+    d : float
+        The section depth.
+    lunits : str, optional
+        The length units. The default is 'mm'.
+    sectionDict : TYPE, optional
+        A optional section dictionary. The default is None.
+
+    """
     def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm'):
-        """
-        A rectangular monolitihic section.
-        
-        The section can be defined by either, or by inputing a dictionary
-        for the section.
-
-        Parameters
-        ----------
-        mat : MaterialElastic
-            The material to use for the section.
-        b : float
-            The section width.
-        d : float
-            The section depth.
-        lunits : str, optional
-            The length units. The default is 'mm'.
-        sectionDict : TYPE, optional
-            A optional section dictionary. The default is None.
-
-                
-        Returns
-        -------
-        None.
-
-        """
         self._initUnits(lunits)
         self.mat = mat
         
@@ -204,10 +198,6 @@ class SectionRectangle(SectionMonolithic):
         lUnit : string
             Converts the section units.
 
-        Returns
-        -------
-        None.
-
         """
         cfactor = self.lConvert(lUnit)
         self.lUnit = lUnit
@@ -224,7 +214,36 @@ class SectionRectangle(SectionMonolithic):
 
 
 class SectionSteelW(SectionMonolithic):
-    """A class that represents geometry for a steel W section."""
+    """
+    A class that represents the geometry for a steel W section.
+    
+    Steel sections are defined by importing from a database. See 
+
+    Parameters
+    ----------
+    mat : MaterialElastic
+        The material to use for the section.
+    sectionDict : dict
+        The input section dictionary, generally loaded from a database..
+    lunits : str, optional
+        The length units. The default is 'mm'.
+
+
+    """    
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
+
+        # add all items from the input section dictionary
+        self.__dict__.update(sectionDict)
+        self._initUnits(lunits)
+        
+        self.mat = mat
+    
+    @property
+    def name(self):
+        return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
+       
+    def __repr__(self):
+        return f'<limitstates {self.name} Section>'
     
     
 class SectionSteelHSS(SectionMonolithic):

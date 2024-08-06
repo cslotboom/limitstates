@@ -11,9 +11,9 @@ Some section files are intended for user by users.
 import pandas as pd
 import os
 from math import isnan
-
+import numpy as np
 from .material import MaterialAbstract
-from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt
+from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteelW
 from dataclasses import dataclass
 
 filepath = os.path.realpath(__file__)
@@ -69,13 +69,15 @@ def listSectionDBs(code:str, sectionType:str, fileName:str):
         
 def _loadSectionDBDict(config:SectionDBConfig) -> pd.DataFrame:
     """
-    Loads a file and returns the results as a dictionary
+    Loads a file and returns the results as a dictionary.
+    Note that converting to a dictionary is expensive, and we want to do 
+    any fitlering before that operation.
     """
     base    = os.path.join(basedir, 'section', 'db')
     dbPath  = os.path.join(base, config.code, config.sectionType, config.fileName)    
-    sectiondb   = pd.read_csv(dbPath)
-    return sectiondb.to_dict(orient='index')
-        
+    return pd.read_csv(dbPath)
+    
+ 
 def _loadSectionDB(mat:MaterialAbstract, 
                    config:SectionDBConfig,
                    sectionClass:SectionAbstract,
@@ -84,7 +86,8 @@ def _loadSectionDB(mat:MaterialAbstract,
     Loads a file and returns the results as a dictionary
     """
 
-    sectionDict = _loadSectionDBDict(config)
+    sectiondb = _loadSectionDBDict(config)
+    sectionDict = sectiondb.to_dict(orient='index')
     
     sections = []
     for key in sectionDict.keys():
@@ -93,7 +96,9 @@ def _loadSectionDB(mat:MaterialAbstract,
 
 def _loadSectionRectangular(mat:MaterialAbstract, config:SectionDBConfig, lUnit) -> list[SectionRectangle]:
 
-    sectionDict = _loadSectionDBDict(config)
+
+    sectiondb = _loadSectionDBDict(config)
+    sectionDict = sectiondb.to_dict(orient='index')
     
     sections = []
     for key in sectionDict.keys():
@@ -101,7 +106,14 @@ def _loadSectionRectangular(mat:MaterialAbstract, config:SectionDBConfig, lUnit)
         sections.append(SectionRectangle(mat, tmpD['b'], tmpD['d'], lUnit))
     return sections
     
+
+def _getCodeUnits(code):
     
+    if code == 'us':
+        return 'in'
+    else:
+        return 'mm'
+
 def getRectangularSections(mat:MaterialAbstract, 
                            code:str, 
                            sectionType:str, 
@@ -128,11 +140,8 @@ def getRectangularSections(mat:MaterialAbstract,
     None.
 
     """
-    
-    if code == 'us':
-        lUnit='in'
-    else:
-        lUnit='mm'
+
+    lUnit = _getCodeUnits(code)
         
     config = SectionDBConfig(code, sectionType, fileName)
     
@@ -140,8 +149,66 @@ def getRectangularSections(mat:MaterialAbstract,
 
 
 
+
+# def _loadAiscDict(mat:MaterialAbstract, 
+#                   code:str, 
+#                   sectionType:str, 
+#                   fileName:str):
+
+#     sectionDict = _loadSectionDBDict(config)
+
+
+
+        
+def getSectionTypes(sectionRawDict, section_type: str) -> pd.DataFrame:
+    """
+    Removes all empty entry from the dataframe.
+    """
+    return sectionRawDict.loc[sectionRawDict.Type == section_type]
+
+
+
+sectionDict = {'W':SectionSteelW}
+
+def getSteelSections(mat:MaterialAbstract, 
+                     code:str, 
+                     fileName:str,
+                     steelShapeType:str) -> SectionSteelW:
+    
+    config = SectionDBConfig(code, 'steel', fileName)
+    rawDbData = _loadSectionDBDict(config)
+
+    filteredDbData = getSectionTypes(rawDbData, steelShapeType)
+    filteredDict = filteredDbData.to_dict(orient='index')
+
+    SectionClass = sectionDict[steelShapeType]
+    
+    # !!! Consider making this a funciton with more logic.
+    dbName = ''.join(fileName.strip('.csv').split('_'))
+        
+    lUnit = _getCodeUnits(code)
+    
+    sections = [None]*len(filteredDict.keys())
+    for ii, key in enumerate(filteredDict.keys()):
+        tmpD = filteredDict[key]
+        sections[ii] = SectionClass(mat, tmpD, lUnit)
+        sections[ii].sectionDB = dbName
+    
+    return sections
+    
+    
+def getSectionTypes(sectionRawDict:dict, sectionType: str) -> pd.DataFrame:
+    """
+    Returns only sections of a given type from the raw dataframe.
+    """
+    return sectionRawDict.loc[sectionType == sectionRawDict.Type]
+
+
+
+
+
 # =============================================================================
-# 
+# CLT loading functions
 # =============================================================================
 
 
@@ -298,6 +365,8 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
     """
 
     tempDict = _loadSectionDBDict(config)
+    tempDict = tempDict.to_dict(orient='index')
+
     sectionsDict = _parseCLTDataFrame(tempDict)
    
     sections = []
@@ -308,3 +377,9 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
 
     return sections
     
+# =============================================================================
+# Steel Loading functions
+# =============================================================================
+
+
+
