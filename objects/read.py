@@ -11,9 +11,8 @@ Some section files are intended for user by users.
 import pandas as pd
 import os
 from math import isnan
-import numpy as np
 from .material import MaterialAbstract
-from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteelW
+from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteelW, SectionSteelHSS
 from dataclasses import dataclass
 
 filepath = os.path.realpath(__file__)
@@ -148,17 +147,6 @@ def getRectangularSections(mat:MaterialAbstract,
     return _loadSectionRectangular(mat, config, lUnit)
 
 
-
-
-# def _loadAiscDict(mat:MaterialAbstract, 
-#                   code:str, 
-#                   sectionType:str, 
-#                   fileName:str):
-
-#     sectionDict = _loadSectionDBDict(config)
-
-
-
         
 def getSectionTypes(sectionRawDict, section_type: str) -> pd.DataFrame:
     """
@@ -168,23 +156,31 @@ def getSectionTypes(sectionRawDict, section_type: str) -> pd.DataFrame:
 
 
 
-sectionDict = {'W':SectionSteelW}
+#TODO Evaluate if we can make this a generic steel section class.
+sectionDict = {'W':SectionSteelW, 'HSS':SectionSteelHSS}
+
 
 def getSteelSections(mat:MaterialAbstract, 
                      code:str, 
-                     fileName:str,
+                     dbName:str,
                      steelShapeType:str) -> SectionSteelW:
     
-    config = SectionDBConfig(code, 'steel', fileName)
-    rawDbData = _loadSectionDBDict(config)
+    # !!! do we actually need a different section for
+    if steelShapeType in list(sectionDict.keys()):
+        dbName += '_' + steelShapeType.lower() + '.csv'
+    else:
+        raise Exception(f'Shape {steelShapeType} is not currently supported.')
+    
+    config      = SectionDBConfig(code, 'steel', dbName)
+    rawDbData   = _loadSectionDBDict(config)
 
     filteredDbData = getSectionTypes(rawDbData, steelShapeType)
+    
     filteredDict = filteredDbData.to_dict(orient='index')
-
     SectionClass = sectionDict[steelShapeType]
     
     # !!! Consider making this a funciton with more logic.
-    dbName = ''.join(fileName.strip('.csv').split('_'))
+    dbName = ''.join(dbName.strip('.csv').strip(steelShapeType).split('_'))
         
     lUnit = _getCodeUnits(code)
     
@@ -195,14 +191,6 @@ def getSteelSections(mat:MaterialAbstract,
         sections[ii].sectionDB = dbName
     
     return sections
-    
-    
-def getSectionTypes(sectionRawDict:dict, sectionType: str) -> pd.DataFrame:
-    """
-    Returns only sections of a given type from the raw dataframe.
-    """
-    return sectionRawDict.loc[sectionType == sectionRawDict.Type]
-
 
 
 

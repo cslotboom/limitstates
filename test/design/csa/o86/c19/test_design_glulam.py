@@ -155,7 +155,7 @@ def test_compression_Design_Example_Pr():
 
 def test_compression_Table():
     """
-    Tests results using the design example form column checklists in the 
+    Tests results using the design example from column checklists in the 
     wood design manual.
     
     Use 265x342 column.
@@ -177,11 +177,9 @@ def test_compression_Table():
     Prsol = 200 
     assert Pr == pytest.approx(Prsol, rel = 0.01)
     
-
-
-def test_Interaction():
+def test_Interaction_ecc():
     """
-    See wood handbook, 5.3 Ex 3 2020
+    See CSA wood design manual, 5.3 Ex 3 2020
     """
     
     d = 190
@@ -191,20 +189,45 @@ def test_Interaction():
 
     mySection = ls.SectionRectangle(mat2, b, d)
     
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection)    
+    column = o86.getBeamColumnGlulamCSA19(L, mySection)    
     
-    Pr = o86.checkPrGlulamColumn(myElement)
+    Pr = o86.checkPrGlulamColumn(column)
     Prsol = 175*1000
     
     # assert inTol(pr, prsol)
     assert Pr == pytest.approx(Prsol, rel = 0.01)
 
-    # e = d / 2 + 60
-    # knet = 1
-    # Pf = 72.5*1000
-    # interSol = 0.79
-    # inter = o86.checkBeamInteractionEccTop(myElement, knet, Pf, Pf*e)
-    # assert inTol(inter, interSol)
+    e = (d / 2 + 60)/1000
+    knet = 1
+    Pf = 72.5*1000
+    interSolTop = 0.79
+    # interSolMid = 0.54
+    inter = o86.checkInterEccPfGlulam(column, Pf, e, knet)
+    assert inter == pytest.approx(interSolTop, rel = 0.01)
+
+
+    
+def test_Interaction_ecc_table():
+    """
+    Tests a random example from Table
+    """
+    
+    # d = 228
+    d = 152
+    b = 80
+    L = 4
+    mat2 = mats[1]
+
+    mySection = ls.SectionRectangle(mat2, b, d)
+    column = o86.getBeamColumnGlulamCSA19(L, mySection)    
+    
+    e = (d)/2 / 1000
+    knet = 1
+    # Pf = 35.6*1000
+    Pf = 24.3*1000
+    interSolTop = 1.0
+    inter = o86.checkInterEccPfGlulam(column, Pf, e, knet)
+    assert inter == pytest.approx(interSolTop, rel = 0.02)
 
 if __name__ == "__main__":
     test_Cb()
@@ -217,4 +240,5 @@ if __name__ == "__main__":
     test_compression_Design_Example_Pr()
     test_compression_Table()
     
-    test_Interaction()
+    test_Interaction_ecc()
+    test_Interaction_ecc_table()

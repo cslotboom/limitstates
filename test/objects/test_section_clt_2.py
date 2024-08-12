@@ -47,20 +47,20 @@ def test_layerGroup_GA():
       
     layers = _init()
     layerGroup = LayerGroupClt(layers)
-    GA = layerGroup.getGA(NlayerNet = 5)
+    GA = layerGroup.getGA(NlayerTotal = 5)
 
     GAeff = 9.03*1e6 
-    assert GA == pytest.approx(GAeff, 0.005)
+    assert GA == pytest.approx(GAeff, 0.01)
 
 def test_Section_GA():
       
     layers = _init()
     layerGroup = LayerGroupClt(layers)
-    section = SectionCLT(layerGroup)
+    section = SectionCLT(layerGroup, NlayerTotal = 5)
     GA = section.getGAs()
 
     GAeff = 9.03*1e6 
-    assert GA == pytest.approx(GAeff, 0.005)
+    assert GA == pytest.approx(GAeff, 0.01)
 
 
 

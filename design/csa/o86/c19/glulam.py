@@ -2,7 +2,7 @@
 Contains the code designc clauses
 """
 
-from .element import GlulamBeamColumnCSA19,  _getSection, _getphi, _getphiCr
+from .element import BeamColumnGlulamCSA19,  _getSection, _getphi, _getphiCr, _isGlulam
 from numpy import pi
 
 def checkCb(Le, d, b):
@@ -11,7 +11,7 @@ def checkCb(Le, d, b):
     """
     return (Le*d/b**2)**0.5   
 
-def getBeamCb(element:GlulamBeamColumnCSA19, useX:bool = True):
+def getBeamCb(element:BeamColumnGlulamCSA19, useX:bool = True):
     """
     Calculates slenderness ratio according to c.l. 7.5.6.4.3
     """
@@ -124,7 +124,7 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
     return min(Mr1, Mr2) / 1000
     
    
-def checkMrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkMrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
                         useFire:bool = False, useX = True) -> float:
     """
     Checks the Mr for a beamcolumn, where there are not points of inflection 
@@ -140,7 +140,7 @@ def checkMrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -252,7 +252,7 @@ def checkGlulamWr(Ag:float, Fv:float, Lbeam:float, Cv = 3.69, phi = 0.9):
     
     return phi*Fv*0.48*Ag*Cv*(Ag*Lbeam/1e9)**-0.18    
 
-def checkVrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkVrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
                         useFire:bool = False) -> float:
     """
     Checks the Wr for a beamcolumn, where there are no notches and no positive
@@ -268,7 +268,7 @@ def checkVrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -300,7 +300,7 @@ def checkVrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
 
 
-def checkWrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1, 
+def checkWrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
                         useFire:bool = False, Cv:float = 3.69) -> float:
     """
     Checks the Vr for a beamcolumn, where there are no notches and no positive
@@ -316,7 +316,7 @@ def checkWrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -357,14 +357,14 @@ def checkWrGlulamBeamSimple(element:GlulamBeamColumnCSA19, knet:float = 1,
 def _checkSlenderness(Le, r):
     return Le / r
 
-def checkColumnCc(element:GlulamBeamColumnCSA19, useFire:bool = False):
+def checkColumnCc(element:BeamColumnGlulamCSA19, useFire:bool = False):
     """
     Returns the slenderness factors for a column in each direction.
     Requires Lex and Ley to be set.
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The beamcolumn element to check.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
@@ -391,13 +391,13 @@ def checkColumnCc(element:GlulamBeamColumnCSA19, useFire:bool = False):
 
 
 
-def checkKci(Fc:float, kzcg:float, Ci:float, E:float, kSE:float = 1, 
+def checkKci(Fc:float, kzcg:float, Ci:float, E05:float, kSE:float = 1, 
            kT:float = 1):
     """
     get Kci in direction i
     """
     
-    return (1 + ((Fc*kzcg*Ci**3) / (35*0.87*E*kSE*kT)))**-1
+    return (1 + ((Fc*kzcg*Ci**3) / (35*E05*kSE*kT)))**-1
     
 
 def checkKzcg(Ag:float, L:float):
@@ -408,6 +408,13 @@ def checkKzcg(Ag:float, L:float):
     return min(0.68*(Ag*L)**-0.13, 1)
     
 
+def _getE05(E, useFire, isGlulam):
+    if useFire:
+        return E
+    if isGlulam: 
+        return 0.87*E
+    else: # saw lumber
+        return 0.62*E
 
 def checkGlulamPr(Ag:float, Fc:float, kzcg:float, kc:float, phi = 0.8):
     """
@@ -434,8 +441,8 @@ def checkGlulamPr(Ag:float, Fc:float, kzcg:float, kc:float, phi = 0.8):
     return phi*Ag*Fc*kzcg*kc
 
    
-def checkPrGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1, 
-                            useFire:bool = False, kSE = 1, kT = 1) -> float:
+def checkPrGlulamColumn(element:BeamColumnGlulamCSA19, knet:float = 1, 
+                        useFire:bool = False, kSE = 1, kT = 1) -> float:
     """
     Checks the Pr for a beamcolumn.
     
@@ -449,7 +456,7 @@ def checkPrGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -486,9 +493,12 @@ def checkPrGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1,
     Fc = section.mat.fc*knet
     E = section.mat.E
     
+    isGlulam = _isGlulam(element)
+    E05 = _getE05(E, useFire,isGlulam)
+    
     # there is probably a way to reduce the computational effort here.
-    kcx = checkKci(Fc, kzcg, Cx, E, kSE, kT)
-    kcy = checkKci(Fc, kzcg, Cy, E, kSE, kT)
+    kcx = checkKci(Fc, kzcg, Cx, E05, kSE, kT)
+    kcy = checkKci(Fc, kzcg, Cy, E05, kSE, kT)
     
     kc = min(kcx, kcy)
 
@@ -498,8 +508,10 @@ def checkPrGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1,
 # Interaction
 # =============================================================================
 
+     
+        
 
-def checkPE(E:float, I:float, Lei:float, kSE:float = 1, kT:float = 1):
+def checkPE(E05:float, I:float, Lei:float, kSE:float = 1, kT:float = 1):
     """
     Calculates the critical buckling load for a typical column based on the
     critical buckling length.
@@ -524,11 +536,11 @@ def checkPE(E:float, I:float, Lei:float, kSE:float = 1, kT:float = 1):
 
     """
     
-    return (pi)**2*0.87*E*kSE*kT*I / Lei**2
+    return (pi)**2*E05*kSE*kT*I / Lei**2
 
    
-def checkPEGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1, 
-                        useFire:bool = False, kSE = 1, kT = 1) -> float:
+def checkPEColumn(element:BeamColumnGlulamCSA19, knet:float = 1, 
+                  useFire:bool = False, kSE = 1, kT = 1) -> float:
     """
     Checks the Pr for a beamcolumn.
     
@@ -542,8 +554,8 @@ def checkPEGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
-        The glulam element to check.
+    element : BeamColumnGlulamCSA19
+        The glulam element to check. Can also be solid timber elements.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
@@ -562,111 +574,140 @@ def checkPEGlulamColumn(element:GlulamBeamColumnCSA19, knet:float = 1,
     """
     section = _getSection(element, useFire)   
     
+    
     # check for lateral support
     Cx, Cy = checkColumnCc(element, useFire)
     
     # Calculate kzcg
-    slfactor = (section.lConvert('mm'))**4
+    slfactor = (section.lConvert('m'))**4
     
     # Note, kzcg is based on the ORIGINAL element size.
-    E = section.mat.E
-    PEx = checkPE(E, section.Ix*slfactor, element.designProps.Lex, kSE, kT)
-    PEy = checkPE(E, section.Ix*slfactor, element.designProps.Ley, kSE, kT)
+    sfactor = section.mat.sConvert('Pa')
+    E = section.mat.E * sfactor
+    
+    isGlulam = _isGlulam(element)
+    E05 = _getE05(E, useFire, isGlulam)
+    PEx = checkPE(E05, section.Ix*slfactor, element.designProps.Lex, kSE, kT)
+    PEy = checkPE(E05, section.Iy*slfactor, element.designProps.Ley, kSE, kT)
     
     return PEx, PEy
 
-def checkInteractionGlulamColumn(Pf:float, Pr:float, Mf:float, Mr:float, PE:float) -> float:
+def checkInterTimberGeneric(Pf:float, Pr:float, Mf:float, Mr:float, PE:float) -> float:
     """
-    Checks the column for .
+    Checks interaction for a generic timber member.
     
-    Pr and kzbg is calculated according to 7.5.8.5, and     
-    kc is calculated according to 7.5.8.6
-    
-    If KSE or KT are not equal to one, they must be included in the equation,
-    in addition to knet. knet should still be the product of all k factors.
-    These terms are seperated out due to clause 7.5.8.6, which seperates
-    kSE and KT when calcualting the factor Kc.
+    The force in the column is factored up by little p-delta loads.
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
-        The glulam element to check.
-    knet : flaot, optional
-        The product of all standard k factors, including kd, kse, etc. 
-        The default is 1.
-    useFire : bool, optional
-        A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
-    kSE : flaot, optional
-        The product of all standard k factors, including kd, kse, etc. 
-        The default is 1.
+    Pf : float
+        The factored compression force.
+    Pr : float
+        The compression resistance.
+    Mf : float
+        The factored moment force.
+    Mr : float
+        The moment resistance.
+    PE : float
+        The Euler bockling force for the column.
 
     Returns
     -------
-    Pr
-        The output in N.
+    float
+        The interactionutilization.
 
     """
     
     return (Pf/Pr)**2 + (Mf/Mr) * (1 - (1-Pf/PE))
 
+def checkInterEccPf(Pf:float, e:float, Pr:float, Mr:float, PE:float) -> float:
+    """
+    Checks interaction for eccentrically loaded members in compression.
+    
+    limitations:
+        - For glulam, does not apply to the weak axis of bending.
+        - Assumes the bending diagram has no points of inflection in it
+        - Assumes the member is constraind at both ends.
+        - Does not consider any amplification due to large P-delta effects.
+        
+    See Section 5.1 of the wood hand book for more information.
+    
+    This is valid, because for eccentriclly loaded members the maximum moment 
+    occurs at the midspan of the member, litle p delta effects occur at the
+    center of the member.
+    
+    Assumes consistent units used, e.g. N, m, Nm
 
-# def checkPrGlulamBeam(element:GlulamBeamColumnCSA19, knet:float = 1, 
-#                             useFire:bool = False, kSE = 1, kT = 1) -> float:
-#     """
-#     Checks the Pr for a beamcolumn.
-    
-#     Pr and kzbg is calculated according to 7.5.8.5, and     
-#     kc is calculated according to 7.5.8.6
-    
-#     If KSE or KT are not equal to one, they must be included in the equation,
-#     in addition to knet. knet should still be the product of all k factors.
-#     These terms are seperated out due to clause 7.5.8.6, which seperates
-#     kSE and KT when calcualting the factor Kc.
+    Parameters
+    ----------
+    Pf : float
+        The factored compression force.
+    e : float
+        The eccentricty the load applies at, in m.
+    Pr : float
+        The compression resistance.
+    Mr : float
+        The moment resistance.
 
-#     Parameters
-#     ----------
-#     element : GlulamBeamColumnCSA19
-#         The glulam element to check.
-#     knet : flaot, optional
-#         The product of all standard k factors, including kd, kse, etc. 
-#         The default is 1.
-#     useFire : bool, optional
-#         A toggle that makes the beam use it's fire section when selected. 
-#         The default is False, which uses no fire sectio.
-#     kSE : flaot, optional
-#         The product of all standard k factors, including kd, kse, etc. 
-#         The default is 1.
+    Returns
+    -------
+        float
+        The interaction utilization in the form (top utilization , middle utilization)
 
-#     Returns
-#     -------
-#     Pr
-#         The output in N.
+    """
+    
+    return (Pf/Pr)**2 + (Pf*e/Mr), (Pf/Pr)**2 + 0.5*(Pf*e/Mr)*(1/(1-Pf/PE))
 
-#     """
-#     section = _getSection(element, useFire)   
-#     phi = _getphiCr(useFire)
-    
-#     # check for lateral support
-#     Cx, Cy = checkColumnCc(element, useFire)
-    
-#     # Calculate kzcg
-#     lfactor = element.member.lConvert('m')
-#     slfactor = section.lConvert('m')
-    
-#     # Note, kzcg is based on the ORIGINAL element size.
-#     dmm = element.section.d*slfactor
-#     bmm = element.section.b*slfactor
-#     Lmm = element.getLength()*lfactor
-#     kzcg = checkKzcg(bmm*dmm, Lmm)
-    
-#     Fc = section.mat.fc*knet
-#     E = section.mat.E
-    
-#     # there is probably a way to reduce the computational effort here.
-#     kcx = checkKci(Fc, kzcg, Cx, E, kSE, kT)
-#     kcy = checkKci(Fc, kzcg, Cy, E, kSE, kT)
-    
-#     kc = min(kcx, kcy)
 
-#     return checkGlulamPr(section.A, Fc, kzcg,  kc, phi)
+
+def checkInterEccPfGlulam(element:BeamColumnGlulamCSA19, Pf:float, e:float,
+                          Mr:float, knet:float = 1, useX:bool = True,
+                          useFire:bool = False, 
+                          kSE = 1, kT = 1) -> float:
+    """
+    Checks interaction for eccentrically loaded members in compression.
+    Moment is applied in x if useX is set to true.
+    For glulam, 
+    
+    limitations:
+        - For glulam, does not apply to the weak axis of bending.
+        - Assumes the bending diagram has no points of inflection in it
+        - Assumes the member is constraind at both ends.
+        - Does not consider any amplification due to large P-delta effects.
+
+        
+    See Section 5.1 of the wood hand book for more information.
+        
+    This is valid, because for eccentriclly loaded members the maximum moment 
+    occurs at the midspan of the member, litle p delta effects occur at the
+    center of the member.
+    
+    Parameters
+    ----------
+    Pf : float
+        The factored compression force, in N.
+    e : float
+        The eccentricty the load applies at, in m.
+
+    Returns
+    -------
+        float
+        The interaction utilization.
+
+    """
+    
+    if _isGlulam(element) and (not useX):
+        raise Exception('Glualam checks in the weak axis are currently supported.')
+    
+    Mr = checkMrGlulamBeamSimple(element, knet, useFire, useX)
+    Pr = checkPrGlulamColumn(element, knet, useFire, kSE, kT)
+    
+    PEx, PEy = checkPEColumn(element, knet, useFire, kSE, kT)
+    if useX:
+        PE =  PEx
+    else:
+        PE = PEy
+    
+    return max(checkInterEccPf(Pf, e, Pr, Mr, PE))
+
+

@@ -13,7 +13,7 @@ from .. material import MaterialAbstract, MaterialElastic
 from ... units import ConverterLength
 
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
-           'SectionRectangle', 'SectionSteelW']
+           'SectionRectangle', 'SectionSteelW', 'SectionSteelHSS']
 
 #Rename this to SectionArchetype?
 class SectionAbstract(ABC):
@@ -207,7 +207,7 @@ class SectionRectangle(SectionMonolithic):
     
     @property
     def name(self):
-        return f"{self.b}{self.lUnit}x{self.d}{self.lUnit} Rectangle"
+        return f"{self.b}x{self.d} {self.mat.name} Rectangle"
     
     def __repr__(self):
         return f"<limitstates {self.name} Section.>"
@@ -248,7 +248,24 @@ class SectionSteelW(SectionMonolithic):
     
 class SectionSteelHSS(SectionMonolithic):
     """A class that represents geometry for a steel HSS section."""
+    
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
 
+        # add all items from the input section dictionary
+        self.__dict__.update(sectionDict)
+        self._initUnits(lunits)
+        
+        self.mat = mat
+    
+    
+    @property
+    def name(self):
+        return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
+       
+    def __repr__(self):
+        return f'<limitstates {self.name} Section>'
+    
+    
     
 class SectionSteelAngle(SectionMonolithic):
     """A class that represents a standard steel W section."""
@@ -311,46 +328,3 @@ class SectionComposite(SectionAbstract):
         pass
 
 
-
-# =============================================================================
-# 
-# =============================================================================
-
-# class SectionLayered(Section):
-#     """
-#     Represents a layered section, for example CLT
-#     """
-    
-#     def getEA(sunit='sunit', lunit='Pa'):
-#         pass    
-    
-#     def getEIx(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getEIy(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getGAx(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getGAy(sunit='sunit', lunit='Pa'):
-#         pass
-
-# class SectionAggregate(Section):
-#     """
-#     """
-    
-#     def getEA(sunit='sunit', lunit='Pa'):
-#         pass    
-    
-#     def getEIx(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getEIy(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getGAx(sunit='sunit', lunit='Pa'):
-#         pass
-    
-#     def getGAy(sunit='sunit', lunit='Pa'):
-#         pass

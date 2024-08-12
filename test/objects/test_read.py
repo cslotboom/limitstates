@@ -4,9 +4,7 @@ Tests if the read functions proprely return database values.
 We will use the a specific function from csa o86-19 to check
 """
 
-# from limitstates.design.read import _loadMaterialDBDict, _loadMaterialDatabase
 import limitstates.design.csa.o86.c19 as o86
-# import pytest
 
 
     

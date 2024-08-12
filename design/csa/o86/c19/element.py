@@ -12,8 +12,8 @@ from .....objects import (Member, SectionRectangle, initSimplySupportedMember,
 from .fireportection import GypusmRectangleCSA19, GypusmFlatCSA19
 from limitstates import BeamColumn, DisplayProps
 
-__all__ = ["GlulamBeamColumnCSA19", "getBeamColumnGlulamCSA19", 
-           "CltBeamColumnCSA19", "DesignPropsClt19", "DesignPropsGlulam19"]
+__all__ = ["BeamColumnGlulamCSA19", "getBeamColumnGlulamCSA19", 
+           "BeamColumnCltCSA19", "DesignPropsClt19", "DesignPropsGlulam19"]
 
 @dataclass
 class DesignPropsGlulam19:
@@ -27,7 +27,7 @@ class DesignPropsGlulam19:
     Lex:bool = None
     Ley:bool = None
 
-class GlulamBeamColumnCSA19(BeamColumn):
+class BeamColumnGlulamCSA19(BeamColumn):
     designProps:DesignPropsGlulam19
     
     def __init__(self, member:Member, section:SectionRectangle, 
@@ -80,12 +80,12 @@ class GlulamBeamColumnCSA19(BeamColumn):
 def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m', 
                              firePortection:GypusmRectangleCSA19 = None,
                              Lex:float = None, 
-                             Ley:float = None) -> GlulamBeamColumnCSA19:
+                             Ley:float = None) -> BeamColumnGlulamCSA19:
     """
     A function used to return a beamcolumn based on an input length.
     The beam uses a simply supported elemet by default. If a different type
     of element is required, it should be manually defined with 
-    "GlulamBeamColumnCSA19" inatead.
+    "BeamColumnGlulamCSA19" inatead.
     
     Default values are assigned to design propreties.
 
@@ -105,11 +105,11 @@ def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m',
 
     """
     member = initSimplySupportedMember(L, lUnit)
+    designProps = DesignPropsGlulam19()
+
     
     if firePortection:
-        designProps = DesignPropsGlulam19(firePortection)
-    else:
-        designProps = DesignPropsGlulam19()
+        designProps.firePortection
     
     if Lex:
         designProps.Lex = Lex
@@ -121,7 +121,7 @@ def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m',
     else:
         designProps.Ley = L
     
-    return GlulamBeamColumnCSA19(member, section, designProps)
+    return BeamColumnGlulamCSA19(member, section, designProps)
 
 @dataclass
 class DesignPropsClt19:
@@ -135,7 +135,7 @@ class DesignPropsClt19:
         
     
 
-class CltBeamColumnCSA19(BeamColumn):
+class BeamColumnCltCSA19(BeamColumn):
     designProps:DesignPropsClt19
     section:SectionCLT
     
@@ -183,9 +183,7 @@ class CltBeamColumnCSA19(BeamColumn):
             displayProps = DisplayProps(self.member, self.section)            
                     
         self._initProps(designProps, userProps, displayProps)
-
-        
-        
+      
         
 def _getSection(element, useFire:bool):
     """
@@ -215,4 +213,16 @@ def _getphiCr(useFire:bool):
         return 1
     else:
         return 0.8
+
+        
+def _isGlulam(element:BeamColumn):
+    """
+    Checks if an element is timber or glulam.
+    There may be better ways of checking if a element is of a certain type,
+    for example we could add it to the design propreties.
+    """
+    if isinstance(element, BeamColumnGlulamCSA19):
+        return True
+    else:
+        return False
         

@@ -7,7 +7,7 @@ to CSA o86 Annex B.
 from .....objects import BeamColumn, SectionRectangle, SectionCLT, LayerClt, LayerGroupClt
 from .....objects.fireportection import FirePortection
 from .fireportection import GypusmFlatCSA19, GypusmRectangleCSA19
-from .element import GlulamBeamColumnCSA19, CltBeamColumnCSA19
+from .element import BeamColumnGlulamCSA19, BeamColumnCltCSA19
 from enum import IntEnum
 
 import numpy as np
@@ -462,8 +462,24 @@ def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float],
 The majority of functions exposed to the user are in this section.
 """
 
-def setFireSectionGlulamCSA(element:GlulamBeamColumnCSA19, 
-                            FRR:float|list[float]|ndarray[float],
+def getFRRfromFireConditions(FRR:float, fireCon:FireConditions = 2):
+    """
+    A helper function used to get the appropriate FRR list from a set of 
+    typical conditions.
+    """
+    
+    if fireCon == FireConditions.beamWithPanel:
+        FRR = np.array([0,FRR,FRR,FRR])
+    elif fireCon == FireConditions.beamColumn:
+        FRR = np.array([FRR,FRR,FRR,FRR])
+    else:
+        vals = [e.value for e in FireConditions]
+        raise Exception(f'recieved {fireCon}, expected one of {vals} from FireConditions Enum')
+        
+    return FRR
+
+def setFireSectionGlulamCSA(element:BeamColumnGlulamCSA19, 
+                            FRR:list[float]|ndarray[float],
                             Bn:float = 0.7):
     """
     Sets the burnt section for a glulam element.
@@ -479,7 +495,7 @@ def setFireSectionGlulamCSA(element:GlulamBeamColumnCSA19,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The Glulam element to burn.
     FRR : list[float]|ndarray[float]
         For a rectangular section fire portection is input 
@@ -487,27 +503,26 @@ def setFireSectionGlulamCSA(element:GlulamBeamColumnCSA19,
     Bn : float, optional
         The burn rate for the section. 
         The default is 0.7, which is the notional char rate.
-
-    Returns
-    -------
-    None.
+    fireCondition : FireConditions
+        The fire condition used. See the FireConditions enumeration for 
+        possible values
 
     """
     
     section = element.section
     firePort = element.designProps.firePortection
     
+    if isinstance(FRR, list):
+        FRR = np.array(FRR)
+    
     # If the section is not set, assume the beam is exposed.
     if not firePort:
         firePort = GypusmRectangleCSA19('exposed')
-    
-    if isinstance(FRR, int) or isinstance(FRR, float):
-        FRR = np.array([0,FRR,FRR,FRR])
-    
+            
     fireSection = getBurntRectangularSection(section, FRR, firePort)    
     element.designProps.fireSection = fireSection
 
-def setFireSectionCltCSA(element:GlulamBeamColumnCSA19, 
+def setFireSectionCltCSA(element:BeamColumnGlulamCSA19, 
                          FRR:float|list[float]|ndarray[float],
                          Bn:float = 0.8):
     """
@@ -524,7 +539,7 @@ def setFireSectionCltCSA(element:GlulamBeamColumnCSA19,
 
     Parameters
     ----------
-    element : GlulamBeamColumnCSA19
+    element : BeamColumnGlulamCSA19
         The Glulam element to burn.
     FRR : list[float]|ndarray[float]
         For a rectangular section fire portection is input 
@@ -558,15 +573,15 @@ def setFireSectionCltCSA(element:GlulamBeamColumnCSA19,
 
 
 # TODO! add panel once it's complete
-def setBurntSection(element:GlulamBeamColumnCSA19, 
+def setBurntSection(element:BeamColumnGlulamCSA19, 
                     FRR:float|list[float]|ndarray[float], 
                     Bn:float = 0.7):
     
-    if isinstance(element, GlulamBeamColumnCSA19):
+    if isinstance(element, BeamColumnGlulamCSA19):
         setFireSectionGlulamCSA(element, FRR, Bn)
     elif isinstance(element, BeamColumn):
         setFireSectionGlulamCSA(element, FRR, Bn)
-    elif isinstance(element, CltBeamColumnCSA19):
+    elif isinstance(element, BeamColumnCltCSA19):
         setFireSectionCltCSA(element, FRR, Bn)
     
 

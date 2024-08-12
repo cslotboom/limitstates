@@ -234,7 +234,7 @@ class LayerGroupClt:
         lfactor = self.lConvert(lunits)
         return EI * sfactor * lfactor**3
     
-    def getGA(self, parallelToStrong:bool = True, NlayerNet:int = None,
+    def getGA(self, parallelToStrong:bool = True, NlayerTotal:int = None,
               lunits:str = 'm', sunits:str = 'Pa'):
         """
         Gets GA for the layer group orientation.
@@ -258,8 +258,8 @@ class LayerGroupClt:
         layers = self.layers
         Nlayer = len(layers)
         
-        if not NlayerNet:
-            NlayerNet = Nlayer
+        if not NlayerTotal:
+            NlayerTotal = Nlayer
         
         denom = 0
         h = 0
@@ -271,9 +271,9 @@ class LayerGroupClt:
         h += t0
         
         # account for the final layer if it's present.
-        if NlayerNet == Nlayer:
-            GN = layers[NlayerNet-1].getLayerG(parallelToStrong)
-            tN = layers[NlayerNet-1].t/2
+        if NlayerTotal == Nlayer:
+            GN = layers[NlayerTotal-1].getLayerG(parallelToStrong)
+            tN = layers[NlayerTotal-1].t/2
             denom += tN/GN
             h += tN
         
@@ -313,7 +313,7 @@ class LayerGroupClt:
         """
         
         EA = 0
-        lMid = self._getLayerMidpointsRelative(parallelToStrong)
+        # lMid = self._getLayerMidpointsRelative(parallelToStrong)
         for ii, layer in enumerate(self.layers):
             E = layer.getLayerE(parallelToStrong)
             EA += layer.t * E 
@@ -401,46 +401,49 @@ def getActiveLayers(LayerGroupClt:LayerGroupClt, searchInStrong=True) -> LayerGr
     
 
 class SectionCLT(SectionLayered):
+    """
+    Represents a layered CLT object. Layers can have strong axis direction
+    and weak axis direction.
+    CLT sections have two effective layer groups in each direction.
+    
+    If the user is representing a section that is reduced from the original 
+    section dimensions, as is the case, then NlayersTotal needs to be set to
+    the original number of layers the section has.
+    
+    Units of the CLT sectionare the same as the untis for the the layers used.
 
+    If the length unit, lUnit is set be differnt than default, then the
+    units of the layers will be updates as well.
+
+    Parameters
+    ----------
+    layers : list[LayerClt]
+        The group of CLT layers to use for the section.
+    w : float, optional
+        The width of the section to use for design propreties. 
+        The default is a unit width, or 1000.
+    wWeak : float, optional
+        The width of the section to use for it's weak axis design 
+        propreties. The default is to use the same width as the strong axis.
+    lUnit : string, optional
+        The width units to use for the section. The using 'default' sets units 
+        to the same as the layer group. If another unit is specified, then 
+        the units for each layer is converted to this new unit. 
+    NlayerTotal : int, optional
+        The total number of layers in the original section, pre-fire.
+        GA is dependant on not just the layers that are active, but 
+        the total number of layers in the CLT.
+        
+    Returns
+    -------
+    None.
+
+    """
     sLayers:LayerGroupClt
     wLayers:LayerGroupClt
     def __init__(self, layers:LayerGroupClt, w:float = 1000, wWeak:float = None,
                  lUnit = 'default', NlayerTotal = None):
-        """
-        
-        Units are the same as the layers used.
-        Represents a layered CLT object. Layers can have strong axis direction
-        and weak axis direction.
-        
-        If the length unit, lUnit is set be differnt than default, then the
-        units of the layers will be updates as well.
 
-        Assumes that the input layer group has the same units as the section.
-
-        Parameters
-        ----------
-        layers : list[LayerClt]
-            The group of CLT layers to use for the section.
-        w : float, optional
-            The width of the section to use for design propreties. 
-            The default is a unit width, or 1000.
-        w : float, optional
-            The width of the section to use for it's weak axis design p
-            ropreties. The default is to use the same width as the strong axis.
-        lUnit : string, optional
-            The width units to use for the section. The default is the same
-            unit as the clt layers, which is in 'mm'.
-        NlayerTotal : int, optional
-            The total number of layers in the original section, pre-fire.
-            GA is dependant on not just the layers that are active, but 
-            the total number of layers in the CLT.
-            
-        Returns
-        -------
-        None.
-
-        """
-        
         # set the weak axis width equal to w if it's not set.
         if not wWeak:
             wWeak = w
@@ -465,17 +468,19 @@ class SectionCLT(SectionLayered):
             
         self.sLayers = LayerGroupClt(getActiveLayers(layers,True))
         self.wLayers = LayerGroupClt(getActiveLayers(layers,False))
-
     
     def _initUnits(self, lUnit):
         """Initiates the length unit used for the layer"""
         self.lUnit = lUnit
         self.lConverter = ConverterLength()
-        
-    def __repr__(self):
-        return f'<limitstates CLT {self.sLayers.grade} {int(self.sLayers.d)} Section>'
-        
     
+    @property
+    def name(self):
+        return f'{self.sLayers.grade} {int(self.sLayers.d)}'
+    
+    def __repr__(self):
+        return f'<limitstates CLT {self.name} Section>'
+        
     def lConvert(self, outputUnit:str):
         """
         Get the conversion factor from the current unit to the output unit
@@ -483,7 +488,6 @@ class SectionCLT(SectionLayered):
         """
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
     
-     
     def _convertUnits(self, lUnit):
         """Initiates the length unit used for the layer"""
         self.lUnit = lUnit

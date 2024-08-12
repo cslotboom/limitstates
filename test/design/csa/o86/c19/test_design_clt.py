@@ -51,7 +51,7 @@ def test_Panel_Mr():
     layerGroup = ls.LayerGroupClt(layers)
     section = ls.SectionCLT(layerGroup)
     member = ls.initSimplySupportedMember(6, 'm')
-    beamColumn = o86.CltBeamColumnCSA19(member, section)
+    beamColumn = o86.BeamColumnCltCSA19(member, section)
     
     MrSol = 87.8*1e3
     Mr = o86.checkMrCltBeam(beamColumn)
@@ -72,7 +72,7 @@ def test_Panel_Vr():
     layerGroup = ls.LayerGroupClt(layers)
     section = ls.SectionCLT(layerGroup)
     member = ls.initSimplySupportedMember(6, 'm')
-    beamColumn = o86.CltBeamColumnCSA19(member, section)
+    beamColumn = o86.BeamColumnCltCSA19(member, section)
     
     VrSol = 58*1e3*0.9
     Vr = o86.checkCltBeamShear(beamColumn)
@@ -92,10 +92,11 @@ def test_Panel_DB():
     """
     
     sections = _initDB()
-    # layerGroup = ls.LayerGroupClt(layers)
-    # section = ls.SectionCLT(layerGroup)
+
+    assert 'E1' in sections[0].name
+
     member = ls.initSimplySupportedMember(6, 'm')
-    beamColumn = o86.CltBeamColumnCSA19(member, sections[11])
+    beamColumn = o86.BeamColumnCltCSA19(member, sections[11])
     
     MrSol = 146*1e3*0.9
     Mr = o86.checkMrCltBeam(beamColumn)

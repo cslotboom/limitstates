@@ -22,6 +22,7 @@ def test_table_1():
     L = 7
     myElement = o86.getBeamColumnGlulamCSA19(L, section, 'm')
     FRR = 60
+    FRR = o86.getFRRfromFireConditions(FRR)
     o86.setFireSectionGlulamCSA(myElement, FRR)   
         
     knet = o86.kdfi*o86.kfi['glulam']
@@ -32,20 +33,17 @@ def test_table_1():
     assert myElement.designProps.fireSection.d == pytest.approx(dfsol, rel = 0.01)
 
     Mr = o86.checkMrGlulamBeamSimple(myElement, knet, useFire=True) / 1000
-    Vr = o86.checkVrGlulamBeamSimple(myElement, knet, useFire=True) / 1000
 
     kzbg = o86.checkKzbg(section.b, section.d, myElement.member.L*1000)
     Mrsol = 130 * kzbg
-    Vrsol = 130 * kzbg
 
     
     assert Mr == pytest.approx(Mrsol, rel = 0.02)
-    # assert Vr == pytest.approx(Vrsol, rel = 0.01)
     
     
 def test_table_2():
     """
-    Tests results using glulam selecton tables in CSA o86
+    Tests results using glulam selecton tables in the Wood Design Manual 2020
     D.fir-L 24f-E
     """
     
@@ -56,6 +54,7 @@ def test_table_2():
 
 
     FRR = 45
+    FRR = o86.getFRRfromFireConditions(FRR)
     o86.setFireSectionGlulamCSA(myElement, FRR)
     
     L = 6
@@ -71,19 +70,90 @@ def test_table_2():
     
     assert Mr == pytest.approx(Mrsol, rel = 0.01)
     assert Vr == pytest.approx(Vrsol, rel = 0.01)
-    
-    # L = 16
-    # myElement = o86.getBeamColumnGlulamCSA19(L, section, 'm')
-    # o86.setFireSectionGlulamCSA(myElement, FRR)
 
-    # Wr = o86.checkWrGlulamBeamSimple(myElement, knet, useFire=True) / 1000
-
-    # WrSol = 783 * L**-0.18
     
+def test_compression_example_1():
+    """
+    Tests results using example 3 on page 827 of the wood design manual.
+    """
     
-    # assert Wr == pytest.approx(WrSol, rel = 0.01)
+    myMat = mats[-3]
+    b = 215
+    d = 304
+    section = ls.SectionRectangle(myMat, b, d)
+    L = 9
+    Lex = 4.5
+    Ley = 4.5
+    port = o86.GypusmFlatCSA19(['12.7mm'])
 
+    column = o86.getBeamColumnGlulamCSA19(L, section, 'm', port,
+                                          Lex = Lex, Ley = Ley)
+        
+    FRR = [60,60,60,60]
+    o86.setFireSectionGlulamCSA(column, FRR)
+    assert column.designProps.fireSection.b == pytest.approx(138, rel = 0.01)
+    assert column.designProps.fireSection.d == pytest.approx(227, rel = 0.01)
+    
+    knet = o86.kdfi*o86.kfi['glulam']
+
+    Pr = o86.checkPrGlulamColumn(column, knet, useFire=True)
+    Prsol = 228*1000
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+    
+def test_compression_example2():
+    """
+    Tests results using example 4 on page 827 of the wood design manual.
+    """
+    
+    myMat = mats[-3]
+    b = 215
+    d = 304
+    section = ls.SectionRectangle(myMat, b, d)
+    L = 7
+    Ley = 3.5
+    port = o86.GypusmFlatCSA19(['12.7mm'])
+
+    column = o86.getBeamColumnGlulamCSA19(L, section, 'm', port, Ley = Ley)
+        
+    # o86.FireConditions.
+    FRR = [60,60,60,60]
+    o86.setFireSectionGlulamCSA(column, FRR)
+    
+    knet = o86.kdfi*o86.kfi['glulam']
+
+    Pr = o86.checkPrGlulamColumn(column, knet, useFire=True)
+    Prsol = 260*1000
+    assert Pr == pytest.approx(Prsol, rel = 0.01)
+
+    
+def test_compression_table():
+    """
+    Tests results using glulam selecton tables in the Wood Design Manual 2020
+    D.fir-L 24f-E
+    """
+    
+    myMat = mats[-3]
+    b = 215
+    d = 266
+    section = ls.SectionRectangle(myMat, b, d)
+    L = 5.5
+    column = o86.getBeamColumnGlulamCSA19(L, section, 'm')
+
+
+
+    FRR = [60,60,60,60]
+    o86.setFireSectionGlulamCSA(column, FRR)
+    knet = o86.kdfi*o86.kfi['glulam']
+
+    Pr = o86.checkPrGlulamColumn(column, knet, useFire=True)
+    Prsol = 58.1*1000
+    
+    assert Prsol == pytest.approx(Pr, rel = 0.01)
+    # assert Vr == pytest.approx(Vrsol, rel = 0.01)
 
 if __name__ == "__main__":
     test_table_1()
     test_table_2()
+    test_compression_example_1()
+    test_compression_example2()
+    test_compression_table()

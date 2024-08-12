@@ -30,7 +30,12 @@ def test_mats_load():
     assert mats[-1][0].fb == 11
     
 def test_section_loadandParse():
+    """
+    Checks that the parse function is creating sections properly.
+    """
     tempDict = _loadSectionDBDict(config)
+    tempDict = tempDict.to_dict(orient='index')
+
     sectionsDict = _parseCLTDataFrame(tempDict)
     assert len(sectionsDict[0]['t']) == 3
     assert len(sectionsDict[2]['t']) == 7

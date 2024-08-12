@@ -23,15 +23,15 @@ def test_line_fromNodes():
     L3 = getLineFromNodes(n2, n3)
     L4 = getLineFromNodes(n1, n4)
     
-    assert L1.length == 1
-    assert L2.length == pytest.approx((3*2**2)**0.5)
-    assert L3.length == pytest.approx(((1+2*2**2)**0.5))
-    assert L4.length == pytest.approx((3*2**2)**0.5)
+    assert L1.L == 1
+    assert L2.L == pytest.approx((3*2**2)**0.5)
+    assert L3.L == pytest.approx(((1+2*2**2)**0.5))
+    assert L4.L == pytest.approx((3*2**2)**0.5)
 
 def test_line_fromlengths():
     line = getLineFromLength(5)
     
-    assert line.length == 5
+    assert line.L == 5
     assert line.n2.getx() == 5
 
 

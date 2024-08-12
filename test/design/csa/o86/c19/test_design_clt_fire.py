@@ -61,7 +61,7 @@ def test_Panel_WoodHandbook_dims():
     section = sections[16]
     member = ls.initSimplySupportedMember(6, 'm')
 
-    beamColumn = o86.CltBeamColumnCSA19(member, section)
+    beamColumn = o86.BeamColumnCltCSA19(member, section)
 
     FRR = 90
     
@@ -88,7 +88,7 @@ def test_Panel_WoodHandbook_Dims_2():
 
     member = ls.initSimplySupportedMember(6, 'm')
 
-    clt = o86.CltBeamColumnCSA19(member, section, designProps = designProps)
+    clt = o86.BeamColumnCltCSA19(member, section, designProps = designProps)
 
 
     FRR = 120
@@ -116,7 +116,7 @@ def test_Panel_WoodHandbook_Dims_2():
 
 #     member = ls.initSimplySupportedMember(4, 'm')
 
-#     clt = o86.CltBeamColumnCSA19(member, section, designProps = designProps)
+#     clt = o86.BeamColumnCltCSA19(member, section, designProps = designProps)
 
 
 #     FRR = 45
@@ -143,7 +143,7 @@ def test_Panel_WoodHandbook_Design():
 
     member = ls.initSimplySupportedMember(6, 'm')
 
-    clt = o86.CltBeamColumnCSA19(member, section, designProps = designProps)
+    clt = o86.BeamColumnCltCSA19(member, section, designProps = designProps)
     FRR = 120
     o86.setFireSectionCltCSA(clt, FRR)
     knet = o86.kdfi*o86.kfi['cltV']
@@ -167,7 +167,7 @@ def test_Panel_WoodHandbook_Tables_Design():
     section = sections[0]
 
     member = ls.initSimplySupportedMember(6, 'm')
-    clt = o86.CltBeamColumnCSA19(member, section)
+    clt = o86.BeamColumnCltCSA19(member, section)
     FRR = 45
     o86.setFireSectionCltCSA(clt, FRR, 0.65)
     knet = o86.kdfi*o86.kfi['cltE']
@@ -195,7 +195,7 @@ def test_Panel_WoodHandbook_Tables_Design():
 #     # beamColumn = ls.getBeamColumn(6, section)
 #     member = ls.initSimplySupportedMember(6, 'm')
 
-#     beamColumn = o86.CltBeamColumnCSA19(member, section)
+#     beamColumn = o86.BeamColumnCltCSA19(member, section)
 
 #     FRR = 60
     
@@ -236,7 +236,7 @@ def test_Beam_GAeff():
     firePortection = o86.GypusmFlatCSA19('15.9mm')
     designProps = o86.DesignPropsClt19(firePortection)
     member = ls.initSimplySupportedMember(6, 'm')
-    clt = o86.CltBeamColumnCSA19(member, section, designProps=designProps)
+    clt = o86.BeamColumnCltCSA19(member, section, designProps=designProps)
     FRR = 120
     o86.setFireSectionCltCSA(clt, FRR)
     # knet = o86.kdfi*o86.kfi['cltE']
@@ -249,7 +249,7 @@ def test_Beam_GAeff():
     # layerGroup = LayerGroupClt(layers)
     # section = SectionCLT(layerGroup)
     # member = initSimplySupportedMember(6, 'm')
-    # beamColumn = o86.CltBeamColumnCSA19(member, section)
+    # beamColumn = o86.BeamColumnCltCSA19(member, section)
     
     # VrSol = 58*1e3*0.9
     # Vr = o86.checkCltBeamShear(beamColumn)
