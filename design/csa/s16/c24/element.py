@@ -4,12 +4,9 @@ These are largely set up to ease development and provide type hints.
 """
 
 from dataclasses import dataclass
-
-from .....objects import (Member, SectionRectangle, initSimplySupportedMember, 
-                          SectionCLT)
+from .....objects import (Member, SectionRectangle, initSimplySupportedMember, SectionSteel)
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
-from .fireportection import SectionSteelW, GypusmFlatCSA19
 from limitstates import BeamColumn, DisplayProps
 
 __all__ = ["DesignPropsSteel24", "BeamColumnSteelCSA19"]
@@ -26,7 +23,7 @@ class DesignPropsSteel24:
 class BeamColumnSteelCSA19(BeamColumn):
     designProps:DesignPropsSteel24
     
-    def __init__(self, member:Member, section:SectionSteelW, 
+    def __init__(self, member:Member, section:SectionSteel, 
                  designProps:DesignPropsSteel24 = None, 
                  userProps:dataclass = None,
                  displayProps:dataclass = None):

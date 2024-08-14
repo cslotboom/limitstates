@@ -12,7 +12,7 @@ import pandas as pd
 import os
 from math import isnan
 from .material import MaterialAbstract
-from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteelW, SectionSteelHSS
+from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel, SectionSteelHSS
 from dataclasses import dataclass
 
 filepath = os.path.realpath(__file__)
@@ -157,13 +157,21 @@ def getSectionTypes(sectionRawDict, section_type: str) -> pd.DataFrame:
 
 
 #TODO Evaluate if we can make this a generic steel section class.
-sectionDict = {'W':SectionSteelW, 'HSS':SectionSteelHSS}
+sectionDict = {'W':SectionSteel, 'HSS':SectionSteelHSS}
 
 
 def getSteelSections(mat:MaterialAbstract, 
                      code:str, 
                      dbName:str,
-                     steelShapeType:str) -> SectionSteelW:
+                     steelShapeType:str) -> SectionSteel:
+    
+    
+    # !!! This is a bandaid
+    if '_si' in dbName:
+        lUnit =  'mm'
+    else:
+        lUnit  = _getCodeUnits(code)
+    
     
     # !!! do we actually need a different section for
     if steelShapeType in list(sectionDict.keys()):
@@ -181,8 +189,9 @@ def getSteelSections(mat:MaterialAbstract,
     
     # !!! Consider making this a funciton with more logic.
     dbName = ''.join(dbName.strip('.csv').strip(steelShapeType).split('_'))
-        
-    lUnit = _getCodeUnits(code)
+    
+    
+
     
     sections = [None]*len(filteredDict.keys())
     for ii, key in enumerate(filteredDict.keys()):

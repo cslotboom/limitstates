@@ -109,7 +109,7 @@ def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m',
 
     
     if firePortection:
-        designProps.firePortection
+        designProps.firePortection = firePortection
     
     if Lex:
         designProps.Lex = Lex

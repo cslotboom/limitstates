@@ -13,7 +13,7 @@ from .. material import MaterialAbstract, MaterialElastic
 from ... units import ConverterLength
 
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
-           'SectionRectangle', 'SectionSteelW', 'SectionSteelHSS']
+           'SectionRectangle', 'SectionSteel', 'SectionSteelHSS']
 
 #Rename this to SectionArchetype?
 class SectionAbstract(ABC):
@@ -213,7 +213,7 @@ class SectionRectangle(SectionMonolithic):
         return f"<limitstates {self.name} Section.>"
 
 
-class SectionSteelW(SectionMonolithic):
+class SectionSteel(SectionMonolithic):
     """
     A class that represents the geometry for a steel W section.
     
@@ -244,6 +244,31 @@ class SectionSteelW(SectionMonolithic):
        
     def __repr__(self):
         return f'<limitstates {self.name} Section>'
+    
+    def getCy(self, lunits = 'm', sunits='Pa'):
+        lfactor = self.lConvert(lunits)
+        sfactor = self.mat.sConvert(sunits)
+        return self.A * lfactor**2 * self.mat.Fy * sfactor
+    
+    @property
+    def Cy(self):
+        return self.getCy( 'm', 'Pa')
+    
+    def getZ(self, useX = True, lunits = 'mm'):
+        lfactor = self.lConvert(lunits)
+        if useX:
+            return self.Zx*lfactor**3
+        else:
+            return self.Zy*lfactor**3
+    
+    def getS(self, useX = True, lunits = 'mm'):
+        lfactor = self.lConvert(lunits)
+        if useX:
+            return self.Sx*lfactor**3
+        else:
+            return self.Sy*lfactor**3    
+    
+    
     
     
 class SectionSteelHSS(SectionMonolithic):

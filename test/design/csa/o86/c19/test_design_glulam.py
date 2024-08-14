@@ -20,7 +20,6 @@ myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')
 def test_Cb():
     Cbx = o86.getBeamCb(myElement)
     assert Cbx == pytest.approx((L*mySection.d/(mySection.b**2))**0.5)
-    
 
 def test_kLa():
     """ Tests kL case A. """
