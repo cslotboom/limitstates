@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools >= 52.0.2", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "limitstates"
+version = "0.1.0"
+authors = [{name = "Christian Slotboom", email = "christian.slotboom@gmail.com"}]
+requires-python = ">=3.9"
+description = "A structural design library."
+readme = "README.md"
+keywords = ["structures", "design", "buildings"] 
+dependencies = [
+  "numpy",
+  "matplotlib",
+]
+classifiers = [
+	'Development Status :: 4 - Beta',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3 :: Only',
+    'Topic :: Software Development',
+    'Topic :: Scientific/Engineering',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+
+[options]
+package-dir = {"" = "src"}
+
+[project.urls]
+Homepage = "https://github.com/cslotboom/limitstates"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

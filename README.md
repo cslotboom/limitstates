@@ -1,2 +1,5 @@
 # limitstates
- A structural engineering design libarary
+A structural representation and design library.
+
+# Overview
+limitstates is a python library for 
