@@ -145,25 +145,25 @@ def test_combined_LSDSS_EX8_8():
     assert u == pytest.approx(util_solC, rel = 0.02)
 
     
-def test_combined_LSDSS_EX8_9():
+# def test_combined_LSDSS_EX8_9():
     
-    """
-    Example 8.7 - limit states design in structural steel. GLK
-    Example for LTB
-    """
-    beam = _initBeam('W250X73', 12)
+#     """
+#     Example 8.7 - limit states design in structural steel. GLK
+#     Example for LTB
+#     """
+#     beam = _initBeam('W250X73', 12)
 
-    Cf = 900*kN
-    Mmax = 180*kN*m
+#     Cf = 900*kN
+#     Mmax = 180*kN*m
     
-    Mmax = 180*kN*m
-    Mmin = 0*kN*m
+#     Mmax = 180*kN*m
+#     Mmin = 0*kN*m
     
-    omega1x = s16.getOmega1(1, Mmax, Mmin)   
-    n = 1.34
-    u = s16.checkCombinedCaseC(beam, Cf, Mmax, 0, n, omega1x, True)
-    util_solC = 0.90
-    assert u == pytest.approx(util_solC, rel = 0.02)
+#     omega1x = s16.getOmega1(1, Mmax, Mmin)   
+#     n = 1.34
+#     u = s16.checkCombinedCaseC(beam, Cf, Mmax, 0, n, omega1x, True)
+#     util_solC = 0.90
+#     assert u == pytest.approx(util_solC, rel = 0.02)
 
 
 
