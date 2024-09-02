@@ -30,12 +30,6 @@ def test_convert_force_metric():
     assert abs(ffactor2 / 0.00444822 - 1) <0.0002
 
 
-# for ii in range(10000):
-#     lconvert = ConverterLength()
-#     lfactor = lconvert.getConversionFactor('mm','m')
-#     lfactor2 = lconvert.getConversionFactor('mm','in')
-#     lfactor3 = lconvert.getConversionFactor('in','ft')
-
 if __name__ == '__main__':
     test_convert_length_metric()
     test_notIn_length()
