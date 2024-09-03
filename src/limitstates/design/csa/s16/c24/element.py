@@ -9,8 +9,8 @@ from .....objects import (Member, SectionRectangle, initSimplySupportedMember, S
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
 from limitstates import BeamColumn, DisplayProps
 
-__all__ = ["DesignPropsSteel24", "BeamColumnSteelCSA19", 
-           "getBeamColumnSteelCSA19"]
+__all__ = ["DesignPropsSteel24", "BeamColumnSteelCsa24", 
+           "getBeamColumnSteelCsa24"]
 
 @dataclass
 class DesignPropsSteel24:
@@ -41,7 +41,7 @@ class DesignPropsSteel24:
         self.Lez = self.Lz * self.kz 
     
     
-class BeamColumnSteelCSA19(BeamColumn):
+class BeamColumnSteelCsa24(BeamColumn):
     designProps:DesignPropsSteel24
     
     def __init__(self, member:Member, section:SectionSteel, 
@@ -91,13 +91,13 @@ class BeamColumnSteelCSA19(BeamColumn):
     def setLey(self, Ley):
         self.designProps.Ley = Ley       
         
-def getBeamColumnSteelCSA19(L:float, section:SectionRectangle, lUnit:str='m', 
+def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m', 
                             kx:float = 1, 
                             ky:float = 1,
                             kz:float = 1,
                             Lx:float = None,
                             Ly:float = None,
-                            Lz:float = None) -> BeamColumnSteelCSA19:
+                            Lz:float = None) -> BeamColumnSteelCsa24:
 
     """
     A function used to return a beamcolumn based on an input length.
@@ -159,4 +159,4 @@ def getBeamColumnSteelCSA19(L:float, section:SectionRectangle, lUnit:str='m',
     designProps.setkz(kz)
 
 
-    return BeamColumnSteelCSA19(member, section, designProps)
+    return BeamColumnSteelCsa24(member, section, designProps)

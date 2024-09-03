@@ -4,7 +4,7 @@ Contains functions for managing sections specific to CSAo86-19
 Note, right now all limits are calculated at once BEFORE the 
 """
 
-from .element import BeamColumnSteelCSA19, SectionSteel
+from .element import BeamColumnSteelCsa24, SectionSteel
 from typing import Callable
 from numpy import pi
 from enum import IntEnum
@@ -103,7 +103,7 @@ def classifySection(section, useX=True, Cf = 0):
         cweb    = classifyWebWSection(section, useX, Cf)
         return max(cflange, cweb)
 
-# def setElementClass(beam:BeamColumnSteelCSA19):
+# def setElementClass(beam:BeamColumnSteelCsa24):
 
 
 
@@ -272,7 +272,7 @@ def getMy(S, Fy):
     phi = 0.9
     return S*Fy*phi / 1000
     
-def checkBeamMrSupported(beam:BeamColumnSteelCSA19, useX:bool=True, Cf:float = 0):
+def checkBeamMrSupported(beam:BeamColumnSteelCsa24, useX:bool=True, Cf:float = 0):
     """
     Calcualtes Mr for a supported member in Nm
     """
@@ -291,7 +291,7 @@ def checkBeamMrSupported(beam:BeamColumnSteelCSA19, useX:bool=True, Cf:float = 0
     else:
         raise Exception(f'{section} recieved is class 4, limitstates currently cannot design class 4 sections.')
     
-def checkBeamMrUnsupportedW(beam:BeamColumnSteelCSA19, omega:float=1, 
+def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1, 
                             Lu:float = None, Cf = 0):
     """
     Calculates Mr for an unsupported W section according to c.l.13.6.1.a.
@@ -401,7 +401,7 @@ def checkMu(E:float, Iy:float, G:float, J:float,
     return (omega*pi / Lu) * (E*Iy*G*J + Iy*Cw*(pi*E/Lu)**2)**0.5
 
 
-def getBeamMr(beam:BeamColumnSteelCSA19, ):
+def getBeamMr(beam:BeamColumnSteelCsa24, ):
     pass
 
 
@@ -493,7 +493,7 @@ def checkFez(E:float, Cw:float, Leff:float, G:float,
     return ((pi**2 * E * Cw ) / Leff**2 + G*J) / (A*rbar**2)
 
 
-def checkColumnFeDirection(column:BeamColumnSteelCSA19, useX = True):
+def checkColumnFeDirection(column:BeamColumnSteelCsa24, useX = True):
     """
     Calculates buckling stress in a single direction stress per 13.3.1.1
     
@@ -504,7 +504,7 @@ def checkColumnFeDirection(column:BeamColumnSteelCSA19, useX = True):
     
     Parameters
     ----------
-    beam : BeamColumnSteelCSA19
+    beam : BeamColumnSteelCsa24
         The structural element to check..
     useX : TYPE, optional
         The x direction to check the column in. The default is True.
@@ -530,7 +530,7 @@ def checkColumnFeDirection(column:BeamColumnSteelCSA19, useX = True):
         
     return checkFe(E, Le, r)
 
-def checkColumnCeDirection(column:BeamColumnSteelCSA19, useX = True):
+def checkColumnCeDirection(column:BeamColumnSteelCsa24, useX = True):
     """
     Calculates buckling stress in a single direction stress per 13.3.1.1
     
@@ -541,7 +541,7 @@ def checkColumnCeDirection(column:BeamColumnSteelCSA19, useX = True):
     
     Parameters
     ----------
-    beam : BeamColumnSteelCSA19
+    beam : BeamColumnSteelCsa24
         The structural element to check..
     useX : TYPE, optional
         The x direction to check the column in. The default is True.
@@ -559,7 +559,7 @@ def checkColumnCeDirection(column:BeamColumnSteelCSA19, useX = True):
 
 
 
-def checkColumnFeTorsion(beam:BeamColumnSteelCSA19, x0:float=0, y0:float=0):
+def checkColumnFeTorsion(beam:BeamColumnSteelCsa24, x0:float=0, y0:float=0):
     """
     Calculates the torsion bucking stress 13.3.1.1
     
@@ -574,7 +574,7 @@ def checkColumnFeTorsion(beam:BeamColumnSteelCSA19, x0:float=0, y0:float=0):
     
     Parameters
     ----------
-    beam : BeamColumnSteelCSA19
+    beam : BeamColumnSteelCsa24
         The structural element to check..
     useX : TYPE, optional
         The x direction to check the column in. The default is True.
@@ -612,7 +612,7 @@ def checkColumnFeTorsion(beam:BeamColumnSteelCSA19, x0:float=0, y0:float=0):
 in each function.
 """
 
-def checkColumnFe(beam:BeamColumnSteelCSA19):
+def checkColumnFe(beam:BeamColumnSteelCsa24):
     """
     Calculates buckling compression stress per 13.3.1.1
     
@@ -625,7 +625,7 @@ def checkColumnFe(beam:BeamColumnSteelCSA19):
 
     Parameters
     ----------
-    beam : BeamColumnSteelCSA19
+    beam : BeamColumnSteelCsa24
         The steelbeamcolumn to check.
         
     Returns
@@ -654,7 +654,7 @@ def checkColumnFe(beam:BeamColumnSteelCSA19):
 
 
 
-def checkColumnCr(column:BeamColumnSteelCSA19, n:float = 1.34, 
+def checkColumnCr(column:BeamColumnSteelCsa24, n:float = 1.34, 
                   lam:float = None):
     """
     Calculates compression resistance per 13.3.1.1
@@ -671,7 +671,7 @@ def checkColumnCr(column:BeamColumnSteelCSA19, n:float = 1.34,
 
     Parameters
     ----------
-    beam : BeamColumnSteelCSA19
+    beam : BeamColumnSteelCsa24
         The steelbeamcolumn to check.
     n : float, optional
         DESCRIPTION. The default is 1.34.
@@ -711,7 +711,7 @@ def checkColumnCr(column:BeamColumnSteelCSA19, n:float = 1.34,
 
 class CombinedBendingChecker:
     
-    def __init__(self, beamColumn:BeamColumnSteelCSA19, Cf, Mfx, Mfy, n, 
+    def __init__(self, beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n, 
                  omega1, isBracedFrame = False):
         
         self.beamColumn
@@ -759,7 +759,7 @@ def getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
     
     return Cf/Cr + betax*U1x*Mfx/Mrx + beta*U1y*Mfy/Mry
 
-def _getCaseAResistance(beamColumn:BeamColumnSteelCSA19, Cf, n, lam = 0):
+def _getCaseAResistance(beamColumn:BeamColumnSteelCsa24, Cf, n, lam = 0):
     Cr = checkColumnCr(beamColumn, n, lam)
     Mrx = checkBeamMrSupported(beamColumn, True, Cf)
     Mry = checkBeamMrSupported(beamColumn, False, Cf)
@@ -768,7 +768,7 @@ def _getCaseAResistance(beamColumn:BeamColumnSteelCSA19, Cf, n, lam = 0):
 def getU1(omega:float, Cf:float, Ce:float):
     return omega / (1-Cf/Ce)
 
-def checkCombinedCaseA(beamColumn:BeamColumnSteelCSA19, Cf:float, Mfx:float, 
+def checkCombinedCaseA(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float, 
                        Mfy:float, n:float, omega1:float):
     """
     Cross Section strength
@@ -788,7 +788,7 @@ def checkCombinedCaseA(beamColumn:BeamColumnSteelCSA19, Cf:float, Mfx:float,
         
     return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=0.6)
 
-def checkCombinedCaseB(beamColumn:BeamColumnSteelCSA19, Cf:float, Mfx:float, 
+def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float, 
                        Mfy:float, n:float, omega1:float,
                        isBracedFrame:bool = False):
     """
@@ -842,7 +842,7 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCSA19, Cf:float, Mfx:float,
         
     return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
-def checkCombinedCaseC(beamColumn:BeamColumnSteelCSA19, Cf, Mfx, Mfy, n, 
+def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n, 
                        omega1, isBracedFrame = False):
     """
     Lateral Torsional Buckling
@@ -895,7 +895,7 @@ def checkCombinedCaseD():
        
        
 
-def checkBeamColumnCombined(beamColumn:BeamColumnSteelCSA19, Cf:float, 
+def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
                             Mfx:float, Mfy:float = 0, n:float = 1.24, 
                             omegax1:float = 1.0, isBracedFrame = False):
     
