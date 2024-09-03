@@ -7,7 +7,7 @@ import limitstates as ls
 import pytest
 from limitstates.objects.read import getSteelSections
 
-mat = s16.MaterialSteelCsa19(345)
+mat = s16.MaterialSteelCsa24(345)
 steelWSections = getSteelSections(mat, 'us', 'aisc_16_si', 'W')
 
 def test_Cr_W():

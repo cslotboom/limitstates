@@ -4,10 +4,10 @@ The material library contains material models
 
 from limitstates import MaterialElastic
 
-__all__ = ["MaterialSteelCsa19"]
+__all__ = ["MaterialSteelCsa24"]
 
 
-class MaterialSteelCsa19(MaterialElastic):
+class MaterialSteelCsa24(MaterialElastic):
 
     """
     An elastic material that has design strengths for glulam. Propreties are

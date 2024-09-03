@@ -9,10 +9,10 @@ L = 6
 Fy = 350
 sectionName = 'W310X118'
 
-# Define the material, in this case a code specific steel with Fy = 350
-mat = s16.MaterialSteelCsa19(Fy)
+# Define the material, in this case a code specific steel with Fy = 350 MPa
+mat = s16.MaterialSteelCsa24(Fy, sUnit='MPa')
 
-# Define a steel from a database, in this case csa's cisc 12 for w sections.
+# Define a steel section from a database, in this case a cisc 12 w section.
 steelSections   = ls.getSteelSections(mat, 'csa', 'cisc_12', 'w')
 section         = ls.getByName(steelSections, sectionName)
 
@@ -20,8 +20,8 @@ section         = ls.getByName(steelSections, sectionName)
 member = ls.initSimplySupportedMember(L, 'm')
 
 # Make a design object
-beam = s16.BeamColumnSteelCSA24(member, section)
+beam = s16.BeamColumnSteelCsa24(member, section)
 
-# Check capacity using CSA's s16 material standard.
+# Check capacity assuming it's laterally supported using CSA's s16 standard.
 Mr = s16.checkBeamMrSupported(beam) / 1000
 
