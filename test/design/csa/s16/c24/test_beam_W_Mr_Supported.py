@@ -16,7 +16,7 @@ def _initBeam(beamName):
     L = 6
     section = ls.getByName(steelSections, beamName)
     member = ls.initSimplySupportedMember(L, 'm')
-    beam = s16.BeamColumnSteelCSA19(member, section)
+    beam = s16.BeamColumnSteelCsa24(member, section)
     return beam
 
     

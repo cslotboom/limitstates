@@ -15,6 +15,10 @@ from .material import MaterialAbstract
 from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel, SectionSteelHSS
 from dataclasses import dataclass
 
+
+__all__ = ["getSteelSections", "getRectangularSections"]
+
+
 filepath = os.path.realpath(__file__)
 basedir = os.path.dirname(filepath)
 matBaseDir = os.path.join(os.path.dirname(basedir), 'design')
@@ -61,10 +65,6 @@ class SectionDBConfig:
     code:str
     sectionType:str
     fileName:str
-
-def listSectionDBs(code:str, sectionType:str, fileName:str):
-    pass
-
         
 def _loadSectionDBDict(config:SectionDBConfig) -> pd.DataFrame:
     """

@@ -21,8 +21,8 @@ def _initBeam(beamName, L):
     section = ls.getByName(steelSections, beamName)
     # member = ls.initSimplySupportedMember(L, 'mm')
     # props = s16.DesignPropsSteel24(Lx = L, kx = 1, Ly = L, ky = 1)
-    # beam = s16.BeamColumnSteelCSA19(member, section, props)
-    beam = s16.getBeamColumnSteelCSA19(L, section)
+    # beam = s16.BeamColumnSteelCsa24(member, section, props)
+    beam = s16.getBeamColumnSteelCsa24(L, section)
     return beam
 
 
