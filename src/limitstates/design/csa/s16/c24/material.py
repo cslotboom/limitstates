@@ -8,7 +8,6 @@ __all__ = ["MaterialSteelCsa24"]
 
 
 class MaterialSteelCsa24(MaterialElastic):
-
     """
     An elastic material that has design strengths for glulam. Propreties are
     read from a dictionary

@@ -40,12 +40,30 @@ class MaterialAbstract:
 
 class MaterialElastic(MaterialAbstract):
 
-    """
-    Represents a generic Isotropic elastic material. This material is code 
-    agnostic.
-    """
     def __init__(self, E:float, G:float=None, rho=None, 
                  sUnit:str='MPa', rhoUnit='kg/m3'):
+        """
+        Represents a generic Isotropic elastic material. This material is code 
+        agnostic.
+
+        Parameters
+        ----------
+        E : float
+            DESCRIPTION.
+        G : float, optional
+            DESCRIPTION. The default is None.
+        rho : TYPE, optional
+            DESCRIPTION. The default is None.
+        sUnit : str, optional
+            DESCRIPTION. The default is 'MPa'.
+        rhoUnit : TYPE, optional
+            DESCRIPTION. The default is 'kg/m3'.
+
+        Returns
+        -------
+        None.
+
+        """
         self._initUnits(sUnit, rhoUnit)
         self.E = E
         self.G = G

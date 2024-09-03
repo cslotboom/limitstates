@@ -52,7 +52,7 @@ class UnitConverter(ABC):
         """
         #!!! Consider returning 1 if the units are the same. Check the performance of this.
         
-        # Most of teh time we expect units to work.
+        # Most of the time we expect units to work, so we use try and except.
         try:
             return self.unitDict[inputUnit] / self.unitDict[outputUnit]
         # In the rare case they do not work, find out what went wrong.
