@@ -3,13 +3,12 @@ The material library contains material models
 """
 
 from limitstates import MaterialElastic
-from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, MaterialDBConfig, _sortCLTMatDict
+from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, DBConfig, _sortCLTMatDict
 
 __all__ = ["MaterialGlulamCSA19", "MaterialCLTLayerCSA19", 
            "loadGlulamMaterialDB", "loadGlulamMaterial", "loadCltMatDB"]
 
-_glulamConfig = MaterialDBConfig('csa', 'o86', 'c19', "glulam_csa.csv")
-_cltConfig = MaterialDBConfig('csa', 'o86', 'c19', "clt_csa.csv")
+_glulamConfig = DBConfig('csa', 'glulam', 'csa_o86_2019')
 
 class MaterialGlulamCSA19(MaterialElastic):
 
@@ -150,7 +149,7 @@ def loadGlulamMaterial(species:str, grade:str) -> MaterialGlulamCSA19:
     
     return matOut
 
-def loadCltMatDB(cltDBname:str = "clt_prg320_2019.csv") -> list[[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]:
+def loadCltMatDB(cltDBname:str = "prg320_2019") -> list[[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]:
     """
     Loads a set of CLT material from a database. For each material grade, two
     seperate CLT materials are loaded, one for the strong axis, and one for 
@@ -174,11 +173,12 @@ def loadCltMatDB(cltDBname:str = "clt_prg320_2019.csv") -> list[[MaterialCLTLaye
 
     """
     
-    _cltConfig = MaterialDBConfig('csa', 'o86', 'c19', cltDBname)
+    _cltConfig = DBConfig('csa', 'clt', cltDBname)
     
     # Load the material dictionary.
-    rawMatDict = _loadMaterialDBDict(_cltConfig)
-    sortedMatDict = _sortCLTMatDict(rawMatDict)
+    rawDB     = _loadMaterialDBDict(_cltConfig)
+    rawMatDict = rawDB.to_dict(orient='index')
+    sortedMatDict   = _sortCLTMatDict(rawMatDict)
     
     mats = []
     for cltGrade in sortedMatDict.keys():

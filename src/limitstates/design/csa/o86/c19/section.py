@@ -2,13 +2,13 @@
 Contains functions for managing sections specific to CSAo86-19
 """
 
-from limitstates.objects.read import _loadSectionRectangular, SectionDBConfig, _loadSectionsCLT
+from limitstates.objects.read import _loadSectionRectangular, DBConfig, _loadSectionsCLT
 from .material import MaterialGlulamCSA19, loadCltMatDB
 from limitstates import SectionRectangle, SectionCLT
 
 
 def loadGlulamSections(mat:MaterialGlulamCSA19, 
-                       db:str = 'csa-19.csv') -> list[SectionRectangle]:
+                       db:str = 'csa_o86_2019') -> list[SectionRectangle]:
     """
     Loads the glulam materials for a specific database. By default loads the
     glulam sections for columns in CSAo86-19.
@@ -24,10 +24,10 @@ def loadGlulamSections(mat:MaterialGlulamCSA19,
         A list of output sections.
 
     """
-    config = SectionDBConfig('csa', 'glulam', db)
+    config = DBConfig('csa', 'glulam', db)
     return _loadSectionRectangular(mat, config, lUnit = 'mm')
 
-def loadCltSections(db:str = 'clt_prg320_2019.csv', **sectionkwargs) -> list[SectionCLT]:
+def loadCltSections(db:str = 'prg320_2019', **sectionkwargs) -> list[SectionCLT]:
     """
     Loads all CLT sections in the given database.
 
@@ -47,6 +47,6 @@ def loadCltSections(db:str = 'clt_prg320_2019.csv', **sectionkwargs) -> list[Sec
     mats = loadCltMatDB(db)
     
     # Set up the config and load the raw dictionary.
-    config = SectionDBConfig('csa', 'clt', db)
+    config = DBConfig('csa', 'clt', db)
         
     return _loadSectionsCLT(mats, config, lUnit = 'mm', **sectionkwargs)

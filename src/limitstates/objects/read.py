@@ -7,13 +7,15 @@ Some section files are intended for user by users.
 
 """
 
+import os
+from dataclasses import dataclass
+from functools import wraps
 
 import pandas as pd
-import os
 from math import isnan
+
 from .material import MaterialAbstract
 from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel, SectionSteelHSS
-from dataclasses import dataclass
 
 
 __all__ = ["getSteelSections", "getRectangularSections"]
@@ -24,23 +26,78 @@ basedir = os.path.dirname(filepath)
 matBaseDir = os.path.join(os.path.dirname(basedir), 'design')
 
 @dataclass
-class MaterialDBConfig:
+class DBConfig:
+    """
+    A configuration file, used to load a file from a database.
+    Databases are stored in path code/dbTyp/dbname.csv, for example clt 
+    csa/clt/prg320_2019   
+    
+    Parameters
+    ----------
+    code : str
+        The building code to use.
+    dbType : str
+        The type of object to use for the database, i.e. glulam/clt/steel.
+    dbName : str
+        The name of the database to use. Typically this is in the form 
+        supplier_year_qualifier, e.g. prg320_2019, or supplier_year_qualifier,
+        e.g. 
+    """
     code:str
-    matStandard:str
-    year:str
-    fileName:str
+    dbType:str
+    dbName:str
 
-def _loadMaterialDBDict(config:MaterialDBConfig) -> pd.DataFrame:
-    """
-    Loads a file and returns the results as a dictionary
-    """
-    base    = os.path.join(matBaseDir, config.code, config.matStandard, config.year)
-    dbPath  = os.path.join(base, 'material', 'db', config.fileName)    
-    matdb   = pd.read_csv(dbPath)
-    matDict = matdb.to_dict(orient='index')
-    return matDict
 
-def _loadMaterialDB(config:MaterialDBConfig,
+
+def _setupLoader(objType):
+    
+    # @wraps()
+    def _loadDBDict(config:DBConfig) -> pd.DataFrame:
+        """
+        Loads a database using the input configuration file and returns a 
+        pd dataframe.
+        
+        Note that converting a pd dataframe to a dictionary is expensive, 
+        so any fitlering should be done before that operation.
+
+        Parameters
+        ----------
+        config : DBConfig
+            The database configuration object.
+
+        Returns
+        -------
+        pd.DataFrame
+            A padas dataframe with the database information in it.
+
+        """
+        
+        base    = os.path.join(basedir, objType, 'db')
+        dbPath  = os.path.join(base, config.code, config.dbType)    
+        fileID =  config.dbName + '.csv'
+        dbPath  = os.path.join(dbPath, fileID)    
+        return pd.read_csv(dbPath)
+    
+    return _loadDBDict
+
+
+# @setupLoader
+_loadMaterialDBDict = _setupLoader('material')
+_loadSectionDBDict  = _setupLoader('section')
+
+
+# def _loadMaterialDBDict(config:DBConfig) -> pd.DataFrame:
+#     """
+#     Loads a file and returns the results as a dictionary
+#     """
+    
+#     base    = os.path.join(basedir, 'material', 'db')
+#     dbPath  = os.path.join(base, config.code, config.dbType)    
+#     fileID =  config.dbName + '.csv'
+#     dbPath  = os.path.join(dbPath, fileID)    
+#     return pd.read_csv(dbPath)
+
+def _loadMaterialDB(config:DBConfig,
                     MatClass:MaterialAbstract,
                     sUnit:str = 'MPa', 
                     rhoUnit:str = 'kg/m3'):
@@ -48,8 +105,9 @@ def _loadMaterialDB(config:MaterialDBConfig,
     Loads a file and returns the results as a dictionary
     """
     
-    matDict = _loadMaterialDBDict(config)   
-    
+    matdb = _loadMaterialDBDict(config)   
+    matDict = matdb.to_dict(orient='index')
+
     materials = []
     for key in matDict.keys():
         materials.append(MatClass(matDict[key], sUnit=sUnit, rhoUnit = rhoUnit))
@@ -59,33 +117,29 @@ def _loadMaterialDB(config:MaterialDBConfig,
 # =============================================================================
 # Section read files
 # =============================================================================
-
-@dataclass
-class SectionDBConfig:
-    code:str
-    sectionType:str
-    fileName:str
         
-def _loadSectionDBDict(config:SectionDBConfig) -> pd.DataFrame:
-    """
-    Loads a file and returns the results as a dictionary.
-    Note that converting to a dictionary is expensive, and we want to do 
-    any fitlering before that operation.
-    """
-    base    = os.path.join(basedir, 'section', 'db')
-    dbPath  = os.path.join(base, config.code, config.sectionType, config.fileName)    
-    return pd.read_csv(dbPath)
+# def _loadSectionDBDict(config:DBConfig) -> pd.DataFrame:
+#     """
+#     Loads a file and returns the results as a dictionary.
+#     Note that converting to a dictionary is expensive, and we want to do 
+#     any fitlering before that operation.
+#     """
+#     base    = os.path.join(basedir, 'section', 'db')
+#     dbPath  = os.path.join(base, config.code, config.dbType)    
+#     fileID =  config.dbName + '.csv'
+#     dbPath  = os.path.join(dbPath, fileID)
+#     return pd.read_csv(dbPath)
     
  
 def _loadSectionDB(mat:MaterialAbstract, 
-                   config:SectionDBConfig,
+                   config:DBConfig,
                    sectionClass:SectionAbstract,
                    lUnit='mm') -> pd.DataFrame:
     """
     Loads a file and returns the results as a dictionary
     """
 
-    sectiondb = _loadSectionDBDict(config)
+    sectiondb   = _loadSectionDBDict(config)
     sectionDict = sectiondb.to_dict(orient='index')
     
     sections = []
@@ -93,7 +147,7 @@ def _loadSectionDB(mat:MaterialAbstract,
         sections.append(sectionClass(mat, sectionDict[key]), lUnit = lUnit)
     return sections
 
-def _loadSectionRectangular(mat:MaterialAbstract, config:SectionDBConfig, lUnit) -> list[SectionRectangle]:
+def _loadSectionRectangular(mat:MaterialAbstract, config:DBConfig, lUnit) -> list[SectionRectangle]:
 
 
     sectiondb = _loadSectionDBDict(config)
@@ -142,7 +196,7 @@ def getRectangularSections(mat:MaterialAbstract,
 
     lUnit = _getCodeUnits(code)
         
-    config = SectionDBConfig(code, sectionType, fileName)
+    config = DBConfig(code, sectionType, fileName)
     
     return _loadSectionRectangular(mat, config, lUnit)
 
@@ -174,11 +228,11 @@ def getSteelSections(mat:MaterialAbstract,
     
     # !!! do we actually need a different section for
     if steelShapeType in list(sectionDict.keys()):
-        dbName += '_' + steelShapeType.lower() + '.csv'
+        dbName += '_' + steelShapeType.lower()
     else:
         raise Exception(f'Shape {steelShapeType} is not currently supported.')
     
-    config      = SectionDBConfig(code, 'steel', dbName)
+    config      = DBConfig(code, 'steel', dbName)
     rawDbData   = _loadSectionDBDict(config)
 
     filteredDbData = getSectionTypes(rawDbData, steelShapeType)
@@ -337,7 +391,7 @@ def _getCLTSectionLayers(sectionDict:dict, mats:list,
 
 
 def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]], 
-                    config:SectionDBConfig, 
+                    config:DBConfig, 
                     lUnit = 'mm', **sectionkwargs) -> list[SectionCLT]:
     """
     An internal function that can be used to load a set of CLT sections given
@@ -347,7 +401,7 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
     ----------
     mats : list[[MaterialAbstract, MaterialAbstract]]
         The materials to assign to the strong and weak axis respectively.
-    config : SectionDBConfig
+    config : DBConfig
         A config object that contains the database file to read from.
     lUnit : string, optional
         The units to use in the section. The default is 'mm'.
