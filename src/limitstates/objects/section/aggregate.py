@@ -39,9 +39,9 @@ class CltLayerGroup:
     dnet:float
     
     def setYbar(self):
+        pass
         
         
-    def set
         
     
 
