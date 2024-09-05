@@ -93,7 +93,29 @@ def _checkType(sectionType:str):
 # 
 # =============================================================================
 
-def classifySection(section, useX=True, Cf = 0):
+def classifySection(section:SectionSteel, useX=True, Cf = 0):
+    """
+    Used to classify a section, returning the worst case section class for 
+    the flange and web. Currently only applies 
+    
+    Class 4 sections are not supported.
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of.
+    useX : bool, optional
+        A flag that specifies if the x axis (strong axis) should be used. 
+        The default is True.
+    Cf : float, optional
+        The force acting on the section in N. The default is 0.
+
+    Returns
+    -------
+    section class : int
+        The worst case between the section class and web class.
+
+    """
 
     _checkType(section)
 
