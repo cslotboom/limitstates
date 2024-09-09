@@ -10,3 +10,11 @@ For example, a csao86 CLT section will store it's information.
 
 
 from abc import ABC
+
+
+
+class SectionConcrete:
+    """
+    This class is currently incomplete.
+    """
+    pass

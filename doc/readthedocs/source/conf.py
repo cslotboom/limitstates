@@ -12,17 +12,14 @@
 #
 import os
 import sys
-#sys.path.insert(0, os.path.abspath('..'))
-#sys.path.insert(0, os.path.abspath('../source'))
-#sys.path.insert(0, os.path.abspath("."))
-#sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath('../../../src'))
 
 
 import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'limitstates'
-copyright = '2020, CSlotboom'
+copyright = '2024, CSlotboom'
 author = 'CSlotboom'
 
 # The full version, including alpha/beta/rc tags

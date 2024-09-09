@@ -16,12 +16,8 @@ mat = s16.MaterialSteelCsa24(Fy, sUnit='MPa')
 steelSections   = ls.getSteelSections(mat, 'csa', 'cisc_12', 'w')
 section         = ls.getByName(steelSections, sectionName)
 
-# make a member, in this case a simplely supported beam 6m long beam.
-member = ls.initSimplySupportedMember(L, 'm')
+# Return the current unit, in this case mm
+print(section.lUnit)
 
-# Make a element, which the design library can act on.
-beam = s16.BeamColumnSteelCsa24(member, section)
-
-# Check capacity assuming it's laterally supported using CSA's s16 standard.
-Mr = s16.checkBeamMrSupported(beam) / 1000
+lfactor = section.lConvert('in')
 

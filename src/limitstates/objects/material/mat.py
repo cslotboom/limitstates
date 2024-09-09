@@ -3,22 +3,29 @@ The material library contains material models
 """
 
 from ... units import ConverterStress, ConverterDensity
-from functools import partial
 
 __all__ = ["MaterialAbstract", "MaterialElastic"]
 
 class MaterialAbstract:
-    
     """
-    The common material object. Contains interfaces relevant for all design
+    A base class common to all material objects. It Contains interfaces 
+    relevant for all design, including unit initiation and converters.
     objects.
     """
     E:float
     
     def _initUnits(self, sUnit:str='MPa', rhoUnit='kg/m3'):
         """
-        Inititiates the unite of the material.
+        Inititiates the units of the material.
+        Parameters
+        ----------
+        sUnit : str, optional
+            The stress units to use for the material. The default is 'MPa'.
+        rhoUnit : str, optional
+            The density units to use for the material. The default is 'kg/m3'.
+
         """
+
         self.sUnit      = sUnit
         self.sConverter = ConverterStress()
         self.rhoUnit  = rhoUnit
@@ -27,52 +34,64 @@ class MaterialAbstract:
     def sConvert(self, outputUnit:str):
         """
         Get the conversion factor from the current unit to the output unit
-        for stress units
+        in stress units.
+        
+        Parameters
+        ----------
+        outputUnit : str
+            The desired output unit for stress.
+
+        Returns
+        -------
+        float
+            The conversion factor between the base unit and the output unit.
+
         """
         return self.sConverter.getConversionFactor(self.sUnit, outputUnit)
         
     def rhoConvert(self, outputUnit:str):
         """
         Get the conversion factor from the current unit to the output unit
-        for stress units
+        for density.
+        
+        Parameters
+        ----------
+        outputUnit : str
+            The desired output unit for stress.
+
+        Returns
+        -------
+        float
+            The conversion factor between the base unit and the output unit.
+
         """        
         return self.rhoConverter.getConversionFactor(self.rhoUnit, outputUnit)
 
 class MaterialElastic(MaterialAbstract):
+    """
+    The elastic material represents a generic Isotropic elastic material. 
+    This material is code agnostic and contains no strenght information.
+
+    Parameters
+    ----------
+    E : float
+        The elastic modulus for the sections, in units of sUnit.
+    G : float, optional
+        The shear modulus for the sections, in units of sUnit.
+    rho : float, optional
+        The density of the material in units of mass per unit of volume. 
+        The default is None.
+    sUnit : str, optional
+        The stress units to use for the material. The default is 'MPa'.
+    rhoUnit : str, optional
+        The density units to use for the material. The default is 'kg/m3'.
+
+    """
 
     def __init__(self, E:float, G:float=None, rho=None, 
                  sUnit:str='MPa', rhoUnit='kg/m3'):
-        """
-        Represents a generic Isotropic elastic material. This material is code 
-        agnostic.
 
-        Parameters
-        ----------
-        E : float
-            DESCRIPTION.
-        G : float, optional
-            DESCRIPTION. The default is None.
-        rho : TYPE, optional
-            DESCRIPTION. The default is None.
-        sUnit : str, optional
-            DESCRIPTION. The default is 'MPa'.
-        rhoUnit : TYPE, optional
-            DESCRIPTION. The default is 'kg/m3'.
-
-        Returns
-        -------
-        None.
-
-        """
         self._initUnits(sUnit, rhoUnit)
         self.E = E
         self.G = G
         self.rho = rho
-
-class MaterialElasticIso(MaterialElastic):
-    """
-    Represents a generic Isotropic elastic material. This material is code 
-    agnostic.
-    """
-    pass
-

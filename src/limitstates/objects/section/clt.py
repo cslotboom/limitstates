@@ -16,6 +16,9 @@ from typing import Protocol
 
 
 class AbstractMaterialTimber(Protocol):
+    """
+    A protocol class that defines all the propreties needed for a CLT section.
+    """
     fb: float
     fb90: float
     fv: float
@@ -26,16 +29,29 @@ class AbstractMaterialTimber(Protocol):
     G90: float
 
     def getE(self, isStrong:bool):
+        """
+        A method used to get E in the strong or weak direction.
+        """
         pass
 
     def getG(self, isStrong:bool):
+        """
+        A method used to get G in the strong or weak direction.
+        """
         pass
     
     def sConvert(self):
+        """
+        A method used to get the conversion factor between stress units.
+        """
         pass
 
 @dataclass
 class LayerClt:
+    """
+    Represents a single layer of CLT. The Section is made up of an aggregate
+    of layers, defined at differnt heights.
+    """
     t:float
     mat:AbstractMaterialTimber
     ymidfloat = None
@@ -72,8 +88,9 @@ class LayerClt:
 
         Parameters
         ----------
-        globalOrientation : bool
-            the angle of the global orientation in rad.
+        checkInStrong : bool
+            A flag that specifies if we are lookin at the layers strong or weak
+            axis.
 
         """
         if self._layerMatchesDirection(checkInStrong):
@@ -87,9 +104,9 @@ class LayerClt:
 
         Parameters
         ----------
-        globalOrientation : TYPE
-            the angle of the global orientation in rad.
-
+        checkInStrong : bool
+            A flag that specifies if we are lookin at the layers strong or weak
+            axis.
         """
         if self._layerMatchesDirection(checkInStrong):
             return self.mat.G
@@ -100,27 +117,28 @@ class LayerClt:
         return checkInStrong == self.parallelToStrong
 
 class LayerGroupClt:
+    """
+    Represents a group of CLT layers, and acts on them to find net section
+    propreties.
+    The CLT layers are numberd from top layer to bottom layer.
+
+    Parameters
+    ----------
+    layers : list[LayerClt]
+        A list of the input layers to m.
+
+    Returns
+    -------
+    None.
+
+    """
     layers:list[LayerClt]
     ybar:float
     dnet:float
     grade:str
        
     def __init__(self, layers:list[LayerClt]):
-        """
-        Represents a group of CLT layers, and acts on them to find net section
-        propreties.
-        The CLT layers are numberd from top layer to bottom layer.
 
-        Parameters
-        ----------
-        layers : list[LayerClt]
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
-        """
         self.layers:list[LayerClt] = layers
         
         self._setLayerBoundaries()
@@ -485,6 +503,18 @@ class SectionCLT(SectionLayered):
         """
         Get the conversion factor from the current unit to the output unit
         for length units
+        
+        Parameters
+        ----------
+        outputUnit : str
+            The unit to get the conversion factor to.
+
+        Returns
+        -------
+        float
+            The conversion factor between the current length unit and the
+            target output length unit.
+
         """
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
     
@@ -505,24 +535,87 @@ class SectionCLT(SectionLayered):
     
     def getEIs(self, sunit='Pa', lunit='m'):
         """
-        Gets EI in units of sunit * lunit ^ 4
+        Returns EI about the sections strong axis. 
+        Returns in units of sunit x lunit^4  
+        
+        Parameters
+        ----------
+        lunit : float, optional
+            The length units to output Ix in. The default is 'm'.
+        sunit : float, optional
+            Stress units to output E in. The default is 'Pa'.
+
+        Returns
+        -------
+        float.
+            The EIs for the section.
+
         """
         lconvertWidth = self.w*self.lConvert(lunit)
         return self.sLayers.getEI(True, sunit, lunit)*lconvertWidth
     
     def getEIw(self, sunit='Pa', lunit='m'):
         """
-        Gets EI in units of sunit * lunit ^ 4
+        Returns EI about the sections weak axis. 
+        Returns in units of sunit x lunit^4  
+        
+        Parameters
+        ----------
+        lunit : float, optional
+            The length units to output Ix in. The default is 'm'.
+        sunit : float, optional
+            Stress units to output E in. The default is 'Pa'.
+
+        Returns
+        -------
+        float.
+            The EIw for the section.
+
         """
         lconvertWidth = self.w*self.lConvert(lunit)
         return self.wLayers.getEI(False, sunit, lunit)*lconvertWidth
     
     def getGAs(self, sunit='Pa', lunit='m'):
+        """
+        Returns GA about the sections strong axis. 
+        Returns in units of sunit x lunit^2  
+        
+        Parameters
+        ----------
+        lunit : float, optional
+            The length units to output As in. The default is 'm'.
+        sunit : float, optional
+            Stress units to output E in. The default is 'Pa'.
+
+        Returns
+        -------
+        float.
+            The GAs for the section.
+
+        """
+        
         lconvertWidth = self.w*self.lConvert(lunit)
         Nlayer = self.NlayerTotal
         return self.sLayers.getGA(True, Nlayer, lunit, sunit)*lconvertWidth
     
     def getGAw(self, sunit='Pa', lunit='m'):
+        """
+        Returns GA about the sections weak axis. 
+        Returns in units of sunit x lunit^2  
+        
+        Parameters
+        ----------
+        lunit : float, optional
+            The length units to output As in. The default is 'm'.
+        sunit : float, optional
+            Stress units to output E in. The default is 'Pa'.
+
+        Returns
+        -------
+        float.
+            The GAw for the section.
+
+        """
         lconvertWidth = self.w*self.lConvert(lunit)
         Nlayer = self.NlayerTotal
         return self.sLayers.getGA(False, Nlayer, lunit, sunit)*lconvertWidth

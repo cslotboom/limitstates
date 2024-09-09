@@ -15,6 +15,25 @@ __all__ = ['Node', 'getLengthNodes',
 
 @dataclass(slots=True)
 class Node:
+    """
+    Represents a node in 2D or 3D space.
+    Nodes in 3D are currently not supported.
+    
+    Nodes have degrees of freedom [dx, dy, rz], or [dx, dy, dz, rx, ry, rz]
+    where di is a translation, and ri is a rotation.
+    
+    Parameters
+    ----------
+    p1 : list or numpy ndarray
+        A list or array of coordinate values in the form [x,y] or [x,y,z].
+    units : str
+        The units the node is stored in.
+    label : str
+        A label for the node.
+    support : Support
+        A support object, either one that is custom defined or defined using
+        SupportTypes2D.
+    """
     p1:np.ndarray | list
     units:str = 'm'
     label:str = None
@@ -25,18 +44,30 @@ class Node:
             self.p1 = np.array(self.p1)
             
     def getx(self):
+        """
+        Returns the x component of a nodes position.
+        """
         return self.p1[0]
     
     def gety(self):
+        """
+        Returns the y component of a nodes position.
+        """
         return self.p1[1]
     
     def getz(self):
+        """
+        Returns the z component of a nodes position, if it exists.
+        """
         if len(self.p1) <=2:
             raise Exception('Node is 2D, no z value exists.')
         else:
             return self.p1[2]
         
     def setSupportType(self, newType:Support):
+        """
+        Sets a new support condition for the node.
+        """
         self.support = newType
 
 def _checkUnitsMatch(obj1, obj2):
@@ -48,48 +79,99 @@ def _checkUnitsMatch(obj1, obj2):
 
 def getLengthNodes(n1:Node, n2:Node):
     """
-    Gets the length between two input points
-    Assumes that both points have the same units.
+    Gets the length between two input nodes.
+    Assumes that both points have the same units and dimensionality.
+
+    Parameters
+    ----------
+    n1 : Node
+        The first node.
+    n2 : Node
+        The second node.
+
+    Returns
+    -------
+    float
+        The length between two nodes.
 
     """
+
     _checkUnitsMatch(n1, n2)
     return np.sum((n1.p1 - n2.p1)**2)**0.5
 
 class Curve:
+    """
+    An arbitary curve connecting two points.
+    Currently only lines are used.
+    """
     pass
 
 @dataclass(slots=True)
 class Line(Curve):
+    """
+    A represents straight line in space between two nodes.
+    
+    Parameters
+    ----------
+    n1 : Node
+        The first Node.
+    n2 : Node
+        The Second Node.
+    units : str
+        The length units the line uses. Will match the node units 
+    label : str
+        A label for the line.
+    """
+
     n1:Node
     n2:Node
-    L:float = None
     units:str = 'm'
     label:str = None
 
-def getLineFromNodes(n1:Node, n2:Node) -> Line:
+    def __post_init__(self):
+        self.L = getLengthNodes(self.n1, self.n2)
+
+def getLineFromNodes(n1:Node, n2:Node, label = None) -> Line:
     """
-    Returns a new line from two input nodes.
+    Returns a new line that connects two input nodes.
+
+    Parameters
+    ----------
+    n1 : Node
+        The first Node.
+    n2 : Node
+        The Second Node.
+    label : str
+        A label for the line.
 
     Returns
     -------
-    None.
+    Line
+        The output line.
 
     """
+
     _checkUnitsMatch(n1, n2)
-    line = Line(n1,n2)
-    line.L = getLengthNodes(n1, n2)
-    return line
+    return Line(n1, n2, n1.units, label)
    
 def getLineFromLength(L:float, units = 'm') -> Line:
     """
-    Returns a new line.
-    By default uses the x axis for the line.
+    Makes a new line of length L that starts at the origin. Two nodes will be
+    defined, one at the origin, and one at poition L in the x axis.
+    
+    Parameters
+    ----------
+    L : float
+        The length of the line to be defined.
+    units : TYPE, optional
+        The units to use for the line. The default is 'm'.
 
     Returns
     -------
-    None.
+    Line
+        The output line of length "L".
 
-    """  
+    """ 
     n1 = Node(np.array([0.,0.,0.]),units)
     n2 = Node(np.array([L, 0.,0.]),units)
     
@@ -108,15 +190,30 @@ class Member:
     
     They also contain data about the analysis, such as bending moment diagrams.
     
+        
+    Parameters
+    ----------
+    nodes : list[Node]
+        The nodes of the member.
+    curves : list[Line]
+        The curves connecting each node.
+    units : str, optional
+        The units used in the member. Should match the Node and Line units. 
+        The default is 'm'.
+    label : str
+        A label for the Member.
+    loadData : str
+        A dictionary containing loading informationa about the Member.
+    analysisData : str
+        A dictionary containing output information about analysis of the 
+        Member, e.g. the bending moment diagram, the shear force diagram, etc.
     """
     nodes:list[Node] = None
-    curves:list[Curve] = None
+    curves:list[Line] = None
     lUnit:str = 'm'
     label:str = None
     loadData:dict = None
     analysisData:dict = None
-    L:float = None
-    lConverter:ConverterLength = None
 
     
     def __post_init__(self):
@@ -137,21 +234,22 @@ class Member:
         """
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
 
-def initSimplySupportedMember(L:float, lUnit:str):
+def initSimplySupportedMember(L:float, lUnit:str) -> Member:
     """
-    Initialized a simply supported member.
+    A function that can intialize a simply supported member of length L between
+    two points.
 
     Parameters
     ----------
     L : float
         The member length.
     lUnit : str
-        The length units.
+        The units to be used by the member and line.
 
     Returns
     -------
     Member
-        A simply supported member.
+        The output member.
 
     """
     

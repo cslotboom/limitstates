@@ -15,6 +15,10 @@ class Unit:
     factor:float
 
 class UnitConverter(ABC):
+    """
+    The base unit converter class, contains interfaces all unit converter
+    classes use.
+    """
     unitDict = {}
     
     def _unsupportedException(self, unit):
@@ -30,7 +34,26 @@ class UnitConverter(ABC):
     def convert(self, inputUnit:str, outputUnit:str, value:float):
         """
         Converts the value of one unit to another unit.
+
+
+        Parameters
+        ----------
+        inputUnit : str
+            A string representing the input unit. Must be one of the units in 
+            the the unit converter 'unitDict' attribute.
+        outputUnit : str
+            A string representing the output unit. Must be one of the units in 
+            the the unit converter 'unitDict' attribute.
+        value : float
+            The current value to be converted.
+
+        Returns
+        -------
+        float
+            The "value" converted from the input unit to the output unit.
+
         """
+
         return value * (self.getConversionFactor(inputUnit, outputUnit))
         
     def getConversionFactor(self, inputUnit:str, outputUnit:str):
@@ -40,9 +63,11 @@ class UnitConverter(ABC):
         Parameters
         ----------
         inputUnit : str
-            The inuput unit to convert from.
+            A string representing the input unit. Must be one of the units in 
+            the the unit converter 'unitDict' attribute.
         outputUnit : str
-            The output unit to convert to.
+            A string representing the output unit. Must be one of the units in 
+            the the unit converter 'unitDict' attribute.
 
         Returns
         -------
@@ -92,6 +117,9 @@ class ConverterLengthImperialinch(UnitConverter):
     unitDict = {'m':39.37, 'mm':0.03937, 'in':1, 'ft':12}
     
 class ConverterForce(UnitConverter):
+    """
+    A converter for length units. Supports: 'N', 'kN', 'lbf'.
+    """
     type = 'force'
     unitDict = {'N':1, 'kN':1000, 'lbf':4.44822162}
         
