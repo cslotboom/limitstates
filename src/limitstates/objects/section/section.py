@@ -144,8 +144,10 @@ class SectionAbstract(ABC):
     
 class SectionMonolithic(SectionAbstract):
     """
-    Defines a generic monolitic section. Monolithic section have one single
-    material that defines their cross section.
+    The Monolithic section should not be used directly, it defines interfaces
+    that all sections that use only one uniform material over their
+    whole cross section will have.
+
     """
     
     def __len__(self):
@@ -265,8 +267,9 @@ class SectionMonolithic(SectionAbstract):
     
 class SectionGeneric(SectionMonolithic):
     """
-    The user section is unique in that it has no base geometry.
-    All section propreties are set by the user, not infered from geometry!
+    The generic section is unique in that it has no base geometry.
+    Instead, all section propreties are set by the user, instead of infered 
+    from geometry!
 
     Parameters
     ----------
@@ -310,11 +313,9 @@ class SectionGeneric(SectionMonolithic):
         
 class SectionRectangle(SectionMonolithic):
     """
-    A rectangular monolitihic section.
+    A defines a rectangular monolitihic section. Section propreties are defined
+    using geometry and mechanics of materials.
     
-    The section can be defined by either, or by inputing a dictionary
-    for the section.
-
     Parameters
     ----------
     mat : MaterialElastic
