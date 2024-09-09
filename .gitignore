@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Sphinx
+doc/build/readthedocs
+
 # branding
 *.ai
 
