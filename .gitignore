@@ -5,6 +5,8 @@ __pycache__/
 
 # Sphinx
 doc/readthedocs/build/
+doc/readthedocs/output/
+doc/readthedocs/old/
 
 # branding
 *.ai
