@@ -9,11 +9,14 @@ For example, a csao86 CLT section will store it's information.
 """
 
 from abc import ABC, abstractmethod
+from enum import Enum
+
 from .. material import MaterialAbstract, MaterialElastic
 from ... units import ConverterLength
+# from .plot import GeomRectangle, SectionPlotter, plotDisplayParameters
 
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
-           'SectionRectangle', 'SectionSteel', 'SectionSteelHSS']
+           'SectionRectangle', 'SectionSteel']
 
 #Rename this to SectionArchetype?
 class SectionAbstract(ABC):
@@ -328,6 +331,7 @@ class SectionRectangle(SectionMonolithic):
         The length units. The default is 'mm'.
 
     """
+    
     def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm'):
         self._initUnits(lunits)
         self.mat = mat
@@ -335,6 +339,7 @@ class SectionRectangle(SectionMonolithic):
         self.d = d
         self.b = b
         self._setupSectionProps()
+        self.plotGeom = None
     
     def _setupSectionProps(self):
         b = self.b
@@ -347,7 +352,6 @@ class SectionRectangle(SectionMonolithic):
         self.Iy  = d*b**3 / 12
         self.Sx  = b*d**2 / 6
         self.Sy  = (b**2)*d / 6
-        
         
         # Torsion modulus
         a = max(b, d)
@@ -380,12 +384,17 @@ class SectionRectangle(SectionMonolithic):
     
     def __repr__(self):
         return f"<limitstates {self.name} Section.>"
+           
+
 
 class SectionSteel(SectionMonolithic):
     """
     A class that represents the geometry for a steel section from one of the
     standard shapes. This include I beams (W sections), hollow sections (hss),
     etc.
+    
+    All steel sections will have a "type attribute, which will be either "w"
+    for W sections, 'hss' for hss sections, or 'hss4' for round hss sections.
     
     Steel sections are defined by importing from a database. See section 
     databases for all availible databases.
@@ -407,8 +416,9 @@ class SectionSteel(SectionMonolithic):
         # add all items from the input section dictionary
         self.__dict__.update(sectionDict)
         self._initUnits(lunits)
-        
         self.mat = mat
+        
+        self.typeEnum = self._classifySectionType()
     
     @property
     def name(self):
@@ -499,28 +509,50 @@ class SectionSteel(SectionMonolithic):
         if useX:
             return self.Ix*lfactor**4
         else:
-            return self.Iy*lfactor**4    
-    
-    
-    
-class SectionSteelHSS(SectionMonolithic):
-    """A class that represents geometry for a steel HSS section."""
-    
-    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
+            return self.Iy*lfactor**4        
 
-        # add all items from the input section dictionary
-        self.__dict__.update(sectionDict)
-        self._initUnits(lunits)
+    def _classifySectionType(self):
+        if 'w' == self.type.lower():
+            return SteelSectionTypes.w
+        elif 'hss' == self.type.lower():
+            return SteelSectionTypes.hss
+        else:
+            return SteelSectionTypes.other
+
+
+class SteelSectionTypes(Enum):
+    """
+    Represents the possible types of steel sections.
+    w for I beams, hss for square and rectangular hss sections, hssr 
+    and other for any other type of section not listed.
+    
+    """
+    w = 1
+    hss = 2
+    hssr = 3
+    other = 4
+    
+
+
+    
+# class SectionSteelHSS(SectionMonolithic):
+#     """A class that represents geometry for a steel HSS section."""
+    
+#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
+
+#         # add all items from the input section dictionary
+#         self.__dict__.update(sectionDict)
+#         self._initUnits(lunits)
         
-        self.mat = mat
+#         self.mat = mat
     
     
-    @property
-    def name(self):
-        return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
+#     @property
+#     def name(self):
+#         return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
        
-    def __repr__(self):
-        return f'<limitstates {self.name} Section>'
+#     def __repr__(self):
+#         return f'<limitstates {self.name} Section>'
     
     
     

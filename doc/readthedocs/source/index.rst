@@ -36,8 +36,10 @@ A simple script is shown below:
    :maxdepth: 3
    :numbered:
    
+   rst/overview
    rst/units
    rst/objects
+   rst/design
 
 
 

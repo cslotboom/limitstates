@@ -38,6 +38,7 @@ Some elements, such as CLT, may have design geometry that differs from their ana
 #. :doc:`objects-section`
 #. :doc:`objects-geometry`
 #. :doc:`objects-element`
+#. :doc:`objects-helpers`
 
 
 .. toctree::
@@ -48,5 +49,6 @@ Some elements, such as CLT, may have design geometry that differs from their ana
    objects-section.rst
    objects-geometry.rst
    objects-element.rst
+   objects-helpers.rst
 
 

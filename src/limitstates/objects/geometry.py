@@ -214,7 +214,8 @@ class Member:
     label:str = None
     loadData:dict = None
     analysisData:dict = None
-
+    lConverter:ConverterLength = None
+    L:float = None
     
     def __post_init__(self):
         self._initUnits(self.lUnit)

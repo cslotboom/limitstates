@@ -12,6 +12,7 @@ Sections define the shape of a structural cross section. Sections can be uniform
 #. :doc:`objects-section-SectionSteel`
 #. :doc:`objects-section-clt`
 #. :doc:`objects-section-SectionConcrete`
+#. :doc:`objects-section-db`
 
 .. toctree::
    :maxdepth: 1
@@ -24,3 +25,4 @@ Sections define the shape of a structural cross section. Sections can be uniform
    objects-section-SectionSteel.rst
    objects-section-clt.rst
    objects-section-SectionConcrete.rst
+   objects-section-db.rst

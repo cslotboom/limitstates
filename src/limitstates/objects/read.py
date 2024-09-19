@@ -9,13 +9,12 @@ Some section files are intended for user by users.
 
 import os
 from dataclasses import dataclass
-from functools import wraps
 
 import pandas as pd
 from math import isnan
 
 from .material import MaterialAbstract
-from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel, SectionSteelHSS
+from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel
 
 
 __all__ = ["getSteelSections", "getRectangularSections"]
@@ -46,8 +45,6 @@ class DBConfig:
     code:str
     dbType:str
     dbName:str
-
-
 
 def _setupLoader(objType):
     
@@ -169,11 +166,12 @@ def _getCodeUnits(code):
 
 def getRectangularSections(mat:MaterialAbstract, 
                            code:str, 
-                           sectionType:str, 
-                           fileName:str):
+                           dbType:str, 
+                           fileName:str) -> list[SectionRectangle]:
     """
     Creates a set of rectangular sections from a input database.
-    The units the database are in will depend on it's location in
+    The units the database are decided based on what code it's in, with 
+    canadian given units of mm, and american codes given units of in.
 
     Parameters
     ----------
@@ -181,12 +179,10 @@ def getRectangularSections(mat:MaterialAbstract,
         The material to be applied to the sections.
     code : str
         The code to use, can be one of 'csa' or 'us'.
-    sectionType : str
-        The type of section to use. 
+    dbType : str
+        The type of section to use, i.e. W, hss. 
     fileName : str
         The specific database file to read from.
-    lunits : str, optional
-        The units the section should be read in. The default is 'mm'.
 
     Returns
     -------
@@ -196,7 +192,7 @@ def getRectangularSections(mat:MaterialAbstract,
 
     lUnit = _getCodeUnits(code)
         
-    config = DBConfig(code, sectionType, fileName)
+    config = DBConfig(code, dbType, fileName)
     
     return _loadSectionRectangular(mat, config, lUnit)
 
@@ -211,7 +207,7 @@ def getSectionTypes(sectionRawDict, section_type: str) -> pd.DataFrame:
 
 
 #TODO Evaluate if we can make this a generic steel section class.
-sectionDict = {'w':SectionSteel, 'hss':SectionSteelHSS}
+sectionDict = {'w':SectionSteel, 'hss':SectionSteel}
 
 
 def getSteelSections(mat:MaterialAbstract, 

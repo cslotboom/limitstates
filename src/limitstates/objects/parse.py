@@ -10,7 +10,7 @@ __all__ = ["sortByAttr", "filterByAttrRange", "filterByName", "getByName"]
 
 def sortByAttr(objectList:list, attr:str, reverse:bool = False):
     """
-    Sort a list of sections by input attribute from smallest to largest.
+    Sort a list of objects by input attribute from smallest to largest.
 
     Parameters
     ----------
@@ -32,7 +32,7 @@ def sortByAttr(objectList:list, attr:str, reverse:bool = False):
 
 
 def filterByAttrRange(objectList:list, attr:str, 
-                         lowerLim =None, upperLim = None):
+                      lowerLim =None, upperLim = None):
     """
     Filter a list of objects using an upper and lower limit.
 
@@ -64,7 +64,9 @@ def filterByAttrRange(objectList:list, attr:str,
     
 def filterByAttrVal(objectList:list, attr:str, filterVal:str):
     """
-    Filter a list of sections using an upper and lower limit.
+    Returns a list of objects if the attribute "attr" contains the filter value
+    "filterVal". For example, steel sections can be filtered by name to find W
+    sections with attr = name and filterVal = 'W'
 
     Parameters
     ----------
@@ -73,7 +75,7 @@ def filterByAttrVal(objectList:list, attr:str, filterVal:str):
     attr : str
         The attribute to sort by.
     filterVal : str, optional
-        The value to short by 
+        The value to be included in the attribute of each object attr.
         
     Returns
     -------
@@ -86,7 +88,7 @@ def filterByAttrVal(objectList:list, attr:str, filterVal:str):
 
 def filterByName(objectList:list, filterVal:str):
     """
-    Filter a list of sections using an upper and lower limit.
+    Finds all sections that hve the string of filterVal in it's name.
 
     Parameters
     ----------
@@ -95,7 +97,6 @@ def filterByName(objectList:list, filterVal:str):
     filterVal : str
         The string to check if is in any names.
 
-        
     Returns
     -------
     list
@@ -108,7 +109,8 @@ def filterByName(objectList:list, filterVal:str):
 
 def getByName(objectList:list, filterVal:str):
     """
-    Filter a list of sections using an upper and lower limit.
+    Returns the first object that has the string of filterVal in it's name.
+    Results are not case sensetive.
 
     Parameters
     ----------
@@ -127,5 +129,4 @@ def getByName(objectList:list, filterVal:str):
     for ii in range(len(objectList)):
         if filterVal in objectList[ii].name.lower():
             return objectList[ii]
-    # raise Exception('No name {}')
     
