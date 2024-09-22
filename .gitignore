@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Sphinx
+doc/readthedocs/build/
+doc/readthedocs/output/
+doc/readthedocs/old/
+
 # branding
 *.ai
 
@@ -28,6 +33,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+token.txt
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

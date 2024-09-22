@@ -8,7 +8,7 @@ import limitstates as ls
 
 from limitstates.objects.read import getSteelSections
 
-mat = s16.MaterialSteelCsa19()
+mat = s16.MaterialSteelCsa24()
 
 steelSections = getSteelSections(mat, 'us', 'aisc_16_si', 'W')
 

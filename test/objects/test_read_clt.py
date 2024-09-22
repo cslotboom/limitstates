@@ -8,13 +8,13 @@ We will use the a specific function from csa o86-19 to check
 Contains functions for managing sections specific to CSAo86-19
 """
 
-from limitstates.objects.read import _loadSectionDBDict, SectionDBConfig, _parseCLTDataFrame, _loadSectionsCLT
+from limitstates.objects.read import _loadSectionDBDict, DBConfig, _parseCLTDataFrame, _loadSectionsCLT
 from limitstates.design.csa.o86.c19.material import loadCltMatDB
 from limitstates import SectionCLT
 
 
-db = 'clt_prg320_2019.csv'
-config = SectionDBConfig('csa', 'clt', db)
+db = 'prg320_2019'
+config = DBConfig('csa', 'clt', db)
     
 
 def test_mats_load():
