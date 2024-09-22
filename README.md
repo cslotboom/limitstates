@@ -1,6 +1,9 @@
 # limitstates
 A structural design and representation library.
 
+## XXXXX limitstates is currently in early development XXXXX
+It should only be used for testing purposes.
+
 # Overview
 limitstates is a python library for that can represent and design of structural 
 elements according to code and material standards from various countries. Limit states has two main components: 
