@@ -15,7 +15,7 @@ sections = o86.loadGlulamSections(myMat)
 mySection = sections[12]
 L = 6
 
-myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')
+myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm')
 
 def test_Cb():
     Cbx = o86.getBeamCb(myElement)
@@ -76,7 +76,7 @@ def test_bending_table_1():
     mySection = ls.SectionRectangle(mat, 365, 836)
     
     L = 6
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm')
     
     
     kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
@@ -90,7 +90,7 @@ def test_bending_table_1():
     Vrsol = 366
     EIsol = 220000*10**9
     
-    myElement = o86.getBeamColumnGlulamCSA19(12, mySection, 'm')
+    myElement = o86.getBeamColumnGlulamCsa19(12, mySection, 'm')
     kzbg = o86.checkKzbg(mySection.b, mySection.d, myElement.member.L*1000)
 
     Wr = o86.checkWrGlulamBeamSimple(myElement, 1) / 1000
@@ -119,7 +119,7 @@ def test_compression_Design_Example_Cc():
     
     Lex = 7
     Ley = 3.5
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lex = Lex, Ley = Ley)
     
     Cx, Cy = o86.checkColumnCc(myElement)
     CxSol = 30.7
@@ -143,7 +143,7 @@ def test_compression_Design_Example_Pr():
     
     Lex = 7
     Ley = 3.5
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lex = Lex, Ley = Ley)
     
     Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
         
@@ -165,13 +165,13 @@ def test_compression_Table():
     mySection = ls.SectionRectangle(mat, 265, 342)
     
     L = 4.5
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')    
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm')    
     Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
     Prsol = 1290 
     assert Pr == pytest.approx(Prsol, rel = 0.01)
 
     L = 13
-    myElement = o86.getBeamColumnGlulamCSA19(L, mySection, 'm')    
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm')    
     Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
     Prsol = 200 
     assert Pr == pytest.approx(Prsol, rel = 0.01)
@@ -188,7 +188,7 @@ def test_Interaction_ecc():
 
     mySection = ls.SectionRectangle(mat2, b, d)
     
-    column = o86.getBeamColumnGlulamCSA19(L, mySection)    
+    column = o86.getBeamColumnGlulamCsa19(L, mySection)    
     
     Pr = o86.checkPrGlulamColumn(column)
     Prsol = 175*1000
@@ -218,7 +218,7 @@ def test_Interaction_ecc_table():
     mat2 = mats[1]
 
     mySection = ls.SectionRectangle(mat2, b, d)
-    column = o86.getBeamColumnGlulamCSA19(L, mySection)    
+    column = o86.getBeamColumnGlulamCsa19(L, mySection)    
     
     e = (d)/2 / 1000
     knet = 1

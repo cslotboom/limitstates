@@ -17,20 +17,21 @@ User Props:
 	- This provides a safe place for users to store any additional information they want in design. The limitstates library will objects will not use this attribute.
 Geometry Props
 	- This is used to store information about output element geometry. Examples include making plots or rendering geometry.
+
 Some elements, such as CLT, may have design geometry that differs from their analysis model. In the example of CLT, while it is a 2D plate, it is often modeled as if it was a beam.
 
 **Currently, only canadian codes are supported by limit states**
 
 
-#. :doc:`design-csa`
-
-
+#. :doc:`design-csa-o86-19`
+#. :doc:`design-csa-s16-19`
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 6
    :hidden:
    
-   design-csa.rst
+   design-csa-o86-19.rst
+   design-csa-s16-19.rst
 
 
 

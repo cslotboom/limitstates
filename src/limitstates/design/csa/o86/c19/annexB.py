@@ -7,7 +7,7 @@ to CSA o86 Annex B.
 from .....objects import BeamColumn, SectionRectangle, SectionCLT, LayerClt, LayerGroupClt
 from .....objects.fireportection import FirePortection
 from .fireportection import GypusmFlatCSA19, GypusmRectangleCSA19
-from .element import BeamColumnGlulamCSA19, BeamColumnCltCSA19
+from .element import BeamColumnGlulamCsa19, BeamColumnCltCsa19
 from enum import IntEnum
 
 import numpy as np
@@ -478,7 +478,7 @@ def getFRRfromFireConditions(FRR:float, fireCon:FireConditions = 2):
         
     return FRR
 
-def setFireSectionGlulamCSA(element:BeamColumnGlulamCSA19, 
+def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19, 
                             FRR:list[float]|ndarray[float],
                             Bn:float = 0.7):
     """
@@ -495,7 +495,7 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCSA19,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The Glulam element to burn.
     FRR : list[float]|ndarray[float]
         For a rectangular section fire portection is input 
@@ -522,7 +522,7 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCSA19,
     fireSection = getBurntRectangularSection(section, FRR, firePort)    
     element.designProps.fireSection = fireSection
 
-def setFireSectionCltCSA(element:BeamColumnGlulamCSA19, 
+def setFireSectionCltCSA(element:BeamColumnGlulamCsa19, 
                          FRR:float|list[float]|ndarray[float],
                          Bn:float = 0.8):
     """
@@ -539,7 +539,7 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCSA19,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The Glulam element to burn.
     FRR : list[float]|ndarray[float]
         For a rectangular section fire portection is input 
@@ -573,15 +573,15 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCSA19,
 
 
 # TODO! add panel once it's complete
-def setBurntSection(element:BeamColumnGlulamCSA19, 
+def setBurntSection(element:BeamColumnGlulamCsa19, 
                     FRR:float|list[float]|ndarray[float], 
                     Bn:float = 0.7):
     
-    if isinstance(element, BeamColumnGlulamCSA19):
+    if isinstance(element, BeamColumnGlulamCsa19):
         setFireSectionGlulamCSA(element, FRR, Bn)
     elif isinstance(element, BeamColumn):
         setFireSectionGlulamCSA(element, FRR, Bn)
-    elif isinstance(element, BeamColumnCltCSA19):
+    elif isinstance(element, BeamColumnCltCsa19):
         setFireSectionCltCSA(element, FRR, Bn)
     
 

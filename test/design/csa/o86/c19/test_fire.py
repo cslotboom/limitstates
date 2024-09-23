@@ -91,7 +91,7 @@ def test_Rect_glulam_setSection():
     width = 300
     depth = 600
     mySection = ls.SectionRectangle(mats[0], width, depth)
-    myElement = o86.getBeamColumnGlulamCSA19(4, mySection)
+    myElement = o86.getBeamColumnGlulamCsa19(4, mySection)
     FRR = np.array([0,60,60,60])
     myElement.designProps.firePortection = o86.GypusmRectangleCSA19('15.9mm')
 

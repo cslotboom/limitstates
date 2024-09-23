@@ -33,7 +33,7 @@ A simple script is shown below:
 .. literalinclude:: /example/Ex1 - demo.py
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 6
    :numbered:
    
    rst/overview

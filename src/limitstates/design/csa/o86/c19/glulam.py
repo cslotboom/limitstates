@@ -2,18 +2,48 @@
 Contains the code designc clauses
 """
 
-from .element import BeamColumnGlulamCSA19,  _getSection, _getphi, _getphiCr, _isGlulam
+from .element import BeamColumnGlulamCsa19,  _getSection, _getphi, _getphiCr, _isGlulam
 from numpy import pi
 
 def checkCb(Le, d, b):
     """
     Calculates slenderness ratio according to c.l. 7.5.6.4.3
+    Assumes units are all in m or mm.
+
+    Parameters
+    ----------
+    Le : float
+        The effective length of the section in the direction being checked.
+    d : float
+        The depth of the section in the direction being checked.
+    b : float
+        The width of the section in the direction being checked.
+
+    Returns
+    -------
+    float
+        The Cb factor.
+
     """
     return (Le*d/b**2)**0.5   
 
-def getBeamCb(element:BeamColumnGlulamCSA19, useX:bool = True):
+def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
     """
     Calculates slenderness ratio according to c.l. 7.5.6.4.3
+
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The beamcolumn element to use for checks.
+    useX : bool, optional
+        A flag that toggles if the x direction is to be used for Cb. 
+        The default is True.
+
+    Returns
+    -------
+    float
+        The Cb factor.
+
     """
     if useX:
         Le = element.designProps.Lex
@@ -124,7 +154,7 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
     return min(Mr1, Mr2) / 1000
     
    
-def checkMrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
+def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1, 
                         useFire:bool = False, useX = True) -> float:
     """
     Checks the Mr for a beamcolumn, where there are not points of inflection 
@@ -140,7 +170,7 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -194,7 +224,7 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
     return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
 
 
-def checkMrMultispanBeamColumn():
+def _checkMrMultispanBeamColumn():
     pass
     # phi = 0.9
     
@@ -252,7 +282,7 @@ def checkGlulamWr(Ag:float, Fv:float, Lbeam:float, Cv = 3.69, phi = 0.9):
     
     return phi*Fv*0.48*Ag*Cv*(Ag*Lbeam/1e9)**-0.18    
 
-def checkVrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
+def checkVrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1, 
                         useFire:bool = False) -> float:
     """
     Checks the Wr for a beamcolumn, where there are no notches and no positive
@@ -268,7 +298,7 @@ def checkVrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -300,7 +330,7 @@ def checkVrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
 
 
 
-def checkWrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1, 
+def checkWrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1, 
                         useFire:bool = False, Cv:float = 3.69) -> float:
     """
     Checks the Vr for a beamcolumn, where there are no notches and no positive
@@ -316,7 +346,7 @@ def checkWrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -357,14 +387,14 @@ def checkWrGlulamBeamSimple(element:BeamColumnGlulamCSA19, knet:float = 1,
 def _checkSlenderness(Le, r):
     return Le / r
 
-def checkColumnCc(element:BeamColumnGlulamCSA19, useFire:bool = False):
+def checkColumnCc(element:BeamColumnGlulamCsa19, useFire:bool = False):
     """
     Returns the slenderness factors for a column in each direction.
     Requires Lex and Ley to be set.
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The beamcolumn element to check.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
@@ -390,7 +420,7 @@ def checkColumnCc(element:BeamColumnGlulamCSA19, useFire:bool = False):
     return Cx, Cy
 
 
-
+# !!! What is the refernce code clause.
 def checkKci(Fc:float, kzcg:float, Ci:float, E05:float, kSE:float = 1, 
            kT:float = 1):
     """
@@ -399,10 +429,10 @@ def checkKci(Fc:float, kzcg:float, Ci:float, E05:float, kSE:float = 1,
     
     return (1 + ((Fc*kzcg*Ci**3) / (35*E05*kSE*kT)))**-1
     
-
+# !!! What is the refernce code clause.
 def checkKzcg(Ag:float, L:float):
     """
-    get Kci in direction i
+    Gets the compression kzcg factor.
     """
     
     return min(0.68*(Ag*L)**-0.13, 1)
@@ -441,7 +471,7 @@ def checkGlulamPr(Ag:float, Fc:float, kzcg:float, kc:float, phi = 0.8):
     return phi*Ag*Fc*kzcg*kc
 
    
-def checkPrGlulamColumn(element:BeamColumnGlulamCSA19, knet:float = 1, 
+def checkPrGlulamColumn(element:BeamColumnGlulamCsa19, knet:float = 1, 
                         useFire:bool = False, kSE = 1, kT = 1) -> float:
     """
     Checks the Pr for a beamcolumn.
@@ -456,7 +486,7 @@ def checkPrGlulamColumn(element:BeamColumnGlulamCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -539,7 +569,7 @@ def checkPE(E05:float, I:float, Lei:float, kSE:float = 1, kT:float = 1):
     return (pi)**2*E05*kSE*kT*I / Lei**2
 
    
-def checkPEColumn(element:BeamColumnGlulamCSA19, knet:float = 1, 
+def checkPEColumn(element:BeamColumnGlulamCsa19, knet:float = 1, 
                   useFire:bool = False, kSE = 1, kT = 1) -> float:
     """
     Checks the Pr for a beamcolumn.
@@ -554,7 +584,7 @@ def checkPEColumn(element:BeamColumnGlulamCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnGlulamCSA19
+    element : BeamColumnGlulamCsa19
         The glulam element to check. Can also be solid timber elements.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -660,7 +690,7 @@ def checkInterEccPf(Pf:float, e:float, Pr:float, Mr:float, PE:float) -> float:
 
 
 
-def checkInterEccPfGlulam(element:BeamColumnGlulamCSA19, Pf:float, e:float,
+def checkInterEccPfGlulam(element:BeamColumnGlulamCsa19, Pf:float, e:float,
                           Mr:float, knet:float = 1, useX:bool = True,
                           useFire:bool = False, 
                           kSE = 1, kT = 1) -> float:

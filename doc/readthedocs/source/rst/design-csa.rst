@@ -10,7 +10,7 @@ This library contains code and material standards for the Canadian Standards Ass
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 6
    :hidden:
    
    design-csa-o86.rst
