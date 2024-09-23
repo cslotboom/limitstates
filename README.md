@@ -1,6 +1,6 @@
 # limitstates
 <p align="center">
-  <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text.jpg" width="500">
+  <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text-2.jpg" width="500">
 </p>
 A structural design and representation library.
 
