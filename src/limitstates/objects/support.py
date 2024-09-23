@@ -9,7 +9,7 @@ from enum import Enum
 
 __all__ = ["Support", "SupportTypes2D"]
 
-@dataclass(slots=True)
+@dataclass()
 class Support:
     """
     Represents a support in 2D or 3D space. Currently only 2D supportes are

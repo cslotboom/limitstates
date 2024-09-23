@@ -13,7 +13,7 @@ __all__ = ['Node', 'getLengthNodes',
            'Line', 'getLineFromNodes', 'getLineFromLength',
            'Member', 'initSimplySupportedMember']
 
-@dataclass(slots=True)
+@dataclass()
 class Node:
     """
     Represents a node in 2D or 3D space.
@@ -106,7 +106,7 @@ class Curve:
     """
     pass
 
-@dataclass(slots=True)
+@dataclass()
 class Line(Curve):
     """
     A represents straight line in space between two nodes.
@@ -180,7 +180,7 @@ def getLineFromLength(L:float, units = 'm') -> Line:
     return line    
 
 
-@dataclass(slots=True)
+@dataclass()
 class Member:
     """
     Members represent a multi-portion curve, and fully define where a 
@@ -266,7 +266,7 @@ def initSimplySupportedMember(L:float, lUnit:str) -> Member:
 # Experimental classes, 
 # =============================================================================
 
-@dataclass(slots=True)
+@dataclass()
 class Surface:
     """
     !!!EXPERIMENTAL!!!
