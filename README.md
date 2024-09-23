@@ -1,11 +1,14 @@
 # limitstates
+<p align="center">
+  <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text.jpg" width="500">
+</p>
 A structural design and representation library.
 
 ## XXXXX limitstates is currently in early development XXXXX
 It should only be used for testing purposes.
 
 # Overview
-limitstates is a python library that can represent and design of structural 
+limitstates is a python library that can represent and design structural 
 elements according to code and material standards from various countries. Limit states has two main components: 
 a set of classes that representations structural objects, e.g. A Ibeam that is 6m long made or steel; 
 and design libraries that can act on elements and determine capacities, e.g. Canada's CSA s16 steel material standard.
