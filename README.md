@@ -1,7 +1,8 @@
-# limitstates
+
 <p align="center">
   <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text-2.jpg" width="500">
 </p>
+
 A structural design and representation library.
 
 ## XXXXX limitstates is currently in early development XXXXX
