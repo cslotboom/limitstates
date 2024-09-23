@@ -2,7 +2,7 @@
 Contains code design clauses for working with CLT.
 """
 
-from .element import BeamColumnCltCSA19, _getSection, _getphi
+from .element import BeamColumnCltCsa19, _getSection, _getphi
 from .....objects import SectionCLT
 
 
@@ -44,7 +44,7 @@ def checkMrClt(S:float, Fb:float, useStrongAxis=True, phi = 0.9):
     return phi*S*Fb*krb
     
    
-def checkMrCltBeam(element:BeamColumnCltCSA19, knet:float = 1, 
+def checkMrCltBeam(element:BeamColumnCltCsa19, knet:float = 1, 
                useFire:bool = False, useStrongAxis = True) -> float:
     """
     Checks the Mr for typical CLT panel, return units in Nm.
@@ -58,7 +58,7 @@ def checkMrCltBeam(element:BeamColumnCltCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnCltCSA19
+    element : BeamColumnCltCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 
@@ -127,7 +127,7 @@ def checkCltShear(Ag:float, Fs:float, phi = 0.9):
     phi = 0.9
     return phi*Fs*Ag*(2/3)
   
-def checkCltBeamShear(element:BeamColumnCltCSA19, knet:float = 1, 
+def checkCltBeamShear(element:BeamColumnCltCsa19, knet:float = 1, 
                         useFire:bool = False, useStrongAxis = True) -> float:
     """
     Checks the Wr for a beamcolumn, where there are no notches and no positive
@@ -143,7 +143,7 @@ def checkCltBeamShear(element:BeamColumnCltCSA19, knet:float = 1,
 
     Parameters
     ----------
-    element : BeamColumnCltCSA19
+    element : BeamColumnCltCsa19
         The glulam element to check.
     knet : flaot, optional
         The product of all standard k factors, including kd, kse, etc. 

@@ -12,13 +12,35 @@ from .....objects import (Member, SectionRectangle, initSimplySupportedMember,
 from .fireportection import GypusmRectangleCSA19, GypusmFlatCSA19
 from limitstates import BeamColumn, DisplayProps
 
-__all__ = ["BeamColumnGlulamCSA19", "getBeamColumnGlulamCSA19", 
-           "BeamColumnCltCSA19", "DesignPropsClt19", "DesignPropsGlulam19"]
+__all__ = ["BeamColumnGlulamCsa19", "getBeamColumnGlulamCsa19", 
+           "BeamColumnCltCsa19", "DesignPropsClt19", "DesignPropsGlulam19"]
 
 @dataclass
 class DesignPropsGlulam19:
     """
     Design propreties specifically for a glulam beamcolumn element
+
+    Parameters
+    ----------
+    firePortection : GypusmRectangleCSA19
+        The the structural member used to represent the beam's position,
+        orientation and support conditions.
+    fireSection : SectionRectangle
+        The fire section for the beamcolumn member.
+    lateralSupport : bool, optional
+        A flag that is set equal to true if the beamcolumn has continuous
+        lateral support for beidng
+    isCurved : bool
+        A flag that specifies if the beam is curved. Curved members are 
+        not currently supported.
+    Lex : float
+        The beam column's unsupported length in the section's x direction, which
+        is typically the strong direction.
+    Ley : float
+        The beam column's unsupported length in the section's x direction, which
+        is typically the strong direction.        
+
+
     """
     firePortection:GypusmRectangleCSA19 = None
     fireSection:SectionRectangle = None
@@ -27,37 +49,38 @@ class DesignPropsGlulam19:
     Lex:bool = None
     Ley:bool = None
 
-class BeamColumnGlulamCSA19(BeamColumn):
+class BeamColumnGlulamCsa19(BeamColumn):
+    """
+    Design propreties for a glulam beam element.
+
+    Parameters
+    ----------
+    member : Member
+        The the structural member used to represent the beam's position,
+        orientation and support conditions.
+    section : SectionRectangle
+        The section for the beamcolumn.
+    designProps : DesignPropsGlulam19, optional
+        The inital design propreties. The default is None, which creates 
+        a empty DesignPropsGlulam19 object.
+    userProps : dataclass, optional
+        The user design propeties. The default is None, which creates an
+        empty dataclass.
+    displayProps : dataclass
+        Propreties used to display the section.
+
+    Returns
+    -------
+    None.
+
+    """
     designProps:DesignPropsGlulam19
     
     def __init__(self, member:Member, section:SectionRectangle, 
                  designProps:DesignPropsGlulam19 = None, 
                  userProps:dataclass = None,
                  displayProps:dataclass = None):
-        """
-        Design propreties for a glulam beam element.
 
-        Parameters
-        ----------
-        member : Member
-            The the structural member used to represent the beam's position,
-            orientation and support conditions.
-        section : SectionRectangle
-            The section for the beamcolumn.
-        designProps : DesignPropsGlulam19, optional
-            The inital design propreties. The default is None, which creates 
-            a empty DesignPropsGlulam19 object.
-        userProps : dataclass, optional
-            The user design propeties. The default is None, which creates an
-            empty dataclass.
-        displayProps : dataclass
-            Propreties used to display the section.
-
-        Returns
-        -------
-        None.
-
-        """
         
         self._initMain(member, section)
 
@@ -77,15 +100,15 @@ class BeamColumnGlulamCSA19(BeamColumn):
     def setLey(self, Ley):
         self.designProps.Ley = Ley       
         
-def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m', 
+def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m', 
                              firePortection:GypusmRectangleCSA19 = None,
                              Lex:float = None, 
-                             Ley:float = None) -> BeamColumnGlulamCSA19:
+                             Ley:float = None) -> BeamColumnGlulamCsa19:
     """
     A function used to return a beamcolumn based on an input length.
-    The beam uses a simply supported elemet by default. If a different type
+    The beam uses a simply supported elemet. If a different type
     of element is required, it should be manually defined with 
-    "BeamColumnGlulamCSA19" inatead.
+    "BeamColumnGlulamCsa19" instead.
     
     Default values are assigned to design propreties.
 
@@ -110,7 +133,6 @@ def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m',
     
     if firePortection:
         designProps.firePortection = firePortection
-    
     if Lex:
         designProps.Lex = Lex
     else:
@@ -121,7 +143,7 @@ def getBeamColumnGlulamCSA19(L:float, section:SectionRectangle, lUnit:str='m',
     else:
         designProps.Ley = L
     
-    return BeamColumnGlulamCSA19(member, section, designProps)
+    return BeamColumnGlulamCsa19(member, section, designProps)
 
 @dataclass
 class DesignPropsClt19:
@@ -135,7 +157,7 @@ class DesignPropsClt19:
         
     
 
-class BeamColumnCltCSA19(BeamColumn):
+class BeamColumnCltCsa19(BeamColumn):
     designProps:DesignPropsClt19
     section:SectionCLT
     
@@ -221,7 +243,7 @@ def _isGlulam(element:BeamColumn):
     There may be better ways of checking if a element is of a certain type,
     for example we could add it to the design propreties.
     """
-    if isinstance(element, BeamColumnGlulamCSA19):
+    if isinstance(element, BeamColumnGlulamCsa19):
         return True
     else:
         return False

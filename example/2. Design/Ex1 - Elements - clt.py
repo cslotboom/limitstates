@@ -60,7 +60,7 @@ layerGroup = ls.LayerGroupClt([layer1, layer1, layer2, layer1, layer3])
 
 
 # mySection   = ls.SectionRectangle(myMat, width, depth)   
-# myElement = csa.getBeamColumnGlulamCSA19(Length, mySection, 'm')
+# myElement = csa.getBeamColumnGlulamCsa19(Length, mySection, 'm')
 
 # section = code.getGlulamSection('matString', width, depth)
 # designElement = csa.getGlulamElement(Length, section)
@@ -75,7 +75,7 @@ layerGroup = ls.LayerGroupClt([layer1, layer1, layer2, layer1, layer3])
 
 # myMat = csa.loadGlulamMaterial('SPF', '20f-E')
 # mySection   = ls.SectionRectangle(myMat, width, depth)   
-# myElement = csa.getBeamColumnGlulamCSA19(Length, mySection, 'm')
+# myElement = csa.getBeamColumnGlulamCsa19(Length, mySection, 'm')
 
 # FRR         = csa.getFireDemands(60, csa.FireConditions.beamColumn)
 # gypsum      = csa.getGypsumFirePortection(csa.FireConditions.beamColumn, "12.7mm")

@@ -103,7 +103,7 @@ def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m',
     A function used to return a beamcolumn based on an input length.
     The beam uses a simply supported elemet by default. If a different type
     of element is required, it should be manually defined with 
-    "BeamColumnGlulamCSA19" inatead.
+    "BeamColumnGlulamCsa19" inatead.
     
     Default values are assigned to design propreties.
     
