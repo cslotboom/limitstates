@@ -16,6 +16,10 @@ Objects also exist for representing fire portection, and burning sections accord
    :undoc-members:
    :show-inheritance:
 
+ 
+.. automodule:: limitstates.design.csa.o86.c19.section.loadGlulamSections
+	:members: getBeamColumnGlulamCsa19
+
    
 .. automodule:: limitstates.design.csa.o86.c19.element
 	:members: getBeamColumnGlulamCsa19
@@ -23,7 +27,6 @@ Objects also exist for representing fire portection, and burning sections accord
 .. automodule:: limitstates.design.csa.o86.c19.glulam
 	:members: checkCb, checkBeamCb, checkKL, checkKzbg, checkGlulamMr, checkMrGlulamBeamSimple
 	
-
    
 .. automodule:: limitstates.design.csa.o86.c19.glulam
 	:members: checkGlulamShearSimple, checkGlulamWr, checkVrGlulamBeamSimple, checkWrGlulamBeamSimple

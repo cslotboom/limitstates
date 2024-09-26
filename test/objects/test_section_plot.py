@@ -22,13 +22,13 @@ def PolyArea(x,y):
 
 def test_plot_rectangle():  
     myMat       = ls.MaterialElastic(9.5*1000)
-    section     = ls.SectionRectangle(myMat, 300, 200)
+    section     = ls.SectionRectangle(myMat, 200, 400)
     fig, ax     = ls.plotSection(section)
     
     ax.lines
     xy = ax.patches[0].get_xy()
     assert xy[0][1] == 0
-    assert xy[1][1] == 300
+    assert xy[1][1] == 400
 
 
 def test_plot_I_beam():

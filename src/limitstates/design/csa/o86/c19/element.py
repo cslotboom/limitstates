@@ -5,8 +5,10 @@ These are largely set up to ease development and provide type hints.
 
 from dataclasses import dataclass
 
-from .....objects import (Member, SectionRectangle, initSimplySupportedMember, 
+from limitstates.objects import (Member, SectionRectangle, initSimplySupportedMember, 
                           SectionCLT)
+
+from limitstates.objects.display import MATCOLOURS
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
 from .fireportection import GypusmRectangleCSA19, GypusmFlatCSA19
@@ -49,6 +51,19 @@ class DesignPropsGlulam19:
     Lex:bool = None
     Ley:bool = None
 
+@dataclass
+class DisplayPropsGlulam19(DisplayProps):
+    """
+    Design propreties specifically for a glulam beamcolumn element
+
+    """
+    section:SectionRectangle
+    member:Member
+    
+    c:float = MATCOLOURS['glulam']
+    cBurnt:str = MATCOLOURS['glulamBurnt']
+
+
 class BeamColumnGlulamCsa19(BeamColumn):
     """
     Design propreties for a glulam beam element.
@@ -76,21 +91,20 @@ class BeamColumnGlulamCsa19(BeamColumn):
     """
     designProps:DesignPropsGlulam19
     
-    def __init__(self, member:Member, section:SectionRectangle, 
+    def __init__(self, member:Member, section:SectionRectangle,
                  designProps:DesignPropsGlulam19 = None, 
                  userProps:dataclass = None,
                  displayProps:dataclass = None):
 
         
         self._initMain(member, section)
-
         # Initialize the design propreties if none are given.        
         if designProps is None:
             designProps = DesignPropsGlulam19()
 
         # Initialize the design propreties if none are given.        
         if displayProps is None:
-            displayProps = DisplayProps(self.member, self.section)
+            displayProps = DisplayPropsGlulam19(self.section, self.member)
 
         self._initProps(designProps, userProps, displayProps)
         
@@ -202,7 +216,7 @@ class BeamColumnCltCsa19(BeamColumn):
 
         # Initialize the design propreties if none are given.        
         if displayProps is None:
-            displayProps = DisplayProps(self.member, self.section)            
+            displayProps = DisplayProps(self.section, self.member)            
                     
         self._initProps(designProps, userProps, displayProps)
       

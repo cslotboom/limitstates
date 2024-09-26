@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from .. geometry import Member, initSimplySupportedMember
 from .. section import SectionAbstract
+from .. display import CanvasPlotConfig, CanvasObjectConfig
 
 __all__ = ["BeamColumn", "getBeamColumn", "DisplayProps"]
 
@@ -21,14 +22,15 @@ class DefaultDesignProps:
 
 @dataclass
 class DisplayProps:
-    section:SectionAbstract
-    geometry:Member
-        
+    section:SectionAbstract = None
+    member:Member = None
+    displayColor:str = '#B3CFE5'
+    
+    
+    
     def __repr__(self):
         "<limitStates output Propreties Dataclass>"
 
-    def getVerticies(self):
-        pass
 
 
 
@@ -54,7 +56,7 @@ class Element1D:
         A object that stores additional information needed for users. 
         The limitstates library will objects will not use this attribute. 
         The default is None.
-    geomProps : dataclass, optional
+    displayProps : dataclass, optional
         A object used to store information about output element geometry. 
         This includes information necessary for makign plots or rendering 
         geometry. The default is None.
@@ -68,7 +70,7 @@ class Element1D:
     member:Member 
     designProps:DefaultDesignProps
     userProps:UserProps
-    displyProps:DisplayProps
+    displayProps:DisplayProps
     
     @property
     def mat(self):

@@ -15,3 +15,9 @@ Beam Column Object
    :members:
    :undoc-members:
    :show-inheritance:
+
+ 
+.. automodule:: limitstates.design.csa.o86.c19.section.loadCltSections
+	:members: getBeamColumnGlulamCsa19
+
+   

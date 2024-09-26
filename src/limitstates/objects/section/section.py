@@ -16,7 +16,7 @@ from ... units import ConverterLength
 # from .plot import GeomRectangle, SectionPlotter, plotDisplayParameters
 
 __all__ = ['SectionAbstract', 'SectionMonolithic', 'SectionGeneric', 
-           'SectionRectangle', 'SectionSteel']
+           'SectionRectangle', 'SectionSteel', 'SteelSectionTypes']
 
 #Rename this to SectionArchetype?
 class SectionAbstract(ABC):

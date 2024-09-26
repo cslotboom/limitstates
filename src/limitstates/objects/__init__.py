@@ -6,3 +6,4 @@ from .material import *
 from .parse import *
 
 from .read import *
+from .display import plotSection, plotElementSection
