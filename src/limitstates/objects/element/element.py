@@ -1,12 +1,11 @@
 
-# from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from .. geometry import Member, initSimplySupportedMember
 from .. section import SectionAbstract
-from .. display import CanvasPlotConfig, CanvasObjectConfig
+from .. display import EleDisplayProps
 
-__all__ = ["BeamColumn", "getBeamColumn", "DisplayProps"]
+__all__ = ["BeamColumn", "getBeamColumn"]
 
 
 @dataclass
@@ -18,21 +17,6 @@ class UserProps:
 class DefaultDesignProps:
     def __repr__(self):
         "<limitStates Design Propreties Dataclass>"
-
-
-@dataclass
-class DisplayProps:
-    section:SectionAbstract = None
-    member:Member = None
-    displayColor:str = '#B3CFE5'
-    
-    
-    
-    def __repr__(self):
-        "<limitStates output Propreties Dataclass>"
-
-
-
 
 class Element1D:
     """
@@ -70,7 +54,7 @@ class Element1D:
     member:Member 
     designProps:DefaultDesignProps
     userProps:UserProps
-    displayProps:DisplayProps
+    displayProps:EleDisplayProps
     
     @property
     def mat(self):
@@ -190,9 +174,11 @@ class Element1D:
         self.userProps = userProps
         
         if displayProps is None:
-            displayProps = DisplayProps(self.section, self.member)
-        self.displayProps = displayProps
+            displayProps = EleDisplayProps(self.section, self.member)
+        self.eleDisplayProps = displayProps
         
+    def setDisplayProps(self, displayProps):
+        self.eleDisplayProps = displayProps
 
 class BeamColumn(Element1D):
     """

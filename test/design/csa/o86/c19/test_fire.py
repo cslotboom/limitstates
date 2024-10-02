@@ -73,7 +73,7 @@ def test_Rect_netBurnDims_2():
     assert bfi == (width - 2*(45*0.7 + 7))
     assert dfi == (depth - (45*0.7 + 7))
 
-def test_Rect_fireSection():
+def test_Rect_sectionFire():
     width = 200
     depth = 400
     mySection = ls.SectionRectangle(mats[0], width, depth)
@@ -96,7 +96,7 @@ def test_Rect_glulam_setSection():
     myElement.designProps.firePortection = o86.GypusmRectangleCSA19('15.9mm')
 
     o86.setFireSectionGlulamCSA(myElement, FRR)
-    fiSection = myElement.designProps.fireSection
+    fiSection = myElement.designProps.sectionFire
 
     assert fiSection.b == (width - 2*(30*0.7 + 7))
     assert fiSection.d == (depth - 1*(30*0.7 + 7))
@@ -113,6 +113,6 @@ if __name__ == "__main__":
     test_Rect_netBurnTime()
     test_Rect_netBurnDims_1()
     test_Rect_netBurnDims_2()
-    test_Rect_fireSection()
+    test_Rect_sectionFire()
     
     test_Rect_glulam_setSection()

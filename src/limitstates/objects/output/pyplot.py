@@ -7,29 +7,26 @@ Features of a plot:
     - Show a dictionary of common propreties Ix, Sx, Zx, etc.
     - SHow a dictionary of results
 
-
 """
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-
 import numpy as np
 import matplotlib.pyplot as plt
-# from matplotlib.patches import Polygon, Rectangle
+from matplotlib.collections import LineCollection
 
-from ..section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes
-from ..element import BeamColumn, DisplayProps
+from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes
+from .. element import BeamColumn
 
-from .env import MATCOLOURS, CanvasPlotConfig, CanvasObjectConfig
-from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded
+from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject
+from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 
 
 class SectionPlotter:
     
     plotOffset = 0.05
-    def __init__(self, baseGeom:GeomModel, canvasProps:CanvasPlotConfig):
+    def __init__(self, baseGeom:GeomModel, canvasProps:PlotConfigCanvas):
         
         self.geom = baseGeom
         self.maxFigsize = canvasProps.maxFigsize
+
                 
     
     def _getPlotLimits(self, x:list[float], y:list[float]):
@@ -55,8 +52,9 @@ class SectionPlotter:
     def initPlot(self):
         x, y = self.geom.getVerticies()
         xlims, ylims = self._getPlotLimits(x,y)
-        xplot, yplot = self._getPlotSize(xlims, ylims)
         
+        xplot, yplot = self._getPlotSize(xlims, ylims)
+
         # Set the dimensions / aspect ratio of the plot
         fig, ax = plt.subplots(figsize=(xplot, yplot))
         
@@ -77,9 +75,49 @@ class SectionPlotter:
             ax.plot(xy[:,0], xy[:,1], linewidth = objectConfig.lineWidth)
         
         return ax
+
     
-    def _plotInformation(infoDict):
-        pass
+    def plotInterior(self, ax, xy, objectConfig, *args, **kwargs):
+        """
+        Plots the interior of an geometry. This could include line hashing
+        indicating.
+        
+        It could also be a series of internal points
+        """
+        c = objectConfig.c
+        # x, y = self.geom.getPlotVerticies()
+        ax.fill(xy[:,0], xy[:,1], *args, c = c, **kwargs)
+        if objectConfig.showOutline:
+            ax.plot(xy[:,0], xy[:,1], linewidth = objectConfig.lineWidth)
+        
+        return ax
+    
+    
+    def _getPlotLabel(infoDict):
+        """
+        Converts the in
+        
+        {'label':value, 'label2':value ...}
+        
+        label = 
+        
+        """
+        
+        label = r'mathbf{Section Summary}$ \n'
+        for item in infoDict:
+            line = str(item) + ' = ' + str(round(infoDict[item])) + '\n'
+            label += line
+        return label
+    
+    # def _plotInformation(infoDict):
+    #     """
+    #     """
+        
+    #     label = ''
+    #     for item in infoDict:
+    #         items = str(item) + ' ' for item in 
+    #         label += 
+    #     return label
     
     def plotDesignInfo(self, fig, ax, infoDict):
         # x0 = np.average(ax.get_xlim())
@@ -101,7 +139,7 @@ class SectionPlotter:
 
 
 
-def _plotGeomFactory(section:SectionAbstract, *args) -> (GeomModel, CanvasObjectConfig):
+def _plotGeomFactory(section:SectionAbstract, *args) -> (GeomModel, PlotConfigObject):
     """
     Gets the appropriate geometry and dispalay propreties 
 
@@ -111,12 +149,16 @@ def _plotGeomFactory(section:SectionAbstract, *args) -> (GeomModel, CanvasObject
     # a 'switch'
     if isinstance(section, SectionRectangle):
         geom = GeomModelRectangle(section.b, section.d, *args)
-        defaultProps = CanvasObjectConfig(c = MATCOLOURS['glulam'])
+        defaultProps = PlotConfigObject(c = MATCOLOURS['glulam'])
+    
+    
     elif isinstance(section, SectionSteel):
         geom = _plotFactorySteel(section, *args)
-        defaultProps = CanvasObjectConfig(c = MATCOLOURS['steel'])
+        defaultProps = PlotConfigObject(c = MATCOLOURS['steel'])
+    
+    
     else:
-        raise Exception
+        raise Exception(f'Section of type {section} is not supported.')
         
     return geom, defaultProps
 
@@ -148,12 +190,18 @@ def _setupSummaryDict(listIn, ):
 
 def plotSection(section:SectionAbstract, 
                 xy0: tuple[float,float] = (0,0), 
-                canvasConfig: CanvasPlotConfig = None,
-                objectConfig: CanvasObjectConfig = None,
+                canvasConfig: PlotConfigCanvas = None,
+                objectConfig: PlotConfigObject = None,
                 summarizeGeometry: bool|list[str]=False,
                 *args):
     """
     Creates a plot of the section centered at xy0.
+    
+    A default set of propreties will be chosen for the section depending on 
+    it's type.
+    
+    Custom propreties can also be given to the canvas and object by passing in
+    a canvasConfig object.
     
     The figure propreties can be set by using a custom PlotDisplayProps object.
 
@@ -180,7 +228,7 @@ def plotSection(section:SectionAbstract,
     geom, defaultObjectConfig = _plotGeomFactory(section, xy0[0], xy0[1])
 
     if not canvasConfig:
-        canvasConfig = CanvasPlotConfig()
+        canvasConfig = PlotConfigCanvas()
         
     if not objectConfig:
         objectConfig = defaultObjectConfig
@@ -209,7 +257,98 @@ def plotSection(section:SectionAbstract,
 
 # class PlotDisplayConfig:
 #     c = 
+
+def _getFireSectionPositon(burnDims):
+    """
+    Figures out how much to offset the fire section by.
+    This will depend on the fire condition used.
     
+    The if statement logic for this function may be too complex.
+    In that case, a seperate way of tracking how much each side is burned
+    will be needed.
+    """
+    dx = (burnDims[3] - burnDims[1]) / 2 
+    dy = (burnDims[2] - burnDims[0]) / 2 
+    
+    return dx, dy
+    
+def _hasFireSection(dispProps):
+    return (hasattr(dispProps, 'sectionFire') and dispProps.sectionFire)
+
+def _isGlulamSection(dispProps):
+    return hasattr(dispProps, 'sectionFire')
+# If the logic gets too complex here, then we should create a plotting objects
+# that have a interface, "plot", and a factory for them.
+
+def _plotFactory(dispProps):
+    
+    if _isGlulamSection(dispProps):
+        return _plotGlulam(dispProps)
+    else:
+        return _plotBasic(dispProps)
+
+
+def _plotBasic(dispProps):
+    """
+    Plots a basic section.
+    """
+    
+    canvasPlotConfig = dispProps.configCanvas
+    canvasObjConfig  = dispProps.configObject
+            
+    geom, _ = _plotGeomFactory(dispProps.section)
+    plotter = SectionPlotter(geom, canvasPlotConfig)
+    
+    fig, ax = plotter.initPlot()
+    
+    xy = np.column_stack(geom.getVerticies())
+    plotter.plot(ax, xy, canvasObjConfig)
+    return fig, ax
+    
+
+def _plotGlulam(dispProps):
+    """
+    Plots a glulam section, showing the fire section in the center if it is
+    present.
+    
+    We also show some fill lines for the CLT
+    """
+    
+    canvasPlotConfig = dispProps.configCanvas
+    section = dispProps.section
+
+    hasFireSection = _hasFireSection(dispProps)
+    
+    if hasFireSection:
+        canvasObjConfig     = dispProps.configObjectBurnt
+    else:            
+        canvasObjConfig     = dispProps.configObject
+            
+    geom    = GeomModelGlulam(section.b, section.d)
+    plotter = SectionPlotter(geom, canvasPlotConfig)
+    fig, ax = plotter.initPlot()
+    
+    # Plot the base object
+    plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
+    
+    if hasFireSection:
+        sectionFire  = dispProps.sectionFire
+        dx, dy       = _getFireSectionPositon(dispProps.burnDims)
+        dh           = dispProps.displayLamHeight
+        geom         = GeomModelGlulam(sectionFire.b, sectionFire.d, dh, dx, dy)
+        objectConfig = dispProps.configObject
+        plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+    
+    linex, liney = geom.getFillVerticies()
+    lineVerts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    line_collection = LineCollection(lineVerts, colors=dispProps.displayColorLines)
+    ax.add_collection(line_collection)
+    
+    return fig, ax
+
+def _plotCLT():
+    pass
+
 
 def plotElementSection(element:BeamColumn, 
                        summarizeGeometry: bool|list[str]=False):
@@ -244,48 +383,39 @@ def plotElementSection(element:BeamColumn,
         The output matplotlib axis.
 
     """
-    
-    dispProps = element.displayProps
+
+    dispProps = element.eleDisplayProps
     
     # Use the display section if it is set.
-    if dispProps.section:
-        section = dispProps.section
-    else:
-        section = element.section
+    if not dispProps.section:
+        dispProps.section = element.section
     
-    # Plot the section
-    fig, ax = plotSection(section, dispProps = dispProps)
-    
-    if hasattr(element.designProps, 'sectionFire'):
-        pass
-    
-    #     geom, defaultDispProps = _plotGeomFactory(section, xy0[0], xy0[1])
+    return _plotFactory(dispProps)
 
-    # plotter = SectionPlotter(geom, dispProps)
+    # canvasPlotConfig = dispProps.configCanvas
+
+    # hasFireSection = _hasFireSection(dispProps)
+    # if hasFireSection:
+    #     canvasObjConfig     = dispProps.configObjectBurnt
+    # else:            
+    #     canvasObjConfig     = dispProps.configObject
+            
+    # geom, _ = _plotGeomFactory(section)
+    # plotter = SectionPlotter(geom, canvasPlotConfig)
     # fig, ax = plotter.initPlot()
-    # ax = plotter.plot(ax)
-    # ax.plot()
     
+    # # Plot the base object
+    # plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
     
-    fig, ax = plotSection(section, dispProps = dispProps)
+    # if hasFireSection:
+    #     sectionFire = dispProps.sectionFire
+    #     dx, dy  = _getFireSectionPositon(section, sectionFire)
+    #     geom, _ = _plotGeomFactory(sectionFire, dx, dy)
+    #     objectConfig = dispProps.configObject
+    #     plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+        
+        
+        
+        
+        
     
-    
-    
-    
-    return fig, ax
-    # if hasattr(obj, name)
-    
-    # geom, defaultDispProps = _plotGeomFactory(section, xy0[0], xy0[1])
-
-    # if not dispProps:
-    #     dispProps = defaultDispProps    
-
-    # plotter = SectionPlotter(geom, dispProps)
-    # fig, ax = plotter.plot()
-    
-    # if summarizeGeometry:
-    #     summaryAttrList = {'Iy':section.Iy, 'Ix':section.Ix}
-    #     plotter.plotDesignInfo(fig, ax, summaryAttrList)
-    
-    # return fig, ax
-

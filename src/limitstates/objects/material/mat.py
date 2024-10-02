@@ -89,9 +89,14 @@ class MaterialElastic(MaterialAbstract):
     """
 
     def __init__(self, E:float, G:float=None, rho=None, 
-                 sUnit:str='MPa', rhoUnit='kg/m3'):
+                 sUnit:str='MPa', rhoUnit='kg/m3', name=None):
 
         self._initUnits(sUnit, rhoUnit)
         self.E = E
         self.G = G
         self.rho = rho
+        
+        if name == None:
+            name = 'Elastic Material'
+        
+        self.name = name

@@ -2,10 +2,11 @@
 Returns the raw data that can be plotted or rendered.
 All classes are unit agnostic.
 
-
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+
+from math import ceil
 
 import numpy as np
 
@@ -14,27 +15,36 @@ class GeomModel(ABC):
     """
     Represents a geometry and can return a set of verticies
     """
+    
+    
+    getFillVerticies = None
+    
     @abstractmethod
     def getVerticies(self):
         pass
+    
+    
 
 @dataclass
 class GeomModelRectangle(GeomModel):
     b:float
     h:float
-    x0:float = 0
-    y0:float = 0
+    dx0:float = 0
+    dy0:float = 0
         
     def getVerticies(self):
         
         h = self.h
         b = self.b
-        x0 = self.x0
-        y0 = self.y0
+        dx0 = self.dx0
+        dy0 = self.dy0
         
-        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + x0
-        y = np.array([0 ,    h ,   h,   0,    0])  + y0
+        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
+        y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
         return list(x), list(y)
+
+   
+
 
 @dataclass
 class GeomModelGlulam(GeomModel):
@@ -44,18 +54,19 @@ class GeomModelGlulam(GeomModel):
     """
     b:float
     h:float
-    x0:float = 0
-    y0:float = 0
+    dhTarget:float = 38
+    dx0:float = 0
+    dy0:float = 0
         
     def getVerticies(self):
         
         h = self.h
         b = self.b
-        x0 = self.x0
-        y0 = self.y0
+        dx0 = self.dx0
+        dy0 = self.dy0
         
-        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + x0
-        y = np.array([0 ,    h ,   h,   0,    0])  + y0
+        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
+        y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
         return list(x), list(y)
     
         
@@ -63,12 +74,24 @@ class GeomModelGlulam(GeomModel):
         
         h = self.h
         b = self.b
-        x0 = self.x0
-        y0 = self.y0
+        dx0 = self.dx0
+        dy0 = self.dy0
+        dhTarget = self.dhTarget
         
-        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + x0
-        y = np.array([0 ,    h ,   h,   0,    0])  + y0
-        return list(x), list(y)    
+        Nline = ceil(h / dhTarget)
+        dh    = h / Nline
+
+        
+        x0 = [-b/2  + dx0, b/2 + dx0]
+        xlines = []
+        ylines = []
+        dy = -h/2 + dy0
+        for ii in range(Nline-1):
+            y = (ii +1)* dh  + dy
+            xlines.append(x0)
+            ylines.append([y, y])
+
+        return xlines, ylines
     
 
 @dataclass
@@ -80,8 +103,8 @@ class GeomModelIbeam(GeomModel):
     rf:float = None
     rw:float = None
 
-    x0:float = 0
-    y0:float = 0
+    dx0:float = 0
+    dy0:float = 0
     
     def getVerticies(self):
         """ Gets the a list of (x, y) verticies in clockwise order"""
@@ -89,15 +112,15 @@ class GeomModelIbeam(GeomModel):
         w = self.bf 
         tw = self.tw 
         tf = self.tf 
-        x0 = self.x0
-        y0 = self.y0
+        dx0 = self.dx0
+        dy0 = self.dy0
         
         x = np.array([-w/2, w/2, w/2, tw/2, tw/2, w/2,  
                       w/2, -w/2, -w/2, -tw/2, -tw/2, -w/2])
         y = np.array([ h/2, h/2, h/2 - tf, h/2 - tf, -h/2 + tf,  
              -h/2 + tf, -h/2,-h/2, -h/2+tf, -h/2+tf, h/2-tf, h/2-tf])
         
-        return list(x +x0), list(y + y0)    
+        return list(x + dx0), list(y + dy0)    
 
 @dataclass
 class GeomModelIbeamRounded(GeomModel):
@@ -108,17 +131,17 @@ class GeomModelIbeamRounded(GeomModel):
     rf:float
     rw:float
 
-    x0:float = 0
-    y0:float = 0
+    dx0:float = 0
+    dy0:float = 0
     NradiusPoints:int = 6
         
-    def _getcornerVerticies(self, x0, y0, r, dx = 1, dy = 1):
+    def _getcornerVerticies(self, x0, y0, r, dx0 = 1, dy0 = 1):
         """
         dx /  dy are direction terms which are either 1 or negative 1
         """
         
-        x = np.cos(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dx*r + x0
-        y = np.sin(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dy*r + y0
+        x = np.cos(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dx0*r + x0
+        y = np.sin(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dy0*r + y0
         
         return list(x), list(y)
     
@@ -128,8 +151,8 @@ class GeomModelIbeamRounded(GeomModel):
         w   = self.bf 
         tw  = self.tw 
         tf  = self.tf 
-        x0  = self.x0
-        y0  = self.y0
+        dx0  = self.dx0
+        dy0  = self.dy0
         rf:float = self.rf
         rw:float = self.rw
 
@@ -192,5 +215,5 @@ class GeomModelIbeamRounded(GeomModel):
         x = tLeg_x + trfx + trwx + brwx + brfx + bLeg_x + blfx + blwx + tlwx + tlfx
         y = tLeg_y + trfy + trwy + brwy + brfy + bLeg_y + blfy + blwy + tlwy + tlfy        
         
-        return list(np.array(x) + x0), list(np.array(y) + y0)    
+        return list(np.array(x) + dx0), list(np.array(y) + dy0)    
 

@@ -6,4 +6,5 @@ from .material import *
 from .parse import *
 
 from .read import *
-from .display import plotSection, plotElementSection
+from .display import *
+from .output import plotSection, plotElementSection

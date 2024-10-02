@@ -51,7 +51,7 @@ csa.setFireSectionGlulamCSA(myBeam, FRR)
 The output fire section is now accessable in the beam design propreties 
 """
 
-fireSection = myBeam.designProps.fireSection
+fireSection = myBeam.designProps.sectionFire
 
 """
 We can also define a knet for the section, and 
@@ -65,4 +65,4 @@ Mr = csa.checkMrGlulamBeamSimple(myBeam, knet, useFire=True)
 Vr = csa.checkVrGlulamBeamSimple(myBeam, knet, useFire=True )
 
 
-ls.plotElementSection
+ls.plotElementSection(myBeam)

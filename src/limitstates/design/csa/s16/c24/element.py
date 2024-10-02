@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from .....objects import (Member, SectionRectangle, initSimplySupportedMember, SectionSteel)
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
-from limitstates import BeamColumn, DisplayProps
+from limitstates import BeamColumn, EleDisplayProps
 
 __all__ = ["DesignPropsSteel24", "BeamColumnSteelCsa24", 
            "getBeamColumnSteelCsa24"]
@@ -81,7 +81,7 @@ class BeamColumnSteelCsa24(BeamColumn):
 
         # Initialize the design propreties if none are given.        
         if displayProps is None:
-            displayProps = DisplayProps(self.member, self.section)
+            displayProps = EleDisplayProps(self.section, self.member)
 
         self._initProps(designProps, userProps, displayProps)
         

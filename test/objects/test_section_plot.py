@@ -55,9 +55,40 @@ def test_plot_I_beam_round():
     assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.02)
 
 
+def test_plot_I_beam_round_canvasConfig():
+    myMat = ls.MaterialElastic(200*1000)
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'W')
+    section = sections[0]
+    
+    canvasConfig = ls.objects.display.PlotConfigCanvas(6, dpi=172)
+    fig, ax     = ls.plotSection(section, canvasConfig = canvasConfig)
+
+    xy = ax.patches[0].get_xy()
+    assert 53 == len(xy)
+    assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.02)
+
+
+
+def test_plot_I_beam_round_objConfig():
+    myMat = ls.MaterialElastic(200*1000)
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'W')
+    section = sections[0]
+    c = 'red'
+    objConfig = ls.objects.display.PlotConfigObject(c, showOutline=False)
+    fig, ax     = ls.plotSection(section, objectConfig = objConfig)
+
+    cOut = ax.patches[0].get_facecolor()
+    assert np.all(np.array(cOut) == np.array([1,0,0,1]))
+
+
+
 if __name__ == "__main__":
     test_plot_rectangle()
     test_plot_I_beam()
     test_plot_I_beam_round()
+    test_plot_I_beam_round_canvasConfig()
+    test_plot_I_beam_round_objConfig()
 else:
     plt.close('all')

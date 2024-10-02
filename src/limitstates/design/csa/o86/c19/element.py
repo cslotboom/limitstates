@@ -7,12 +7,11 @@ from dataclasses import dataclass
 
 from limitstates.objects import (Member, SectionRectangle, initSimplySupportedMember, 
                           SectionCLT)
-
-from limitstates.objects.display import MATCOLOURS
+from limitstates.objects.display import MATCOLOURS, PlotConfigCanvas,  PlotConfigObject
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
 from .fireportection import GypusmRectangleCSA19, GypusmFlatCSA19
-from limitstates import BeamColumn, DisplayProps
+from limitstates import BeamColumn, EleDisplayProps
 
 __all__ = ["BeamColumnGlulamCsa19", "getBeamColumnGlulamCsa19", 
            "BeamColumnCltCsa19", "DesignPropsClt19", "DesignPropsGlulam19"]
@@ -27,7 +26,7 @@ class DesignPropsGlulam19:
     firePortection : GypusmRectangleCSA19
         The the structural member used to represent the beam's position,
         orientation and support conditions.
-    fireSection : SectionRectangle
+    sectionFire : SectionRectangle
         The fire section for the beamcolumn member.
     lateralSupport : bool, optional
         A flag that is set equal to true if the beamcolumn has continuous
@@ -45,14 +44,16 @@ class DesignPropsGlulam19:
 
     """
     firePortection:GypusmRectangleCSA19 = None
-    fireSection:SectionRectangle = None
+    sectionFire:SectionRectangle = None
     lateralSupport:bool = True
     isCurved:bool = False
     Lex:bool = None
     Ley:bool = None
+    
+    burnDimensions:list[float] = None
 
 @dataclass
-class DisplayPropsGlulam19(DisplayProps):
+class EleDisplayPropsGlulam19(EleDisplayProps):
     """
     Design propreties specifically for a glulam beamcolumn element
 
@@ -60,8 +61,17 @@ class DisplayPropsGlulam19(DisplayProps):
     section:SectionRectangle
     member:Member
     
-    c:float = MATCOLOURS['glulam']
-    cBurnt:str = MATCOLOURS['glulamBurnt']
+    sectionFire:SectionRectangle = None
+    displayColor:str      = MATCOLOURS['glulam']
+    displayColorBurnt:str = MATCOLOURS['glulamBurnt']
+    displayColorLines:str = MATCOLOURS['glulamBurnt']
+    
+    configCanvas: PlotConfigCanvas = PlotConfigCanvas()
+    configObject: PlotConfigObject = PlotConfigObject(displayColor)
+    configObjectBurnt: PlotConfigObject = PlotConfigObject(displayColorBurnt)
+
+    burnDimensions:list[float] = None
+    displayLamHeight = 38
 
 
 class BeamColumnGlulamCsa19(BeamColumn):
@@ -104,7 +114,9 @@ class BeamColumnGlulamCsa19(BeamColumn):
 
         # Initialize the design propreties if none are given.        
         if displayProps is None:
-            displayProps = DisplayPropsGlulam19(self.section, self.member)
+            displayProps = EleDisplayPropsGlulam19(self.section, 
+                                                   self.member,
+                                                   designProps.sectionFire)
 
         self._initProps(designProps, userProps, displayProps)
         
@@ -113,7 +125,16 @@ class BeamColumnGlulamCsa19(BeamColumn):
         
     def setLey(self, Ley):
         self.designProps.Ley = Ley       
+    
+    def setSectionFire(self, sectionFire, burnDims = None):
+        self.designProps.sectionFire = sectionFire
+        self.eleDisplayProps.sectionFire = sectionFire
         
+        if burnDims is not None:
+            self.designProps.burnDims = burnDims
+            self.eleDisplayProps.burnDims = burnDims
+
+    
 def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m', 
                              firePortection:GypusmRectangleCSA19 = None,
                              Lex:float = None, 
@@ -147,6 +168,7 @@ def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m',
     
     if firePortection:
         designProps.firePortection = firePortection
+        
     if Lex:
         designProps.Lex = Lex
     else:
@@ -216,17 +238,22 @@ class BeamColumnCltCsa19(BeamColumn):
 
         # Initialize the design propreties if none are given.        
         if displayProps is None:
-            displayProps = DisplayProps(self.section, self.member)            
+            displayProps = EleDisplayProps(self.section, self.member)            
                     
         self._initProps(designProps, userProps, displayProps)
       
+          
+    def setSectionFire(self, sectionFire):
+        self.designProps.sectionFire = sectionFire
+        self.eleDisplayProps.sectionFire = sectionFire
+
         
 def _getSection(element, useFire:bool):
     """
     Gets the correct section to be used.
     """
     if useFire:
-        return element.designProps.fireSection
+        return element.designProps.sectionFire
     else:
         return element.section
 

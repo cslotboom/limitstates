@@ -29,8 +29,8 @@ def test_table_1():
     
     bfsol = 117
     dfsol = 407
-    assert myElement.designProps.fireSection.b == pytest.approx(bfsol, rel = 0.01)
-    assert myElement.designProps.fireSection.d == pytest.approx(dfsol, rel = 0.01)
+    assert myElement.designProps.sectionFire.b == pytest.approx(bfsol, rel = 0.01)
+    assert myElement.designProps.sectionFire.d == pytest.approx(dfsol, rel = 0.01)
 
     Mr = o86.checkMrGlulamBeamSimple(myElement, knet, useFire=True) / 1000
 
@@ -91,8 +91,8 @@ def test_compression_example_1():
         
     FRR = [60,60,60,60]
     o86.setFireSectionGlulamCSA(column, FRR)
-    assert column.designProps.fireSection.b == pytest.approx(138, rel = 0.01)
-    assert column.designProps.fireSection.d == pytest.approx(227, rel = 0.01)
+    assert column.designProps.sectionFire.b == pytest.approx(138, rel = 0.01)
+    assert column.designProps.sectionFire.d == pytest.approx(227, rel = 0.01)
     
     knet = o86.kdfi*o86.kfi['glulam']
 

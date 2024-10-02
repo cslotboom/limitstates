@@ -94,7 +94,7 @@ def test_Panel_WoodHandbook_Dims_2():
     FRR = 120
     o86.setFireSectionCltCSA(clt, FRR)
     
-    cltLayers = clt.designProps.fireSection.sLayers
+    cltLayers = clt.designProps.sectionFire.sLayers
     
     assert len(cltLayers) == 3
     assert cltLayers.d == pytest.approx(96, 0.001) 
@@ -241,7 +241,7 @@ def test_Beam_GAeff():
     o86.setFireSectionCltCSA(clt, FRR)
     # knet = o86.kdfi*o86.kfi['cltE']
     
-    GAx = clt.designProps.fireSection.getGAs()
+    GAx = clt.designProps.sectionFire.getGAs()
     GAxsol = 9.03e6
     assert GAx == pytest.approx(GAxsol, 0.01) 
 
