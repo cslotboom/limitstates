@@ -10,6 +10,7 @@ doc/readthedocs/old/
 
 # branding
 *.ai
+doc/marketing
 
 # C extensions
 *.so
