@@ -12,10 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 
-from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes
+from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT
 from .. element import BeamColumn
-
-from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject
+from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPosition
 from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 
 
@@ -139,23 +138,58 @@ class SectionPlotter:
 
 
 
-def _plotGeomFactory(section:SectionAbstract, *args) -> (GeomModel, PlotConfigObject):
+def _getPlotOrigin(option, d, b):
+    if option == PlotOriginPosition.centered:
+        return (0,0)
+    elif option == PlotOriginPosition.bottomCenter:
+        return (0, d/2)
+    elif option == PlotOriginPosition.bottomLeft:
+        return (b/2, d/2)
+    
+    else:
+        raise Exception()
+
+
+def _plotGeomFactory(section: SectionAbstract, 
+                     originPosition: PlotOriginPosition|int,
+                     xy) -> (GeomModel, PlotConfigObject):
     """
     Gets the appropriate geometry and dispalay propreties 
 
     """
     
+    # !!! I don't like how we have a different factory for plotting elements
+    # vs. plotting sections.
+    
     # We could return an enumeration instead of using this factory, and have
     # a 'switch'
     if isinstance(section, SectionRectangle):
-        geom = GeomModelRectangle(section.b, section.d, *args)
+        b, d = section.b, section.d
+        dx, dy = _getPlotOrigin(originPosition, d, b)
+        xy[0] += dx
+        xy[1] += dy
+        geom = GeomModelRectangle(b, d, *xy)
         defaultProps = PlotConfigObject(c = MATCOLOURS['glulam'])
     
     
     elif isinstance(section, SectionSteel):
-        geom = _plotFactorySteel(section, *args)
+        b,  d  = section.bf, section.d
+        dx, dy = _getPlotOrigin(originPosition, d, b)
+        xy[0] += dx
+        xy[1] += dy
+        
+        geom = _plotFactorySteel(section, *xy)
         defaultProps = PlotConfigObject(c = MATCOLOURS['steel'])
     
+    elif isinstance(section, SectionCLT):
+        b, d = section.b, section.d
+        dx, dy = _getPlotOrigin(originPosition, d, b)
+        xy[0] += dx
+        xy[1] += dy
+        
+        geom = _plotFactorySteel(section, *xy)
+        defaultProps = PlotConfigObject(c = MATCOLOURS['steel'])
+        
     
     else:
         raise Exception(f'Section of type {section} is not supported.')
@@ -189,11 +223,12 @@ def _setupSummaryDict(listIn, ):
 
 
 def plotSection(section:SectionAbstract, 
-                xy0: tuple[float,float] = (0,0), 
+                xy0: list[float,float] = None, 
                 canvasConfig: PlotConfigCanvas = None,
                 objectConfig: PlotConfigObject = None,
                 summarizeGeometry: bool|list[str]=False,
-                *args):
+                originPosition: PlotOriginPosition|int = 1,
+                *args, **kwargs):
     """
     Creates a plot of the section centered at xy0.
     
@@ -215,6 +250,18 @@ def plotSection(section:SectionAbstract,
         The display propreties to use. The default is None.
     summarizeGeometry : bool|list[str], optional
         A list of the input attributes to summarize. The default is False.
+    originPosition : plotOriginPosition, bool
+        A flag that changes the defult location the plot is placed at.
+        
+        1 is plotted at the centroid.
+        2 is plotted with the bottom at y = 0, and at the centroid on x.
+        3 is plotted with the bottom at y = 0, x = 0.
+    args  
+        Additional arguments for matplotolib's ax.fill function
+                
+    kwargs  
+        Additional arguments for matplotolib's ax.fill function
+        
 
     Returns
     -------
@@ -224,8 +271,10 @@ def plotSection(section:SectionAbstract,
         The output matplotlib axis.
 
     """
+    if xy0 is None:
+        xy0 = [0,0]
     
-    geom, defaultObjectConfig = _plotGeomFactory(section, xy0[0], xy0[1])
+    geom, defaultObjectConfig = _plotGeomFactory(section, originPosition, xy0)
 
     if not canvasConfig:
         canvasConfig = PlotConfigCanvas()
@@ -236,7 +285,8 @@ def plotSection(section:SectionAbstract,
     plotter = SectionPlotter(geom, canvasConfig)
     fig, ax = plotter.initPlot()
     
-    plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+    plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig, 
+                 *args, **kwargs)
 
     
     # if summarizeGeometry:
@@ -247,7 +297,6 @@ def plotSection(section:SectionAbstract,
     # Make the plot display.
     ax.plot()
 
-    
     return fig, ax
 
 
@@ -277,6 +326,12 @@ def _hasFireSection(dispProps):
 
 def _isGlulamSection(dispProps):
     return hasattr(dispProps, 'sectionFire')
+
+
+# def _isGlulamSection(dispProps):
+#     return hasattr(dispProps, 'sectionFire')
+
+
 # If the logic gets too complex here, then we should create a plotting objects
 # that have a interface, "plot", and a factory for them.
 
@@ -290,21 +345,22 @@ def _plotFactory(dispProps):
 
 def _plotBasic(dispProps):
     """
-    Plots a basic section.
+    Plots a basic section using the canvas plot configuration and canvas object
+    configuration classes.
     """
     
-    canvasPlotConfig = dispProps.configCanvas
-    canvasObjConfig  = dispProps.configObject
+    cPlotConfig = dispProps.configCanvas
+    cObjConfig  = dispProps.configObject
             
-    geom, _ = _plotGeomFactory(dispProps.section)
-    plotter = SectionPlotter(geom, canvasPlotConfig)
+    geom, _ = _plotGeomFactory(dispProps.section, cPlotConfig.originLocation, [0,0])
+    plotter = SectionPlotter(geom, cPlotConfig)
     
     fig, ax = plotter.initPlot()
     
     xy = np.column_stack(geom.getVerticies())
-    plotter.plot(ax, xy, canvasObjConfig)
+    plotter.plot(ax, xy, cObjConfig)
     return fig, ax
-    
+
 
 def _plotGlulam(dispProps):
     """
@@ -314,7 +370,7 @@ def _plotGlulam(dispProps):
     We also show some fill lines for the CLT
     """
     
-    canvasPlotConfig = dispProps.configCanvas
+    cPlotConfig = dispProps.configCanvas
     section = dispProps.section
 
     hasFireSection = _hasFireSection(dispProps)
@@ -323,26 +379,28 @@ def _plotGlulam(dispProps):
         canvasObjConfig     = dispProps.configObjectBurnt
     else:            
         canvasObjConfig     = dispProps.configObject
-            
-    geom    = GeomModelGlulam(section.b, section.d)
-    plotter = SectionPlotter(geom, canvasPlotConfig)
+    
+    b, d = section.b, section.d
+    dx0, dy0 = _getPlotOrigin(cPlotConfig.originLocation, d, b)
+
+    geom    = GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
+    plotter = SectionPlotter(geom, cPlotConfig)
     fig, ax = plotter.initPlot()
     
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
     
     if hasFireSection:
-        sectionFire  = dispProps.sectionFire
+        sFire  = dispProps.sectionFire
         dx, dy       = _getFireSectionPositon(dispProps.burnDims)
         dh           = dispProps.displayLamHeight
-        geom         = GeomModelGlulam(sectionFire.b, sectionFire.d, dh, dx, dy)
+        geom         = GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
         objectConfig = dispProps.configObject
         plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
     
     linex, liney = geom.getFillVerticies()
-    lineVerts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
-    line_collection = LineCollection(lineVerts, colors=dispProps.displayColorLines)
-    ax.add_collection(line_collection)
+    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    ax.add_collection(LineCollection(lverts, colors = dispProps.displayColorLines))
     
     return fig, ax
 
@@ -355,7 +413,8 @@ def plotElementSection(element:BeamColumn,
     """
     Creates a plot of the section centered at xy0.
     
-    The figure propreties can be set by using a custom PlotDisplayProps object.
+    The figure propreties can be set by modifying or replacing the element's 
+    eleDisplayProps object.
     
     If the element has a plot section set, that will be used for plotting
     instead of the bas element.
@@ -392,27 +451,6 @@ def plotElementSection(element:BeamColumn,
     
     return _plotFactory(dispProps)
 
-    # canvasPlotConfig = dispProps.configCanvas
-
-    # hasFireSection = _hasFireSection(dispProps)
-    # if hasFireSection:
-    #     canvasObjConfig     = dispProps.configObjectBurnt
-    # else:            
-    #     canvasObjConfig     = dispProps.configObject
-            
-    # geom, _ = _plotGeomFactory(section)
-    # plotter = SectionPlotter(geom, canvasPlotConfig)
-    # fig, ax = plotter.initPlot()
-    
-    # # Plot the base object
-    # plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
-    
-    # if hasFireSection:
-    #     sectionFire = dispProps.sectionFire
-    #     dx, dy  = _getFireSectionPositon(section, sectionFire)
-    #     geom, _ = _plotGeomFactory(sectionFire, dx, dy)
-    #     objectConfig = dispProps.configObject
-    #     plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
         
         
         

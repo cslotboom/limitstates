@@ -17,6 +17,7 @@ class MaterialAbstract:
     def _initUnits(self, sUnit:str='MPa', rhoUnit='kg/m3'):
         """
         Inititiates the units of the material.
+        
         Parameters
         ----------
         sUnit : str, optional

@@ -267,6 +267,20 @@ class SectionMonolithic(SectionAbstract):
     
     def _initMat(self, mat):
         self.mat = mat
+        
+        
+    @property
+    def E(self):
+        return self.mat.E
+        
+    @property
+    def G(self):
+        return self.mat.E
+        
+    @property
+    def Iz(self):
+        return self.Ix
+                          
     
 class SectionGeneric(SectionMonolithic):
     """
@@ -384,7 +398,8 @@ class SectionRectangle(SectionMonolithic):
     
     def __repr__(self):
         return f"<limitstates {self.name} Section.>"
-           
+    
+
 
 
 class SectionSteel(SectionMonolithic):

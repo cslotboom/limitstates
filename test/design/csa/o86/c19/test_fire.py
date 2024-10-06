@@ -57,7 +57,9 @@ def test_Rect_netBurnDims_1():
     port = o86.GypusmRectangleCSA19('12.7mm')
     portTime = np.array(port.getPortectionTime())
     myTime = o86.getNetBurnTime(np.array([60,60,60,60]), portTime)
-    bfi, dfi = o86.getBurntRectangularDims(myTime, width, depth)
+    burnAmount = o86.getBurnDimensions(myTime)
+
+    bfi, dfi = o86.getBurntRectangularDims(burnAmount, width, depth)
 
     assert bfi == (width - 2*(45*0.7 + 7))
     assert dfi == (depth - 2*(45*0.7 + 7))
@@ -68,7 +70,9 @@ def test_Rect_netBurnDims_2():
     port = o86.getGypsumFirePortection(2, '12.7mm')
     portTime = np.array(port.getPortectionTime())
     myTime = o86.getNetBurnTime(np.array([0,60,60,60]), portTime)
-    bfi, dfi = o86.getBurntRectangularDims(myTime, width, depth)
+    burnAmount = o86.getBurnDimensions(myTime)
+
+    bfi, dfi = o86.getBurntRectangularDims(burnAmount, width, depth)
 
     assert bfi == (width - 2*(45*0.7 + 7))
     assert dfi == (depth - (45*0.7 + 7))
@@ -80,7 +84,7 @@ def test_Rect_sectionFire():
     
     port = o86.GypusmRectangleCSA19('12.7mm')
     FRR = np.array([0,60,60,60])
-    fiSection = o86.getBurntRectangularSection(mySection, FRR, port)
+    fiSection, _ = o86.getBurntRectangularSection(mySection, FRR, port)
 
     assert fiSection.b == (width - 2*(45*0.7 + 7))
     assert fiSection.d == (depth - 1*(45*0.7 + 7))

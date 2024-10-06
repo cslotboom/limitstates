@@ -385,6 +385,8 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     -------
     SectionRectangle
         The burn section with dimensions equal to the output section.
+    burnAmount: list[float]
+        An array of what is burned on each face.
     """
     portectionTime = portection.getPortectionTime()
     netBurnTime = getNetBurnTime(FRR, portectionTime)

@@ -5,10 +5,12 @@ All classes are unit agnostic.
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-
 from math import ceil
+from  .. section import LayerGroupClt
 
 import numpy as np
+
+
 
 
 class GeomModel(ABC):
@@ -62,9 +64,60 @@ class GeomModelGlulam(GeomModel):
         
         h = self.h
         b = self.b
+        dx0 = self.dx0 
+        dy0 = self.dy0 
+        
+        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
+        y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0 
+        return list(x), list(y)
+    
+        
+    def getFillVerticies(self):
+        
+        h = self.h
+        b = self.b
+        dx0 = self.dx0
+        dy0 = self.dy0 
+        dhTarget = self.dhTarget
+        
+        Nline = ceil(h / dhTarget)
+        dh    = h / Nline
+
+        
+        x0 = [-b/2  + dx0, b/2 + dx0]
+        xlines = []
+        ylines = []
+        dy = -h/2 + dy0 
+        for ii in range(Nline-1):
+            y = (ii +1)* dh  + dy
+            xlines.append(x0)
+            ylines.append([y, y])
+
+        return xlines, ylines
+
+
+
+
+@dataclass
+class GeomModelClt(GeomModel):
+    """
+    Represents a glulam rectangle and can return a fill showing the lamination
+    thickness
+    """
+    cltLayers:LayerGroupClt
+    w:float = 1000
+    dhTarget:float = 38
+    dx0:float = 0
+    dy0:float = 0
+        
+    def getVerticies(self):
+        
+        cltLayers  = self.cltLayers.lBoundaries
+        # directions = self.cltLayers.
+        h = self.b
+        b = self.b
         dx0 = self.dx0
         dy0 = self.dy0
-        
         x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
         y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
         return list(x), list(y)
@@ -94,14 +147,13 @@ class GeomModelGlulam(GeomModel):
         return xlines, ylines
     
 
+
 @dataclass
 class GeomModelIbeam(GeomModel):
     d:float
     tw:float
     bf:float
     tf:float
-    rf:float = None
-    rw:float = None
 
     dx0:float = 0
     dy0:float = 0
