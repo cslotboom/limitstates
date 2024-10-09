@@ -1,6 +1,10 @@
 """
 This example shows how a basic glulam element can be checked for shear and
 moment.
+
+The base limitstates library is imported for object manipulation.
+The design library for csa o86's is imported for specific objects and checks
+The library Planesections is used for beam analysis.
 """
 import limitstates as ls
 import limitstates.design.csa.o86.c19 as o86
@@ -13,39 +17,36 @@ For convience some units, and the section dimensions are defined.
 By default materials are in units of MPa, sections are in units of mm,
 and length is in units of m.
 """
-MPa = 1
-width = 356 # Section width in mm
-depth = 600 # Section depth in mm
+width = 175 # Section width in mm
+depth = 608 # Section depth in mm
 length = 8  # Beam length in m
-supportPositions = [0,5]
+supportPositions = [0, 5]
 
 myMat       = o86.loadGlulamMaterial('SPF', '20f-E')
 mySection   = ls.SectionRectangle(myMat, width, depth)
 
 # We set up a custom member
-pinSupport = ls.SupportTypes2D.PINNED.value
+pinSupport    = ls.SupportTypes2D.PINNED.value
+rollerSupport = ls.SupportTypes2D.ROLLER.value
 n1 = ls.Node([supportPositions[0], 0.], 'm', support = pinSupport)
-n2 = ls.Node([supportPositions[1], 0.], 'm', support = pinSupport)
-
-line1 = ls.getLineFromNodes(n1, n2)
-
+n2 = ls.Node([supportPositions[1], 0.], 'm', support = rollerSupport)
+line1  = ls.getLineFromNodes(n1, n2)
 member = ls.Member([n1,n2], [line1])
 
 
 designProps = o86.DesignPropsGlulam19()
 myElement   = o86.BeamColumnGlulamCsa19(member, mySection, designProps)
-
-beamPs = ls.convertBeamColumnToPlanesections(myElement)
+beamPs      = ls.convertBeamColumnToPlanesections(myElement)
 
 
 """
 Define the beam nodes loads
 """
-kN = 1000
-q = np.array([0.,-1*kN])
-beamPs.addVerticalLoad(3, -5*kN)
+kN = 1000*1.5
+q = [0.,-10*kN]
+beamPs.addVerticalLoad(3, -50*kN)
 beamPs.addDistLoad(0, length, q) 
-ps.plotBeamDiagram(beamPs)
+# ps.plotBeamDiagram(beamPs)
 
 """
 Run the analysis
@@ -54,23 +55,27 @@ analysis = ps.PyNiteAnalyzer2D(beamPs)
 analysis.runAnalysis(recordOutput=True)
 
 """
-Plot results
+Plot Displacement
 """
-ps.plotDisp(beamPs, scale=1000, yunit = 'mm')
-ps.plotRotation(beamPs, scale=1000, yunit = 'mrad')
+# ps.plotDisp(beamPs, scale=1000, yunit = 'mm')
 
 """
 Plot the shear force, and show labeling.
 """
-ps.plotVertDisp(beamPs)
-ps.plotShear(beamPs,labelPOI=True)
-ps.plotMoment(beamPs,labelPOI=True)
+# ps.plotVertDisp(beamPs)
+# ps.plotShear(beamPs,  0.001, labelPOI=True, yunit='kN')
+# ps.plotMoment(beamPs, 0.001, labelPOI=True, yunit='kNm')
 
+xyBMD = beamPs.getBMD()
 
+diagram = ls.DesignDiagram(np.column_stack(xyBMD))
+xCoords = diagram.getIntersectionCoords()
 
+# fig, ax = plt.subplots()
+ax = diagram.curve.plot()
 
-
-
+Mr = o86.checkMrGlulamBeamSimple(myElement)
+Vr = o86.checkVrGlulamBeamSimple(myElement)
 
 
 
@@ -99,8 +104,7 @@ ps.plotMoment(beamPs,labelPOI=True)
 # myElement = csa.getBeamColumnGlulamCsa19(length, mySection, 'm')
 
 # # Check the output using the design library.
-# Mr = csa.checkMrGlulamBeamSimple(myElement)
-# Vr = csa.checkVrGlulamBeamSimple(myElement)
+
 
 # # =============================================================================
 # # Manually create elements

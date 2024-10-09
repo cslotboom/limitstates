@@ -7,10 +7,8 @@ import planesections as ps
 import numpy as np
 # from limitstates import Node, Support
 
-from .. section import SectionAbstract, SectionMonolithic
+from .. section import SectionMonolithic
 from .. element import BeamColumn
-from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPosition
-from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 
 
 
@@ -26,7 +24,7 @@ def convertBeamColumnToPlanesections(element: BeamColumn, meshSize: int = 100,
     section  = element.section
     
     if not isinstance(section, SectionMonolithic):
-        raise Exception('Only Monolotihic sections can be converted.')
+        raise Exception('Only Monolotihic sections can currently be converted.')
     
     # Convert the section regular propreties
     sfactor = element.section.mat.sConvert(sunits)

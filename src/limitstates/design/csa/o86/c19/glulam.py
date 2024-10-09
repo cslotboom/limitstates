@@ -1,9 +1,12 @@
 """
 Contains the code designc clauses
 """
+from numpy import pi, diff
+from enum import IntEnum
 
 from .element import BeamColumnGlulamCsa19,  _getSection, _getphi, _getphiCr, _isGlulam
-from numpy import pi
+from limitstates import DesignDiagram, Member, Support
+
 
 def checkCb(Le, d, b):
     """
@@ -54,7 +57,7 @@ def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
         b = element.section.d
         d = element.section.b
     
-    return (Le*d/b**2)**0.5
+    return checkCb(Le, d, b)
 
 def checkKL(Cb:float, E:float, Fb:float, kse:float=1, kt:float=1, kx:float=1):
     """
@@ -97,7 +100,7 @@ def checkKL(Cb:float, E:float, Fb:float, kse:float=1, kt:float=1, kx:float=1):
     elif Ck < Cb and Cb < 50:
         return 0.65*E*kse*kt / (Cb**2*Fb*kx)
     else:
-        return 0
+        return -1
 
 def checkKzbg(b:float, d:float, LM0:float):
     """
@@ -127,7 +130,7 @@ def checkKzbg(b:float, d:float, LM0:float):
 def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
                   phi = 0.9):
     """
-    Calcualtes Mr for a beam or beam segment.
+    Calcualtes Mr for a beam or beam segment according to cl. 7.5.6.5.1
 
     Parameters
     ----------
@@ -161,7 +164,7 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     in the bending moment diagram. Generally does not apply to multispan beams
     or those with points of inflection.
     
-    Mr and kzbg is calculated according to 7.5.6.5, and 
+    Mr and kzbg is calculated according to 7.5.6.5, and 7.5.6.5
     
     kL is calculated according to 7.5.6.4 and 7.5.6.3.1
     
@@ -195,10 +198,11 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     # check for lateral support
     if element.designProps.lateralSupport:
         kL = 1
+    # c.l. 7.5.6.3.2
     elif (element.section.d / element.section.b) < 2.5:
         kL = 1
     else:
-        raise Exception('Element is unsupported and 7.5.6.4 does not apply. limitstates can currently only design supported members.')
+        raise Exception('Element is unsupported and 7.5.6.3.2 does not apply. limitstates can currently only design supported members.')
   
     # check for curvature
     if not element.designProps.isCurved:
@@ -224,10 +228,278 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
 
 
-def _checkMrMultispanBeamColumn():
+
+
+
+def checkBMDkzbg(inflectionCoords:list[float], 
+                 b:float, 
+                 d:float):
+    """
+    Determins kzbg for a number of beam segments.
+
+
+    Assumes all units are in mm.
+
+
+    Parameters
+    ----------
+    interCoords : list[float]
+        The points of inflection in mm. This should include the start and end 
+        of the beam.
+    b : float
+        The width of the beam in mm.
+    d : float
+        The depth of the beam in mm.
+
+    Returns
+    -------
+    interLengths : list[float]
+        The segment lengths.
+    kzbgOut : float
+        The output kzbg factors for each segment.
+
+    """
+    
+    # interCoords = 
+    interLengths = diff(inflectionCoords)
+    
+    kzbgOut = []
+    for L in interLengths:
+        
+        kzbgOut.append(checkKzbg(b, d, L))
+    
+    return interLengths, kzbgOut
+
+
+def getMemberkL(segmentLengths: list[float], 
+                segmentke, 
+                segmentBraceCondition,
+                b, d, E, Fb, kse, kt, kx):
+    """
+    XX TO TEST
+    """
+        
+    LeOut = []
+    kLOut = []
+    # checkKL(Cb, E, Fb)
+    for L, ke, bc in zip(segmentLengths, segmentke, segmentBraceCondition):
+        
+        # If the compression flange is braced
+        if bc == True:
+            kLOut.append(1)
+        # If the compression flange is braced
+        elif d/b < 2.5:
+            kLOut.append(1)
+        else:
+            Le = L*ke
+            CbSegment = checkCb(Le, d, b)
+            kLOut.append(checkKL(CbSegment, E, Fb, kse, kt, kx))
+    
+    return kLOut
+
+
+
+
+
+class SegmentSupportTypes(IntEnum):
+    CONTINOUS = 1
+    CONTINOUS_POS = 2
+    SUPPORTS = 3
+    MANUAL = 4
+
+
+def _getkLSegments(lateralSupportType: SegmentSupportTypes | int,
+                   member:Member ) :
+    
+    Lsegs = [curve.L for curve in member.curves]
+    
+    isContinouslyBraced = []
+    if lateralSupportType == 1:
+        isContinouslyBraced = [True] * len(Lsegs)
+    
+    
+    
+    return Lsegs
+
+
+def checkMrGlulamBeam(element: BeamColumnGlulamCsa19, 
+                        bmd: DesignDiagram, 
+                        knet = 1, kse = 1, kt = 1, kx = 1,
+                        lateralSupportType: SegmentSupportTypes | int = 2,
+                        segmentLengths:list[float] = None,
+                        keFactors:list[float] = None,
+                        isContinouslyBraced:list[bool] = None
+                        ):
+    """
+    Regions for kzbg are calculated by finding points of inflection in the
+    bending moment diagram.
+    
+    
+    Regions for kL are calculated depending on the option selected.
+    Unless otherwise specified, the factor ke is taken as 1.92 from table 7.4
+    
+    If option 1 is selected, the beam is assumed to be continously laterally 
+    supported over the entire beam.
+    
+    If option 2 is selected, the beam is assumed to be laterally supported
+    over it's entire compression flange, except for regions of negative bending.
+    
+    If option 3 is selected, the beam is assumed to be laterally supported only
+    at support locations. 
+    
+    If option 4 is selected, the beam is assumed to be supported at purlin
+    locations. 
+    
+    If option 5 is selected, the user will manually input the beam segment
+    lengths, ke factors, and brace conditions.
+    
+    """
+    
+    member = element.member
+    mlfactor = bmd.lConvert('mm')
+    
+    slFactor = element.section.lConvert()
+    b = element.section.b*slFactor
+    d = element.section.d*slFactor
+    
+    xkzbg, kzbgOut = checkBMDkzbg(bmd.getIntersectionCoords(), b, d)
+    
+    
+    if lateralSupportType != 5:
+        kLSegs, classification = _getkLSegments(lateralSupportType, member) 
+    
+    
+    # getMemberkL(segLength, segke, segBraceCon, b, d, E, Fb,kse, kt, kx)
+    
+    kzbgRegions = []
+    
+    breakpoints = []
+    
     pass
     # phi = 0.9
+
+
+
+class SegmentTypes(IntEnum):
+    NORMAL = 1
+    CANTILEVER = 2
     
+
+def getElemenklSegments(element: BeamColumnGlulamCsa19) -> (list[float], list[SegmentTypes]):
+    """
+    
+    Classifies a elements segments between supports.
+    All segments are assumed to have a     
+    
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The glulam element to check.
+        
+    Returns
+    -------
+    segments : float
+        The segment length.
+
+    segmentsKe : float
+        The segment ke factor.
+
+    """
+    member = element.member
+    segments = []
+    Ncurves = len(member.curves)
+    for ii in range(Ncurves):
+        line = member.curves[ii]
+        segments.append(line.L)
+        
+    segmentsKe = [1.92]*Ncurves
+
+    return segments, segmentsKe
+
+
+def classifyElementSegmentkL_old(element: BeamColumnGlulamCsa19) -> (list[float], list[SegmentTypes]):
+    
+    
+    """
+    Classifies a elements segments between supports.
+    All segments are assumed to have a 
+
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The glulam element to check.
+    knet : flaot, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire sectio.
+    useX : bool, optional
+        A toggle that sets the diretion moment will be checked in.
+        Weak axis bending is currently not supported by limitstates.
+
+
+    Returns
+    -------
+    Mr
+        The output in Nm.
+
+    """
+    member = element.member
+    
+    segments = []
+    tmpLength = 0
+    segmentTypes = []
+    newSegment = True
+    
+    Ncurves = len(member.curves)
+    for ii in range(Ncurves):
+        
+        line = member.curves[ii]
+        n1, n2 = line.n1, line.n2        
+        
+        leftIsRestrained  = n1.support.fixity != (0,0,0)
+        rightIsRestrained = n2.support.fixity != (0,0,0)
+        atEnd = ii == (Ncurves - 1)
+        
+        # If the region is restrained on both sides it's still between supports
+        if leftIsRestrained and rightIsRestrained:
+            segments.append(line.L)
+            segmentTypes.append(SegmentTypes.NORMAL.value)
+        
+        # If the left is restrained but not the right, increase the 
+        elif (leftIsRestrained) and (not rightIsRestrained) and (not atEnd):
+            tmpLength += line.L
+
+            # The segment is no longer a new segment!
+            newSegment = False
+        
+        # If the right is restrained, we're at the end of our segment.
+        elif (not newSegment) and (rightIsRestrained):
+            tmpLength += line.L
+            segments.append(tmpLength)
+            segmentTypes.append(SegmentTypes.NORMAL.value)
+
+            # Reset the segment back
+            tmpLength = 0
+            newSegment = True
+            
+        # Check for a left side cantilever.
+        elif ii == 0 and (not leftIsRestrained):
+            segments.append(line.L)
+            segmentTypes.append(SegmentTypes.CANTILEVER.value)
+
+        # Check for the final cantilever.
+        elif atEnd and (not rightIsRestrained):
+            segments.append(line.L)
+            segmentTypes.append(SegmentTypes.CANTILEVER.value)
+        
+    segmentsKe = [1.92]*Ncurves
+
+    return segments, segmentTypes, segmentsKe
+
+
+
 
 
 # =============================================================================
