@@ -201,7 +201,7 @@ def test_Interaction_ecc():
     Pf = 72.5*1000
     interSolTop = 0.79
     # interSolMid = 0.54
-    inter = o86.checkInterEccPfGlulam(column, Pf, e, knet)
+    inter = o86.checkInterEccPfColumn(column, Pf, e, knet)
     assert inter == pytest.approx(interSolTop, rel = 0.01)
 
 
@@ -225,7 +225,7 @@ def test_Interaction_ecc_table():
     # Pf = 35.6*1000
     Pf = 24.3*1000
     interSolTop = 1.0
-    inter = o86.checkInterEccPfGlulam(column, Pf, e, knet)
+    inter = o86.checkInterEccPfColumn(column, Pf, e, knet)
     assert inter == pytest.approx(interSolTop, rel = 0.02)
 
 if __name__ == "__main__":

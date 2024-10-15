@@ -1,7 +1,7 @@
-.. _Objects:
+.. _objects:
 
-Objects
-=======
+Objects API Reference
+=====================
 
 The objects library is used to represent structural elements. 
 This includes key object representations, and component objects.
@@ -29,7 +29,7 @@ Design Props:
 	- This is used to store any internal attributes limitstates need for design that are design code dependant. Examples include the fire portection used for glulam elements, or if a beam element is curved.
 User Props:
 	- This provides a safe place for users to store any additional information they want in design. The limitstates library will objects will not use this attribute.
-Geometry Props
+Element Display Props
 	- This is used to store information about output element geometry. Examples include making plots or rendering geometry.
 Some elements, such as CLT, may have design geometry that differs from their analysis model. In the example of CLT, while it is a 2D plate, it is often modeled as if it was a beam.
 

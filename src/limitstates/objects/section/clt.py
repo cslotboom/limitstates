@@ -145,7 +145,7 @@ class LayerGroupClt:
         self._setLayerMidpointsAbs()        
         self.d = self.lBoundaries[-1]
         
-        self.lunit = self.layers[0].lUnit
+        self.lUnit = self.layers[0].lUnit
         self.lConvert = self.layers[0].lConvert
         self.sConvert = self.layers[0].mat.sConvert
         self.grade = self.layers[0].mat.grade
@@ -169,7 +169,7 @@ class LayerGroupClt:
         """
         Updates all the layers to have the new unit.
         """
-        self.lunit = lUnit
+        self.lUnit = lUnit
         scaleFactor = self.layers[0].lConvert(lUnit)
         for layer in self.layers:
             layer.lUnit = lUnit
@@ -219,8 +219,8 @@ class LayerGroupClt:
         r2 = abs(ybar  - self.lBoundaries[-1]) 
         return max(r1, r2)
     
-    def getEI(self, parallelToStrong:bool = True, sunits:str = 'Pa', 
-              lunits:str = 'm'):
+    def getEI(self, parallelToStrong:bool = True, sUnits:str = 'Pa', 
+              lUnits:str = 'm'):
         """
         Gets EI for the layer group in the given global orientation.
         returns per unit, not net.
@@ -229,9 +229,9 @@ class LayerGroupClt:
         ----------
         globalOrientation : float
             The orientation of the global direction to get EI in.
-        lunits : str, optional
+        lUnits : str, optional
             The length units for EI. The default is 'm'.
-        sunits : str, optional
+        sUnits : str, optional
             The stress units for EI. The default is 'Pa'.
 
         Returns
@@ -248,12 +248,12 @@ class LayerGroupClt:
             EI += layer.t**3 * E / 12
             EI += layer.t * lMid[ii]**2  * E
         
-        sfactor = self.sConvert(sunits)
-        lfactor = self.lConvert(lunits)
+        sfactor = self.sConvert(sUnits)
+        lfactor = self.lConvert(lUnits)
         return EI * sfactor * lfactor**3
     
     def getGA(self, parallelToStrong:bool = True, NlayerTotal:int = None,
-              lunits:str = 'm', sunits:str = 'Pa'):
+              lUnits:str = 'm', sUnits:str = 'Pa'):
         """
         Gets GA for the layer group orientation.
 
@@ -261,9 +261,9 @@ class LayerGroupClt:
         ----------
         parallelToStrong : bool
             A flag that si set to true if we are looking in the strong axis.
-        lunits : str, optional
+        lUnits : str, optional
             The length units for EI. The default is 'm'.
-        sunits : str, optional
+        sUnits : str, optional
             The stress units for EI. The default is 'Pa'.
 
         Returns
@@ -304,13 +304,13 @@ class LayerGroupClt:
         
         GA = h**2 / denom
         
-        sfactor = self.sConvert(sunits)
-        lfactor = self.lConvert(lunits)
+        sfactor = self.sConvert(sUnits)
+        lfactor = self.lConvert(lUnits)
         return GA * sfactor * lfactor
 
     
     def getEA(self, parallelToStrong:bool = True, 
-              lunits:str = 'm', sunits:str = 'Pa'):
+              lUnits:str = 'm', sUnits:str = 'Pa'):
         """
         Gets EI for the layer group in the given global orientation.
 
@@ -318,9 +318,9 @@ class LayerGroupClt:
         ----------
         globalOrientation : float
             The orientation of the global direction to get EI in.
-        lunits : str, optional
+        lUnits : str, optional
             The length units for EI. The default is 'm'.
-        sunits : str, optional
+        sUnits : str, optional
             The stress units for EI. The default is 'Pa'.
 
         Returns
@@ -336,8 +336,8 @@ class LayerGroupClt:
             E = layer.getLayerE(parallelToStrong)
             EA += layer.t * E 
         
-        sfactor = self.sConvert(sunits)
-        lfactor = self.lConvert(lunits)
+        sfactor = self.sConvert(sUnits)
+        lfactor = self.lConvert(lUnits)
         return EA * sfactor * lfactor
     
     
@@ -351,19 +351,19 @@ class SectionLayered(SectionAbstract):
     Represents a layered section, for example CLT.
     """
     
-    def getEA(sunit='sunit', lunit='Pa'):
+    def getEA(sUnit='Pa', lUnit='m'):
         pass    
     
-    def getEIx(sunit='sunit', lunit='Pa'):
+    def getEIx(sUnit='Pa', lUnit='m'):
         pass
     
-    def getEIy(sunit='sunit', lunit='Pa'):
+    def getEIy(sUnit='Pa', lUnit='m'):
         pass
     
-    def getGAx(sunit='sunit', lunit='Pa'):
+    def getGAx(sUnit='Pa', lUnit='m'):
         pass
     
-    def getGAy(sunit='sunit', lunit='Pa'):
+    def getGAy(sUnit='Pa', lUnit='m'):
         pass
 
 
@@ -527,22 +527,22 @@ class SectionCLT(SectionLayered):
         self.sLayers.updateUnits(lUnit)
         self.wLayers.updateUnits(lUnit)
     
-    def getEAs(self, sunit='Pa', lunit='m'):
+    def getEAs(self, sUnit='Pa', lUnit='m'):
         raise NotImplementedError('EA has not been defined yet')
     
-    def getEAw(self, sunit='Pa', lunit='m'):
+    def getEAw(self, sUnit='Pa', lUnit='m'):
         raise NotImplementedError('EA has not been defined yet')
     
-    def getEIs(self, sunit='Pa', lunit='m'):
+    def getEIs(self, sUnit='Pa', lUnit='m'):
         """
         Returns EI about the sections strong axis. 
-        Returns in units of sunit x lunit^4  
+        Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ix in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -551,19 +551,19 @@ class SectionCLT(SectionLayered):
             The EIs for the section.
 
         """
-        lconvertWidth = self.w*self.lConvert(lunit)
-        return self.sLayers.getEI(True, sunit, lunit)*lconvertWidth
+        lconvertWidth = self.w*self.lConvert(lUnit)
+        return self.sLayers.getEI(True, sUnit, lUnit)*lconvertWidth
     
-    def getEIw(self, sunit='Pa', lunit='m'):
+    def getEIw(self, sUnit='Pa', lUnit='m'):
         """
         Returns EI about the sections weak axis. 
-        Returns in units of sunit x lunit^4  
+        Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ix in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -572,19 +572,19 @@ class SectionCLT(SectionLayered):
             The EIw for the section.
 
         """
-        lconvertWidth = self.w*self.lConvert(lunit)
-        return self.wLayers.getEI(False, sunit, lunit)*lconvertWidth
+        lconvertWidth = self.w*self.lConvert(lUnit)
+        return self.wLayers.getEI(False, sUnit, lUnit)*lconvertWidth
     
-    def getGAs(self, sunit='Pa', lunit='m'):
+    def getGAs(self, sUnit='Pa', lUnit='m'):
         """
         Returns GA about the sections strong axis. 
-        Returns in units of sunit x lunit^2  
+        Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output As in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -594,20 +594,20 @@ class SectionCLT(SectionLayered):
 
         """
         
-        lconvertWidth = self.w*self.lConvert(lunit)
+        lconvertWidth = self.w*self.lConvert(lUnit)
         Nlayer = self.NlayerTotal
-        return self.sLayers.getGA(True, Nlayer, lunit, sunit)*lconvertWidth
+        return self.sLayers.getGA(True, Nlayer, lUnit, sUnit)*lconvertWidth
     
-    def getGAw(self, sunit='Pa', lunit='m'):
+    def getGAw(self, sUnit='Pa', lUnit='m'):
         """
         Returns GA about the sections weak axis. 
-        Returns in units of sunit x lunit^2  
+        Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output As in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -616,7 +616,7 @@ class SectionCLT(SectionLayered):
             The GAw for the section.
 
         """
-        lconvertWidth = self.w*self.lConvert(lunit)
+        lconvertWidth = self.w*self.lConvert(lUnit)
         Nlayer = self.NlayerTotal
-        return self.sLayers.getGA(False, Nlayer, lunit, sunit)*lconvertWidth
+        return self.sLayers.getGA(False, Nlayer, lUnit, sUnit)*lconvertWidth
 

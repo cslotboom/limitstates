@@ -1,3 +1,5 @@
+.. _section-db:
+
 Section Databases
 =================
 

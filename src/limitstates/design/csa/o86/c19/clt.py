@@ -89,11 +89,11 @@ def checkMrCltBeam(element:BeamColumnCltCsa19, knet:float = 1,
     # slfactor = section.lConvert('mm')
     
     if useStrongAxis:
-        Smm = (section.getEIs(sunit='MPa', lunit='mm') / E / layers.getYmax())
-        # Smm = (section.getEIs(lunit='mm') / E / (layers.getYmax() * slfactor)) /10e6
+        Smm = (section.getEIs(sUnit='MPa', lUnit='mm') / E / layers.getYmax())
+        # Smm = (section.getEIs(lUnit='mm') / E / (layers.getYmax() * slfactor)) /10e6
     else:
         # Smm = (section.getEIw() / E / layers.getYmax() * slfactor)      
-        Smm = (section.getEIw(sunit='MPa', lunit='mm') / E / layers.getYmax())
+        Smm = (section.getEIw(sUnit='MPa', lUnit='mm') / E / layers.getYmax())
         
     return checkMrClt(Smm, fb*knet, useStrongAxis, phi) / 1000
 

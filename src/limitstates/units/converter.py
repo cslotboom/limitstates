@@ -126,7 +126,8 @@ class ConverterForce(UnitConverter):
 class ConverterStress(UnitConverter):
     type = 'stress'
     unitDict = {'Pa':1, 'kPa':1000, 'MPa':1e6, 'GPa':1e9, 
-                'psi':0.0001450377, 'psf':0.020885434273039}
+                'psi':6894.7572932, 'ksi':6894757.2932, 
+                'psf':47.880258888889}
         
 class ConverterDensity(UnitConverter):
     type = 'mass'

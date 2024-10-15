@@ -1,5 +1,7 @@
-Design
-=======
+.. _design:
+
+Design API Reference
+====================
 
 Design libraries can be used to act on structural objects, and determine capacities. The also contain special design objects, which are code specific versions of generic objects.
 

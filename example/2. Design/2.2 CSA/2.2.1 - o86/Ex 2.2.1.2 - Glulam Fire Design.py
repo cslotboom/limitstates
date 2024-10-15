@@ -36,7 +36,9 @@ The section will be exposed for 60 minutes on all 3 sides, and 12.7mm layer
 of gypsum on it.
 """
 # Define the fire demand for a beamcolumn
-FRR      = csa.getFireDemands(60, csa.FireConditions.beamWithPanel)
+
+FRR = csa.getFRRfromFireConditions(60, csa.FireConditions.beamWithPanel)
+
 # Define the fire potection
 firePortection = csa.getGypsumFirePortection(csa.FireConditions.beamWithPanel, "12.7mm")
 
@@ -49,7 +51,7 @@ csa.setFireSectionGlulamCSA(myBeam, FRR)
 The output fire section is now accessable in the beam design propreties 
 """
 
-fireSection = myBeam.designProps.fireSection
+fireSection = myBeam.designProps.sectionFire
 
 """
 We can also define a knet for the section, and 
@@ -62,3 +64,5 @@ Finally, we check the section in fire.
 Mr = csa.checkMrGlulamBeamSimple(myBeam, knet, useFire=True)
 Vr = csa.checkVrGlulamBeamSimple(myBeam, knet, useFire=True )
 
+
+ls.plotElementSection(myBeam)

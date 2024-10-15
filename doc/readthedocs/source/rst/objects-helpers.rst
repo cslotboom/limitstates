@@ -14,7 +14,6 @@ Filtering Functions
 	   
 Reading Functions
 -----------------
-   
-   
-.. automodule:: limitstates.objects.parse
-	:members: getRectangularSections, getSteelSections
+     
+.. automodule:: limitstates.objects.read
+	:members:

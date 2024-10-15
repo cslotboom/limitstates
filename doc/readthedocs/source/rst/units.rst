@@ -1,7 +1,7 @@
 .. _units:
 
-Units
-=====
+Units API Reference
+===================
 
 While is often not used directly by the user, the units library is a core building block of limitstates. 
 It provides a consistent way for tracking and converting between different units.

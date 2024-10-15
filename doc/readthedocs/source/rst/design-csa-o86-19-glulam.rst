@@ -1,37 +1,26 @@
-CSA o86-2019 Glulam Design
+CSA o86-19 Glulam Design
 ==========================
 
 Limitstates currently contains code for working with glulam and CLT.
 Objects also exist for representing fire portection, and burning sections according to Annex B of csa o86.
 
 
- 
-.. autoclass:: limitstates.design.csa.o86.c19.element.DesignPropsGlulam19
-   :members:
-   :undoc-members:
-   :show-inheritance:
- 
-.. autoclass:: limitstates.design.csa.o86.c19.element.BeamColumnGlulamCsa19
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-   
-.. automodule:: limitstates.design.csa.o86.c19.element
-	:members: getBeamColumnGlulamCsa19
-	
-.. automodule:: limitstates.design.csa.o86.c19.glulam
-	:members: checkCb, checkBeamCb, checkKL, checkKzbg, checkGlulamMr, checkMrGlulamBeamSimple
-	
 
-   
-.. automodule:: limitstates.design.csa.o86.c19.glulam
-	:members: checkGlulamShearSimple, checkGlulamWr, checkVrGlulamBeamSimple, checkWrGlulamBeamSimple
-	
+#. :doc:`design-csa-o86-19-glulam-objects`
+#. :doc:`design-csa-o86-19-glulam-moment`
+#. :doc:`design-csa-o86-19-glulam-shear`
+#. :doc:`design-csa-o86-19-glulam-compression`
+#. :doc:`design-csa-o86-19-glulam-interaction`
 
-.. automodule:: limitstates.design.csa.o86.c19.glulam
-	:members: checkColumnCc, checkKci, checkKzcg, checkGlulamPr, checkPrGlulamColumn
-	
+
+.. toctree::
+   :maxdepth: 6
+   :hidden:
    
-.. automodule:: limitstates.design.csa.o86.c19.glulam
-	:members: checkPE, checkPEColumn, checkInterTimberGeneric, checkInterEccPf, checkInterEccPfGlulam
+   design-csa-o86-19-glulam-objects.rst
+   design-csa-o86-19-glulam-moment.rst
+   design-csa-o86-19-glulam-shear.rst
+   design-csa-o86-19-glulam-compression.rst
+   design-csa-o86-19-glulam-interaction.rst
+

@@ -225,8 +225,8 @@ def getBurnDimensions(netFireTime:ndarray[float],
     burnAmount = netFireTime*Bn + xn
     return burnAmount
 
-def getBurntRectangularDims(netBurnTime:ndarray[float], width:float, 
-                            depth:float, Bn:float = 0.7):
+def getBurntRectangularDims(burnAmount, width:float, 
+                            depth:float):
     """
     Gets the burn dimensions for a rectangle from a input burn time. Burn time
     is input in: [top, right, bottom, left]  
@@ -241,14 +241,12 @@ def getBurntRectangularDims(netBurnTime:ndarray[float], width:float,
 
     Parameters
     ----------
-    netBurnTime : nd.Array
-        The burn time on each face in minutes.
+    burnAmount : nd.Array
+        The amount each face is burned.
     width : float
         The input section width as a float.
     depth : float
         The input section depth as a float.
-    Bn : float, optional
-        The char rate for the section. The default is 0.7.
 
     Returns
     -------
@@ -258,9 +256,8 @@ def getBurntRectangularDims(netBurnTime:ndarray[float], width:float,
         The depth of the fire section.
     """
     
-    burnDimensions = getBurnDimensions(netBurnTime, Bn)
-    wfire = max(width - sum(burnDimensions[1::2]),0)
-    dfire = max(depth - sum(burnDimensions[0::2]),0)
+    wfire = max(width - sum(burnAmount[1::2]),0)
+    dfire = max(depth - sum(burnAmount[0::2]),0)
     return wfire, dfire
 
 def getCLTBurnDims(netBurnTime:ndarray[float], sectionCLT:SectionCLT, Bn:float = 0.8):
@@ -388,6 +385,8 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     -------
     SectionRectangle
         The burn section with dimensions equal to the output section.
+    burnAmount: list[float]
+        An array of what is burned on each face.
     """
     portectionTime = portection.getPortectionTime()
     netBurnTime = getNetBurnTime(FRR, portectionTime)
@@ -395,15 +394,15 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     # If section not in mm, convert to mm then convert back later.
     convertBack, oldUnits = _convertUnits(section)
     
-    burnDimensions = getBurntRectangularDims(netBurnTime, section.b, section.d, Bn)
+    burnAmount = getBurnDimensions(netBurnTime, Bn)
+    burnDimensions = getBurntRectangularDims(burnAmount, section.b, section.d)
     burnSection = SectionRectangle(section.mat, *burnDimensions, section.lUnit)
-    # burnSection.designProps = section.designProps
     
     # Convert the section back to mm.
     if convertBack:
         _convertBack(section, burnSection, oldUnits)
     
-    return burnSection
+    return burnSection, burnAmount
 
 def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float], 
                        portection:GypusmFlatCSA19, 
@@ -519,8 +518,8 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19,
     if not firePort:
         firePort = GypusmRectangleCSA19('exposed')
             
-    fireSection = getBurntRectangularSection(section, FRR, firePort)    
-    element.designProps.fireSection = fireSection
+    sectionFire, burnDims = getBurntRectangularSection(section, FRR, firePort)
+    element.setSectionFire(sectionFire, burnDims)    
 
 def setFireSectionCltCSA(element:BeamColumnGlulamCsa19, 
                          FRR:float|list[float]|ndarray[float],
@@ -564,10 +563,11 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCsa19,
     if isinstance(FRR, int) or isinstance(FRR, float):
         FRR = np.array([FRR])
     
-    fireSection = getBurntCLTSection(section, FRR, firePort, Bn)    
+    sectionFire = getBurntCLTSection(section, FRR, firePort, Bn)    
     # fireSection.NlayerTotal = len(section.sLayers)
-    element.designProps.fireSection = fireSection
-    
+    # element.designProps.sectionFire = sectionFire
+    element.setSectionFire(sectionFire)    
+
 
 
 

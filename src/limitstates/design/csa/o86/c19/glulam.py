@@ -1,19 +1,23 @@
 """
 Contains the code designc clauses
 """
+from numpy import pi, diff, sign, cumsum
+from enum import IntEnum
 
 from .element import BeamColumnGlulamCsa19,  _getSection, _getphi, _getphiCr, _isGlulam
-from numpy import pi
+from limitstates import DesignDiagram, Member, Support
 
-def checkCb(Le, d, b):
+
+def checkCb(Leb, d, b):
     """
     Calculates slenderness ratio according to c.l. 7.5.6.4.3
     Assumes units are all in m or mm.
 
     Parameters
     ----------
-    Le : float
-        The effective length of the section in the direction being checked.
+    Leb : float
+        The effective length of the section in the direction being checked
+        for bending.
     d : float
         The depth of the section in the direction being checked.
     b : float
@@ -25,7 +29,7 @@ def checkCb(Le, d, b):
         The Cb factor.
 
     """
-    return (Le*d/b**2)**0.5   
+    return (Leb*d/b**2)**0.5   
 
 def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
     """
@@ -46,15 +50,16 @@ def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
 
     """
     if useX:
-        Le = element.designProps.Lex
+        Leb = element.designProps.Lex * element.designProps.kexB
         b = element.section.b
         d = element.section.d
     else:
-        Le = element.designProps.Ley
-        b = element.section.d
-        d = element.section.b
+        raise Exception('Weak axis bending is not currently supported.')
+        # Leb = element.designProps.Ley
+        # b = element.section.d
+        # d = element.section.b
     
-    return (Le*d/b**2)**0.5
+    return checkCb(Leb, d, b)
 
 def checkKL(Cb:float, E:float, Fb:float, kse:float=1, kt:float=1, kx:float=1):
     """
@@ -97,7 +102,7 @@ def checkKL(Cb:float, E:float, Fb:float, kse:float=1, kt:float=1, kx:float=1):
     elif Ck < Cb and Cb < 50:
         return 0.65*E*kse*kt / (Cb**2*Fb*kx)
     else:
-        return 0
+        return -1
 
 def checkKzbg(b:float, d:float, LM0:float):
     """
@@ -124,17 +129,21 @@ def checkKzbg(b:float, d:float, LM0:float):
     return min(1.3, kzbg)
 
 
+def _getMr0(S:float, Fb:float, phi = 0.9):
+    return phi*Fb*S
+
 def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
                   phi = 0.9):
     """
-    Calcualtes Mr for a beam or beam segment.
+    Calcualtes Mr for a beam or beam segment according to cl. 7.5.6.5.1
 
     Parameters
     ----------
     S : float
         The section modulus in mm3.
     Fb : float
-        The factored bending strength in MPa.
+        The factored bending strength in MPa, this is equal to fb * knet, where
+        knet is the sum of all k factores except for specialty ones.
     kzbg : float
         The size factor.
     kL : float, optional
@@ -148,36 +157,100 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
         Mr in Nm.
 
     """
-    Mr0 = phi*Fb*S
+    Mr0 = _getMr0(S, Fb, phi)
     Mr1 = Mr0*kzbg*kx
     Mr2 = Mr0*kL*kx
     return min(Mr1, Mr2) / 1000
     
-   
-def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1, 
-                        useFire:bool = False, useX = True) -> float:
-    """
-    Checks the Mr for a beamcolumn, where there are not points of inflection 
-    in the bending moment diagram. Generally does not apply to multispan beams
-    or those with points of inflection.
+
+# def _CheckSectionMr():
+#     # Calculate kzbg
+#     lfactor = element.member.lConvert('mm')
+#     slfactor = section.lConvert('mm')
     
-    Mr and kzbg is calculated according to 7.5.6.5, and 
+#     # Note, kzbg is based on the ORIGINAL element size.
+#     dmm = element.section.d*slfactor
+#     bmm = element.section.b*slfactor
+#     Lmm = element.getLength()*lfactor
+#     kzbg = checkKzbg(bmm, dmm, Lmm)
+
+#     if useX:
+#         Smm = section.Sx*slfactor**3
+#     else:
+#         raise Exception('Weak axis bending currently is not supported by limitstates')
+    
+#     return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
+
+def _checkIfLatSupport(supportCondition:bool|list[bool]):
+    """
+    Checks a simple span if it is laterally supported
+    """
+    
+    if supportCondition is True:
+        return True
+    elif isinstance(supportCondition, list):
+        return True    
+    return False
+
+
+
+def _checkElementkL(element, knet, kse, kt, kx = 1):
+    """
+    Checks kL for simplified condtions
     
     kL is calculated according to 7.5.6.4 and 7.5.6.3.1
     
-    If there are points of inflection in the beam, kzbg should be calcualted
-    per segment.
+    Only checks kL in the strong axis
 
+    """
+        
+    # check for lateral support, this should be boolean for simple members / segments
+    
+    latSupport = _checkIfLatSupport(element.designProps.lateralSupport)
+    if latSupport:
+        kL = 1
+    # c.l. 7.5.6.3.2
+    elif (element.section.d / element.section.b) < 2.5:
+        kL = 1
+    else:
+        # raise Exception('Element is unsupported and 7.5.6.3.2 does not apply. limitstates can currently only design supported members.')
+        sLunit = element.section.lUnit
+        L = element.member.L * element.member.lConvert(sLunit)
+        Cb = checkCb(L, element.section.d, element.section.b)
+        
+        E = element.section.mat.E
+        fb = element.section.mat.fb
+        kL = checkKL(Cb, E, fb*knet, kse, kt, kx)
+        
+    return kL
+
+def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1, 
+                            useFire:bool = False, useX = True,
+                            kse:float = 1, kt:float = 1) -> float:
+    """
+    Checks the Mr for a single span beamcolumn, where there are not points of 
+    inflection in the bending moment diagram. If there are multiple spans, 
+    multiple unsupported regions, or or points of inflection, then use
+    :func:`checkMrGlulamBeamMultiSpan <limitstates.design.csa.o86.c19.glulam.checkMrGlulamBeamMultiSpan>`
+    instead.
+    If it is applied to a multi-span beam then it will assume the beam is
+    laterally supported.
+    
+    Mr and kzbg is calculated according to 7.5.6.5, and 7.5.6.5.
+    
+    kL is calculated according to 7.5.6.4 and 7.5.6.3.1. The support condition
+    is set in the design propreties.
+    
     Parameters
     ----------
     element : BeamColumnGlulamCsa19
         The glulam element to check.
-    knet : flaot, optional
+    knet : float, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
+        The default is False, which uses no fire section.
     useX : bool, optional
         A toggle that sets the diretion moment will be checked in.
         Weak axis bending is currently not supported by limitstates.
@@ -189,22 +262,18 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
         The output in Nm.
 
     """
-    section = _getSection(element, useFire)   
-    phi = _getphi(useFire)
-    
-    # check for lateral support
-    if element.designProps.lateralSupport:
-        kL = 1
-    elif (element.section.d / element.section.b) < 2.5:
-        kL = 1
-    else:
-        raise Exception('Element is unsupported and 7.5.6.4 does not apply. limitstates can currently only design supported members.')
+
   
     # check for curvature
     if not element.designProps.isCurved:
         kx = 1
     else:
         raise Exception('Element curved, limitstates can currently only design straight members.')
+        
+    kL = _checkElementkL(element, knet, kse, kt)
+
+    section = _getSection(element, useFire)   
+    phi = _getphi(useFire)
     
     # Calculate kzbg
     lfactor = element.member.lConvert('mm')
@@ -221,13 +290,259 @@ def checkMrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     else:
         raise Exception('Weak axis bending currently is not supported by limitstates')
     
-    return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
+    Fb = section.mat.fb*knet
+    return checkGlulamMr(Smm, Fb, kzbg, kL, kx, phi)
 
 
-def _checkMrMultispanBeamColumn():
-    pass
-    # phi = 0.9
+
+
+
+def checkBMDkzbg(inflectionCoords:list[float], 
+                 b:float, 
+                 d:float):
+    """
+    Determins kzbg for a number of beam segments.
+
+    Assumes all input units are are in mm.
+
+
+    Parameters
+    ----------
+    interCoords : list[float]
+        The points of inflection in mm. This should include the start and end 
+        of the beam.
+    b : float
+        The width of the beam in mm.
+    d : float
+        The depth of the beam in mm.
+
+    Returns
+    -------
+    interLengths : list[float]
+        The segment lengths in mm.
+    kzbgOut : float
+        The output kzbg factors for each segment.
+
+    """
     
+    interLengths = diff(inflectionCoords)
+    
+    kzbgOut = []
+    for L in interLengths:
+        kzbgOut.append(checkKzbg(b, d, L))
+    
+    return interLengths, kzbgOut
+
+
+def getMemberkL(segmentLengths: list[float], 
+                segmentke, 
+                segmentBraceCondition,
+                b, d, E, Fb, kse, kt, kx):
+    """
+    Assumes that all segments have the same length.
+    XX TO TEST
+    """
+        
+    LeOut = []
+    kLOut = []
+    # checkKL(Cb, E, Fb)
+    for L, ke, bc in zip(segmentLengths, segmentke, segmentBraceCondition):
+        
+        # If the compression flange is braced
+        if bc == True:
+            kLOut.append(1)
+        # If the compression flange is braced
+        elif d/b < 2.5:
+            kLOut.append(1)
+        else:
+            Le = L*ke
+            CbSegment = checkCb(Le, d, b)
+            kLOut.append(checkKL(CbSegment, E, Fb, kse, kt, kx))
+    
+    return kLOut
+
+class SegmentSupportTypes(IntEnum):
+    CONTINOUS = 1
+    SUPPORTS = 2
+    MANUAL = 3
+
+
+def getMultispanRegions(Lkzbg, kzbg, Lseg, kL):
+    xKzbg = cumsum(Lkzbg)
+    xSeg  = cumsum(Lseg)
+    xbreakpoints = list(set(list(xKzbg) + list(xSeg)))
+    xbreakpoints.sort()
+    nn = 0
+    mm = 0
+    kzbgOut = []
+    kLOut   = []
+    for ii in range(len(xbreakpoints)):
+        xZ = xKzbg[nn]
+        xS = xSeg[mm]
+        
+        kzbgOut.append(kzbg[nn])
+        kLOut.append(kL[mm])
+        xbreak = xbreakpoints[ii]
+        
+        if xZ <= xbreak:
+            nn += 1
+        if xS <= xbreak:
+            mm += 1        
+    return xbreakpoints, kzbgOut, kLOut
+        
+
+
+def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19, 
+                              bmd: DesignDiagram, 
+                              lateralSupportType: SegmentSupportTypes | int = 2,
+                              knet:float = 1, 
+                              useFire:bool = False,
+                              kse = 1, kt = 1, kx = 1):
+    """
+    Returns the Mr value for each region of a multiSpanBeam.
+    Regions for Mr are determined using the span lengths for kL, and points
+    of inflection for kzbg.
+
+    Assumes the BMD and member have the same units for length.
+    
+    Regions for kzbg are calculated by finding points of inflection in the
+    bending moment diagram.
+    
+    Regions for kL are calculated depending on the option selected.
+    
+    - If option 1 is selected, the beam is assumed to be continously laterally 
+    supported over the entire beam.
+    
+    - If option 2 is selected, the beam is assumed to be laterally unsupported 
+    between supports. In this case the factor ke is taken as 1.92 from 
+    table 7.4
+    
+    - If option 3 is selected, then the design propreties will be used to.
+    The user should manually set the attributed Lex, kexB, and lateralSupport
+    in the designpropreties..
+
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The multi-span element to check.
+    bmd : DesignDiagram
+        The bending moment diagram for the load case to be checked.
+    lateralSupportType : SegmentSupportTypes | int, optional
+        The type of lateral support condition for bending. The default is 2.
+        
+        - 1 will return a beam lateral supported on all segments
+        - 2 will return a beam with no lateral support
+        - 3 will use the user define support conditions. The Lex, kexB, and 
+        lateralSupport must be set for each beam segment
+        
+    knet : float, optional
+        The product of all standard k factors, including kd, kse, etc. 
+        The default is 1.
+    useFire : bool, optional
+        A toggle that makes the beam use it's fire section when selected. 
+        The default is False, which uses no fire section.
+    kSE : float, optional
+        The service condition factor, used when calculating kC. 
+        The default is 1.
+    kT : float
+        The treatment condition factor, used when calculating kC. 
+        The default is 1.
+
+    Returns
+    -------
+    MrOut : list[float]
+        The Mr out for each design segment.
+    xOut : list[float]
+        The length of each design segment - these are either support conditions
+        or points of inflection in the BMD.
+    kzbgout : list[float]
+        The kxbgout for each segment.
+    kLout : list[float]
+        The kL out for each segment..
+
+    """
+        
+    mlfactor = element.member.lConvert('mm')
+    slFactor = element.section.lConvert('mm')
+
+    b  = element.section.b * slFactor # kzbg is based on the original section!
+    d  = element.section.d * slFactor # kzbg is based on the original section!
+    E  = element.section.mat.E
+    Fb = element.section.mat.fb* knet
+        
+    # Get the regions for xkbg
+    coordsmm = bmd.getIntersectionCoords() * mlfactor
+    Lkzbg, kzbg = checkBMDkzbg(coordsmm, b, d)
+    
+    
+    
+    section = _getSection(element, useFire)    
+    bkL = section.b * slFactor # kL is based on the fire section!
+    dkL = section.d * slFactor # kL is based on the fire section!
+    Sx   = section.Sx*slFactor**3
+    
+    if lateralSupportType != 3:
+        Lseg, kexBSeg = _getElemenKlSegments(element)
+        Lseg = [L * mlfactor for L in Lseg]
+        Nseg = len(Lseg)    
+    # Get the kL factor depending on the condition used.
+    if lateralSupportType == 1:
+        kL = [1] * len(Lseg)
+    if lateralSupportType == 2:
+        isContinouslyBraced = [False]* Nseg
+        kL = getMemberkL(Lseg, kexBSeg, isContinouslyBraced,
+                         bkL, dkL, E, Fb, kse, kt, kx)
+    if lateralSupportType == 3:
+        Lseg    = element.designProps.Lex  * mlfactor
+        kexBSeg = element.designProps.kexB
+        isContinouslyBraced = element.designProps.lateralSupport
+        
+        kL = getMemberkL(Lseg, kexBSeg, isContinouslyBraced,
+                         bkL, dkL, E, Fb, kse, kt, kx)
+    
+    
+    xOut, kzbgout, kLout = getMultispanRegions(Lkzbg, kzbg, Lseg, kL)
+    xOut = [L / mlfactor for L in xOut]
+    kmin = [min(kl, kz) for kl, kz  in zip(kzbgout, kLout)]
+    
+
+    phi  = _getphi(useFire)
+    Mr0  = _getMr0(Sx, Fb, phi) / 1000
+    MrOut = [Mr0* k  for k in kmin]
+    
+    return MrOut, xOut, kzbgout, kLout
+
+def _getElemenKlSegments(element: BeamColumnGlulamCsa19) -> (list[float], list[float]):
+    """
+    
+    Classifies a elements segments between supports.
+    All segments are assumed to have a ke factor of 1.92. This is conservative
+    for all loading types.
+    
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The glulam element to check.
+        
+    Returns
+    -------
+    segments : float
+        The segment length.
+
+    segmentsKe : float
+        The segment ke factor.
+
+    """
+    member = element.member
+    segments = []
+    Ncurves = len(member.curves)
+    for ii in range(Ncurves):
+        line = member.curves[ii]
+        segments.append(line.L)
+        
+    segmentsKe = [1.92]*Ncurves
+
+    return segments, segmentsKe
 
 
 # =============================================================================
@@ -300,12 +615,12 @@ def checkVrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     ----------
     element : BeamColumnGlulamCsa19
         The glulam element to check.
-    knet : flaot, optional
+    knet : float, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
+        The default is False, which uses no fire section.
 
 
     Returns
@@ -315,7 +630,7 @@ def checkVrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
 
     """
     section = _getSection(element, useFire)   
-    phi = _getphi(useFire)
+    phi     = _getphi(useFire)
 
     # check for volume support
     lconvert = element.member.lConvert('mm')
@@ -348,7 +663,7 @@ def checkWrGlulamBeamSimple(element:BeamColumnGlulamCsa19, knet:float = 1,
     ----------
     element : BeamColumnGlulamCsa19
         The glulam element to check.
-    knet : flaot, optional
+    knet : float, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
     useFire : bool, optional
@@ -389,8 +704,10 @@ def _checkSlenderness(Le, r):
 
 def checkColumnCc(element:BeamColumnGlulamCsa19, useFire:bool = False):
     """
-    Returns the slenderness factors for a column in each direction.
-    Requires Lex and Ley to be set.
+    Returns the slenderness factors for a column in each direction, assuming
+    it is a rectangular column.
+    Requires Lex and Ley to be set, and requires the beamcolumn only has one
+    span.
 
     Parameters
     ----------
@@ -413,9 +730,11 @@ def checkColumnCc(element:BeamColumnGlulamCsa19, useFire:bool = False):
 
     # convert to the same unit.
     lfactor = element.member.lConvert(element.section.lUnit)
-
-    Cx = _checkSlenderness(element.designProps.Lex*lfactor, section.d)
-    Cy = _checkSlenderness(element.designProps.Ley*lfactor, section.b)
+    props = element.designProps
+    Lexc = props.Lex * props.kexC * lfactor
+    Leyc = props.Ley * props.keyC * lfactor
+    Cx = _checkSlenderness(Lexc, section.d)
+    Cy = _checkSlenderness(Leyc, section.b)
     
     return Cx, Cy
 
@@ -433,6 +752,20 @@ def checkKci(Fc:float, kzcg:float, Ci:float, E05:float, kSE:float = 1,
 def checkKzcg(Ag:float, L:float):
     """
     Gets the compression kzcg factor.
+
+
+    Parameters
+    ----------
+    Ag : float
+        DESCRIPTION.
+    L : float
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
     """
     
     return min(0.68*(Ag*L)**-0.13, 1)
@@ -475,6 +808,7 @@ def checkPrGlulamColumn(element:BeamColumnGlulamCsa19, knet:float = 1,
                         useFire:bool = False, kSE = 1, kT = 1) -> float:
     """
     Checks the Pr for a beamcolumn.
+    Only single segment beamcolumns are supported.
     
     Pr and kzbg is calculated according to 7.5.8.5, and     
     kc is calculated according to 7.5.8.6
@@ -488,16 +822,19 @@ def checkPrGlulamColumn(element:BeamColumnGlulamCsa19, knet:float = 1,
     ----------
     element : BeamColumnGlulamCsa19
         The glulam element to check.
-    knet : flaot, optional
+    knet : float, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
-    kSE : flaot, optional
-        The product of all standard k factors, including kd, kse, etc. 
+        The default is False, which uses no fire section.
+    kSE : float, optional
+        The service condition factor, used when calculating kC. 
         The default is 1.
-
+    kT : float
+        The treatment condition factor, used when calculating kC. 
+        The default is 1.
+        
     Returns
     -------
     Pr
@@ -586,15 +923,19 @@ def checkPEColumn(element:BeamColumnGlulamCsa19, knet:float = 1,
     ----------
     element : BeamColumnGlulamCsa19
         The glulam element to check. Can also be solid timber elements.
-    knet : flaot, optional
+    knet : float, optional
         The product of all standard k factors, including kd, kse, etc. 
         The default is 1.
     useFire : bool, optional
         A toggle that makes the beam use it's fire section when selected. 
-        The default is False, which uses no fire sectio.
-    kSE : flaot, optional
-        The product of all standard k factors, including kd, kse, etc. 
+        The default is False, which uses no fire section.
+    kSE : float, optional
+        The service condition factor, used when calculating kC. 
         The default is 1.
+    kT : float
+        The treatment condition factor, used when calculating kC. 
+        The default is 1.
+        
 
     Returns
     -------
@@ -617,8 +958,11 @@ def checkPEColumn(element:BeamColumnGlulamCsa19, knet:float = 1,
     
     isGlulam = _isGlulam(element)
     E05 = _getE05(E, useFire, isGlulam)
-    PEx = checkPE(E05, section.Ix*slfactor, element.designProps.Lex, kSE, kT)
-    PEy = checkPE(E05, section.Iy*slfactor, element.designProps.Ley, kSE, kT)
+    
+    Lexc = element.designProps.Lex * element.designProps.kexC 
+    Leyc = element.designProps.Ley * element.designProps.keyC 
+    PEx = checkPE(E05, section.Ix*slfactor, Lexc, kSE, kT)
+    PEy = checkPE(E05, section.Iy*slfactor, Leyc, kSE, kT)
     
     return PEx, PEy
 
@@ -690,7 +1034,7 @@ def checkInterEccPf(Pf:float, e:float, Pr:float, Mr:float, PE:float) -> float:
 
 
 
-def checkInterEccPfGlulam(element:BeamColumnGlulamCsa19, Pf:float, e:float,
+def checkInterEccPfColumn(element:BeamColumnGlulamCsa19, Pf:float, e:float,
                           Mr:float, knet:float = 1, useX:bool = True,
                           useFire:bool = False, 
                           kSE = 1, kT = 1) -> float:
@@ -718,6 +1062,16 @@ def checkInterEccPfGlulam(element:BeamColumnGlulamCsa19, Pf:float, e:float,
         The factored compression force, in N.
     e : float
         The eccentricty the load applies at, in m.
+
+
+    kSE : float, optional
+        The service condition factor, used when calculating kC. 
+        The default is 1.
+    kT : float
+        The treatment condition factor, used when calculating kC. 
+        The default is 1.
+        
+
 
     Returns
     -------

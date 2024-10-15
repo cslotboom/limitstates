@@ -3,7 +3,7 @@ Tests if the unit library is working correctly.
 """
 
 
-from limitstates import ConverterLength, ConverterForce
+from limitstates import ConverterLength, ConverterForce, ConverterStress
 import pytest
 
 def test_convert_length_metric():
@@ -30,7 +30,19 @@ def test_convert_force_metric():
     assert abs(ffactor2 / 0.00444822 - 1) <0.0002
 
 
+        
+def test_convert_stress_metric():
+    fconvert = ConverterStress()
+    ffactor =  fconvert.getConversionFactor('MPa','ksi')
+    # ffactor2 = fconvert.getConversionFactor('lbf','kN')
+    
+    # assert ffactor == 0.001
+    assert abs(ffactor / 0.1450377377 - 1) <0.0002
+
+
+
 if __name__ == '__main__':
     test_convert_length_metric()
     test_notIn_length()
     test_convert_force_metric()
+    test_convert_stress_metric()
