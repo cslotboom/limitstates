@@ -27,16 +27,16 @@ class SectionAbstract(ABC):
     """
     
     @abstractmethod
-    def getEIx(lunit='m', sunit='Pa' ):
+    def getEIx(lUnit='m', sUnit='Pa' ):
         """
         Returns EI about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^4  
+        strong axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ix in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -49,16 +49,16 @@ class SectionAbstract(ABC):
         pass
     
     @abstractmethod
-    def getEIy(lunit='m', sunit='Pa'):
+    def getEIy(lUnit='m', sUnit='Pa'):
         """
         Returns EI about the sections local y axis, which is generally the 
-        weak axis. Returns in units of sunit x lunit^4  
+        weak axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Iy in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -70,16 +70,16 @@ class SectionAbstract(ABC):
         pass
     
     @abstractmethod
-    def getGAx(lunit='m', sunit='Pa'):
+    def getGAx(lUnit='m', sUnit='Pa'):
         """
         Returns GA about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ax in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -94,13 +94,13 @@ class SectionAbstract(ABC):
     def getGAy():
         """
         Returns GA about the sections local y axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ay in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -111,18 +111,18 @@ class SectionAbstract(ABC):
         """
         pass
     
-    def _initUnits(self, lunit:str='mm'):
+    def _initUnits(self, lUnit:str='mm'):
         """
         Initiates units of the cross sections. Cross sections have length units
         only.
 
         Parameters
         ----------
-        lunit : str, optional
+        lUnit : str, optional
             The length unit to use. The default is 'mm'.
         """
 
-        self.lUnit      = lunit
+        self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
     def lConvert(self, outputUnit:str):
@@ -156,19 +156,19 @@ class SectionMonolithic(SectionAbstract):
     def __len__(self):
         return 1
     
-    def _getCfactors(self, lunit='m', sunit='Pa'):
-        return self.mat.sConvert(sunit), self.lConvert(lunit)
+    def _getCfactors(self, lUnit='m', sUnit='Pa'):
+        return self.mat.sConvert(sUnit), self.lConvert(lUnit)
     
-    def getEA(self, lunit='m', sunit='Pa'):
+    def getEA(self, lUnit='m', sUnit='Pa'):
         """
         Returns the axis stiffness EA for the section. 
-        Returns in units of sunit x lunit^2  
+        Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output A in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -178,19 +178,19 @@ class SectionMonolithic(SectionAbstract):
 
         """
         
-        sfactor, lfactor = self._getCfactors(lunit, sunit)
+        sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.A * lfactor**2
         
-    def getEIx(self, lunit='m', sunit='Pa'):
+    def getEIx(self, lUnit='m', sUnit='Pa'):
         """
         Returns EI about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^4  
+        strong axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ix in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -199,19 +199,19 @@ class SectionMonolithic(SectionAbstract):
             The EIx for the section.
 
         """
-        sfactor, lfactor = self._getCfactors(lunit, sunit)
+        sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Ix * lfactor**4        
     
-    def getEIy(self, lunit='m', sunit='Pa'):
+    def getEIy(self, lUnit='m', sUnit='Pa'):
         """
         Returns EI about the sections local y axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^4  
+        strong axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Iy in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -220,19 +220,19 @@ class SectionMonolithic(SectionAbstract):
             The EIy for the section.
 
         """
-        sfactor, lfactor = self._getCfactors(lunit, sunit)
+        sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Iy * lfactor**4
     
-    def getGAx(self, lunit='m', sunit='Pa'):
+    def getGAx(self, lUnit='m', sUnit='Pa'):
         """
         Returns GA about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ax in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -241,19 +241,19 @@ class SectionMonolithic(SectionAbstract):
             The GAx for the section.
 
         """
-        sfactor, lfactor = self._getCfactors(lunit, sunit)
+        sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Avx * lfactor**2
          
-    def getGAy(self, lunit='m', sunit='Pa'):
+    def getGAy(self, lUnit='m', sUnit='Pa'):
         """
         Returns GA about the sections local y axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ay in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -262,7 +262,7 @@ class SectionMonolithic(SectionAbstract):
             The GAy for the section.
 
         """
-        sfactor, lfactor = self._getCfactors(lunit, sunit)
+        sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Avy * lfactor**2        
     
     def _initMat(self, mat):
@@ -306,7 +306,7 @@ class SectionGeneric(SectionMonolithic):
         The area in the shear direction x. The default is None.
     Ay : float, optional
         The area in the shear direction y. The default is None.
-    lunits : str, optional
+    lUnits : str, optional
         The units for length used in the section. The default is 'mm'.
         
     Returns
@@ -317,7 +317,7 @@ class SectionGeneric(SectionMonolithic):
     
     def __init__(self, mat:MaterialElastic, Ix:float = 1, A:float = 1, 
                  Iy:float = 1, J:float = 1, Avx:float = None, Avy:float = None, 
-                 lunits:str='mm'):
+                 lUnits:str='mm'):
 
         
         self.mat:MaterialAbstract = mat
@@ -341,13 +341,13 @@ class SectionRectangle(SectionMonolithic):
         The section width.
     d : float
         The section depth.
-    lunits : str, optional
+    lUnits : str, optional
         The length units. The default is 'mm'.
 
     """
     
-    def __init__(self, mat:MaterialElastic, b:float, d:float, lunits:str='mm'):
-        self._initUnits(lunits)
+    def __init__(self, mat:MaterialElastic, b:float, d:float, lUnits:str='mm'):
+        self._initUnits(lUnits)
         self.mat = mat
         
         self.d = d
@@ -420,17 +420,17 @@ class SectionSteel(SectionMonolithic):
         The steel material to use for the section.
     sectionDict : dict
         The input section dictionary, generally loaded from a database.
-    lunits : str, optional
+    lUnits : str, optional
         The length units for the section dictionary. The default is 'mm'.
 
 
     """
     sectionClass = None
-    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits:str='mm'):
 
         # add all items from the input section dictionary
         self.__dict__.update(sectionDict)
-        self._initUnits(lunits)
+        self._initUnits(lUnits)
         self.mat = mat
         
         self.typeEnum = self._classifySectionType()
@@ -442,16 +442,16 @@ class SectionSteel(SectionMonolithic):
     def __repr__(self):
         return f'<limitstates {self.name} Section>'
     
-    def getCy(self, lunits = 'm', sunits='Pa'):
-        lfactor = self.lConvert(lunits)
-        sfactor = self.mat.sConvert(sunits)
+    def getCy(self, lUnits = 'm', sUnits='Pa'):
+        lfactor = self.lConvert(lUnits)
+        sfactor = self.mat.sConvert(sUnits)
         return self.A * lfactor**2 * self.mat.Fy * sfactor
     
     @property
     def Cy(self):
         return self.getCy( 'm', 'Pa')
     
-    def getZ(self, useX:bool = True, lunits:str = 'mm'):
+    def getZ(self, useX:bool = True, lUnits:str = 'mm'):
         """
         Returns the section's plastic modulus in the units and direction input.
 
@@ -460,7 +460,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lunits : string, optional
+        lUnits : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -469,13 +469,13 @@ class SectionSteel(SectionMonolithic):
             The section's plastic modulus in the direction input.
 
         """
-        lfactor = self.lConvert(lunits)
+        lfactor = self.lConvert(lUnits)
         if useX:
             return self.Zx*lfactor**3
         else:
             return self.Zy*lfactor**3
     
-    def getS(self, useX = True, lunits = 'mm'):
+    def getS(self, useX = True, lUnits = 'mm'):
         """
         Returns the section's elastic modulus in the units and direction input.
 
@@ -484,7 +484,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lunits : string, optional
+        lUnits : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -494,13 +494,13 @@ class SectionSteel(SectionMonolithic):
 
         """
         
-        lfactor = self.lConvert(lunits)
+        lfactor = self.lConvert(lUnits)
         if useX:
             return self.Sx*lfactor**3
         else:
             return self.Sy*lfactor**3    
     
-    def getI(self, useX = True, lunits = 'mm'):
+    def getI(self, useX = True, lUnits = 'mm'):
         """
         Returns the section's moment of inertia in the units 
         and direction input.
@@ -510,7 +510,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lunits : string, optional
+        lUnits : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -520,7 +520,7 @@ class SectionSteel(SectionMonolithic):
 
         """
         
-        lfactor = self.lConvert(lunits)
+        lfactor = self.lConvert(lUnits)
         if useX:
             return self.Ix*lfactor**4
         else:
@@ -553,11 +553,11 @@ class SteelSectionTypes(Enum):
 # class SectionSteelHSS(SectionMonolithic):
 #     """A class that represents geometry for a steel HSS section."""
     
-#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits:str='mm'):
+#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits:str='mm'):
 
 #         # add all items from the input section dictionary
 #         self.__dict__.update(sectionDict)
-#         self._initUnits(lunits)
+#         self._initUnits(lUnits)
         
 #         self.mat = mat
     
@@ -591,7 +591,7 @@ class SectionDatabase(SectionMonolithic):
     sectionDict : dict
         A dictionary containing all of the information necessary to define
         the section.
-    lunits : str, optional
+    lUnits : str, optional
         The units for length used in the section. The default is 'mm'.
 
     Returns
@@ -600,11 +600,11 @@ class SectionDatabase(SectionMonolithic):
 
     """
 
-    def __init__(self, mat:MaterialElastic, sectionDict:dict, lunits='mm'):
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits='mm'):
         
         self.__dict__.update(sectionDict)
         self._initMat(mat)
-        self._initUnits(lunits)
+        self._initUnits(lUnits)
 
 
 class SectionComposite(SectionAbstract):
@@ -616,19 +616,19 @@ class SectionComposite(SectionAbstract):
         """
         pass
     
-    def getEA(sunit='sunit', lunit='Pa'):
+    def getEA(sUnit='sUnit', lUnit='Pa'):
         pass    
     
-    def getEIx(sunit='sunit', lunit='Pa'):
+    def getEIx(sUnit='sUnit', lUnit='Pa'):
         pass
     
-    def getEIy(sunit='sunit', lunit='Pa'):
+    def getEIy(sUnit='sUnit', lUnit='Pa'):
         pass
     
-    def getGAx(sunit='sunit', lunit='Pa'):
+    def getGAx(sUnit='sUnit', lUnit='Pa'):
         pass
     
-    def getGAy(sunit='sunit', lunit='Pa'):
+    def getGAy(sUnit='sUnit', lUnit='Pa'):
         pass
 
 

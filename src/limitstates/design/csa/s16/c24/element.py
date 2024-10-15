@@ -47,7 +47,7 @@ class BeamColumnSteelCsa24(BeamColumn):
     def __init__(self, member:Member, section:SectionSteel, 
                  designProps:DesignPropsSteel24 = None, 
                  userProps:dataclass = None,
-                 displayProps:dataclass = None):
+                 eleDisplayProps:dataclass = None):
         """
         Design propreties for a glulam beam element.
 
@@ -64,7 +64,7 @@ class BeamColumnSteelCsa24(BeamColumn):
         userProps : dataclass, optional
             The user design propeties. The default is None, which creates an
             empty dataclass.
-        displayProps : dataclass
+        eleDisplayProps : dataclass
             Propreties used to display the section.
 
         Returns
@@ -80,10 +80,10 @@ class BeamColumnSteelCsa24(BeamColumn):
             designProps = DesignPropsSteel24()
 
         # Initialize the design propreties if none are given.        
-        if displayProps is None:
-            displayProps = EleDisplayProps(self.section, self.member)
+        if eleDisplayProps is None:
+            eleDisplayProps = EleDisplayProps(self.section, self.member)
 
-        self._initProps(designProps, userProps, displayProps)
+        self._initProps(designProps, userProps, eleDisplayProps)
         
     def setLex(self, Lex):
         self.designProps.Lex = Lex
@@ -116,7 +116,7 @@ def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m',
         The input length for the beamcolumn.
     section : SectionAbstract
         The section the beamcolumn ises.
-    lunit : str
+    lUnit : str
         The units for the input length of the member.
     kx : float, optional
         The effective lenght factor for the direction x. The default is 1.

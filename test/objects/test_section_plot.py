@@ -80,6 +80,18 @@ def test_plot_I_beam_round():
     assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.02)
 
 
+def test_plot_I_beam_round_small():
+    myMat = ls.MaterialElastic(200*1000)
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'W')
+    section = sections[-1]
+    fig, ax     = ls.plotSection(section)
+
+    xy = ax.patches[0].get_xy()
+    assert 53 == len(xy)
+    assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]), 0.05)
+
+
 def test_plot_I_beam_round_canvasConfig():
     myMat = ls.MaterialElastic(200*1000)
 
@@ -114,7 +126,9 @@ if __name__ == "__main__":
     test_plot_rectangle_bottom()
     test_plot_I_beam()
     test_plot_I_beam_round()
+    test_plot_I_beam_round_small()
     test_plot_I_beam_round_canvasConfig()
     test_plot_I_beam_round_objConfig()
+    
 else:
     plt.close('all')

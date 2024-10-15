@@ -205,8 +205,8 @@ def _plotFactorySteel(section:SectionSteel, *args):
                                          section.tw, 
                                          section.bf, 
                                          section.tf,  
-                                         section.r1,  
                                          section.r2,  
+                                         section.r1,  
                                          *args)
         # If there is information about the rounded section, plot that
         else:
@@ -430,7 +430,7 @@ def plotElementSection(element:BeamColumn,
     summarizeGeometry : bool|list[str], optional
         If false, dispalys nothing.    
         If true, tries to find a default proprety list defined in the 
-        element.displayProps
+        element.eleDisplayProps
         If a list, creates a summary of the given attributes. 
         The default is False.
 
@@ -448,6 +448,8 @@ def plotElementSection(element:BeamColumn,
     # Use the display section if it is set.
     if not dispProps.section:
         dispProps.section = element.section
+        
+    # if not 
     
     return _plotFactory(dispProps)
 

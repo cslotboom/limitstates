@@ -216,16 +216,17 @@ class Member:
     analysisData:dict = None
     lConverter:ConverterLength = None
     L:float = None
+    isMultiSpan = None
     
     def __post_init__(self):
         self._initUnits(self.lUnit)
         self.L = sum([curve.L for curve in self.curves])
         
-    def _initUnits(self, lunit:str='m'):
+    def _initUnits(self, lUnit:str='m'):
         """
         Inititiates the unit of the section.
         """
-        self.lUnit      = lunit
+        self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
     def lConvert(self, outputUnit:str):
@@ -290,11 +291,11 @@ class Surface:
     def __post_init__(self):
         self._initUnits(self.lUnit)
         
-    def _initUnits(self, lunit:str='m'):
+    def _initUnits(self, lUnit:str='m'):
         """
         Inititiates the unit of the section.
         """
-        self.lUnit      = lunit
+        self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
     def lConvert(self, outputUnit:str):

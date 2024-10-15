@@ -19,7 +19,9 @@ __all__ = ["BeamColumnGlulamCsa19", "getBeamColumnGlulamCsa19",
 @dataclass
 class DesignPropsGlulam19:
     """
-    Design propreties specifically for a glulam beamcolumn element
+    Design propreties specifically for a glulam beamcolumn element.
+    Beams will either be single span or multi-span. For multi-span beams,
+    Lex and Ley need to be set.
 
     Parameters
     ----------
@@ -30,25 +32,39 @@ class DesignPropsGlulam19:
         The fire section for the beamcolumn member.
     lateralSupport : bool, optional
         A flag that is set equal to true if the beamcolumn has continuous
-        lateral support for beidng
+        lateral support for bending.
+        For single spans beams. For multi-segment beams.
     isCurved : bool
         A flag that specifies if the beam is curved. Curved members are 
         not currently supported.
-    Lex : float
+    Lex : float|list[float]
         The beam column's unsupported length in the section's x direction, which
         is typically the strong direction.
-    Ley : float
-        The beam column's unsupported length in the section's x direction, which
-        is typically the strong direction.        
-
+        If the beam is mult-segment, this is a list of the beam length, multiplied
+        by the factor ke from table 
+    Ley : float|list[float]
+        The beam column's unsupported length in the section's y direction, which
+        is typically the weak direction.
+    keBending : float
+        A factor that converts the actual span length into the effective span
+        length. See table 7.4 for guidance. 
+        If the beam is multispan, it must have the same number of entries 
+        as Lex and Ley. 
+    keCompression : float
+        A factor that converts the actual span length into the effective span
+        length for compression. See table A.4 for guidance. 
 
     """
     firePortection:GypusmRectangleCSA19 = None
     sectionFire:SectionRectangle = None
-    lateralSupport:bool = True
+    lateralSupport:bool|list[bool] = True
     isCurved:bool = False
-    Lex:bool = None
-    Ley:bool = None
+    Lex:float|list[float] = None
+    Ley:float|list[float] = None
+    
+    kexB:float|list[float] = None
+    kexC:float = None
+    keyC:float = None
     
     burnDimensions:list[float] = None
 
@@ -72,11 +88,22 @@ class EleDisplayPropsGlulam19(EleDisplayProps):
 
     burnDimensions:list[float] = None
     displayLamHeight = 38
+    
+    
 
 
 class BeamColumnGlulamCsa19(BeamColumn):
     """
     Design propreties for a glulam beam element.
+    
+    Glulam Beam columns can either be single span or multi-span. 
+    The span lengths are required to be set manually
+    
+    
+    Multi-span members with compression loads are not supported.
+    
+    For multi-span beams, Lex and Ley need to be set.
+
 
     Parameters
     ----------
@@ -91,8 +118,8 @@ class BeamColumnGlulamCsa19(BeamColumn):
     userProps : dataclass, optional
         The user design propeties. The default is None, which creates an
         empty dataclass.
-    displayProps : dataclass
-        Propreties used to display the section.
+    eleDisplayProps : dataclass
+        Propreties used to display the element.
 
     Returns
     -------
@@ -104,7 +131,7 @@ class BeamColumnGlulamCsa19(BeamColumn):
     def __init__(self, member:Member, section:SectionRectangle,
                  designProps:DesignPropsGlulam19 = None, 
                  userProps:dataclass = None,
-                 displayProps:dataclass = None):
+                 eleDisplayProps:dataclass = None):
 
         
         self._initMain(member, section)
@@ -113,12 +140,12 @@ class BeamColumnGlulamCsa19(BeamColumn):
             designProps = DesignPropsGlulam19()
 
         # Initialize the design propreties if none are given.        
-        if displayProps is None:
-            displayProps = EleDisplayPropsGlulam19(self.section, 
+        if eleDisplayProps is None:
+            eleDisplayProps = EleDisplayPropsGlulam19(self.section, 
                                                    self.member,
                                                    designProps.sectionFire)
 
-        self._initProps(designProps, userProps, displayProps)
+        self._initProps(designProps, userProps, eleDisplayProps)
         
     def setLex(self, Lex):
         self.designProps.Lex = Lex
@@ -138,7 +165,10 @@ class BeamColumnGlulamCsa19(BeamColumn):
 def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m', 
                              firePortection:GypusmRectangleCSA19 = None,
                              Lex:float = None, 
-                             Ley:float = None) -> BeamColumnGlulamCsa19:
+                             Ley:float = None,
+                             kexB:float = 1,
+                             kexC:float = 1,
+                             keyC:float = 1) -> BeamColumnGlulamCsa19:
     """
     A function used to return a beamcolumn based on an input length.
     The beam uses a simply supported elemet. If a different type
@@ -153,7 +183,7 @@ def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m',
         The input length for the beamcolumn.
     section : SectionAbstract
         The section the beamcolumn ises.
-    lunit : str
+    lUnit : str
         The units for the input length of the member.
 
     Returns
@@ -173,13 +203,19 @@ def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m',
         designProps.Lex = Lex
     else:
         designProps.Lex = L
-    
+    designProps.kexB = kexB
+    designProps.kexC = kexC
+
     if Ley:
         designProps.Ley = Ley
     else:
         designProps.Ley = L
+    designProps.keyC = keyC
     
     return BeamColumnGlulamCsa19(member, section, designProps)
+
+
+
 
 @dataclass
 class DesignPropsClt19:
@@ -201,7 +237,7 @@ class BeamColumnCltCsa19(BeamColumn):
                  sectionOrientation:float = 0,
                  designProps:DesignPropsClt19 = None, 
                  userProps:dataclass = None,
-                 displayProps:dataclass = None):
+                 eleDisplayProps:dataclass = None):
         """
         This design element treats the CLT panel as a beamcolumn.
         
@@ -237,10 +273,10 @@ class BeamColumnCltCsa19(BeamColumn):
             designProps = DesignPropsGlulam19()
 
         # Initialize the design propreties if none are given.        
-        if displayProps is None:
-            displayProps = EleDisplayProps(self.section, self.member)            
+        if eleDisplayProps is None:
+            eleDisplayProps = EleDisplayProps(self.section, self.member)            
                     
-        self._initProps(designProps, userProps, displayProps)
+        self._initProps(designProps, userProps, eleDisplayProps)
       
           
     def setSectionFire(self, sectionFire):

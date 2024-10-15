@@ -1,13 +1,16 @@
 """
-A basic example showing how structural objects can be loaded and acted on by 
-design codes.
+The following is a basic example showing how structural objects can be loaded 
+and acted on by design codes.
+
 """
+
+# Import the base library, and the design library to be used
 import limitstates as ls
 import limitstates.design.csa.s16.c24 as s16
 
 L = 6
 Fy = 350
-sectionName = 'W310X118'
+sectionName = 'W310x118'
 
 # Define the material, in this case a code specific steel with Fy = 350 MPa
 mat = s16.MaterialSteelCsa24(Fy, sUnit='MPa')
@@ -25,3 +28,5 @@ beam = s16.BeamColumnSteelCsa24(member, section)
 # Check capacity assuming it's laterally supported using CSA's s16 standard.
 Mr = s16.checkBeamMrSupported(beam) / 1000
 
+# Make a Plot of the Section.
+fig, ax = ls.plotElementSection(beam, True)

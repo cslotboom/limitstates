@@ -13,30 +13,33 @@ from limitstates import ConverterLength
 
 class DesignDiagram:
     
-    def __init__(self, xyIn, lunit= 'm'):
+    def __init__(self, xyIn, lUnit= 'm'):
         
         self.xy = np.array(xyIn)
        
         # self.curve.
         self.segments = None
         
-        self._initUnits(lunit)
+        self._initUnits(lUnit)
         self._setCurve(xyIn)
     
     def _setCurve(self, xyIn):
         self.curve = hys.SimpleCurve(xyIn)
-        # self.curve.setPeaks(peakProminence = 1)
+        self.curve.setIntersectionInds()
         self.xInflections = self.curve.getXIntersections()[:,0]
         
         
     def getIntersectionCoords(self):
         return self.xInflections
     
-    def _initUnits(self, lunit:str='m'):
+    
+    
+    
+    def _initUnits(self, lUnit:str='m'):
         """
         Inititiates the unit of the section.
         """
-        self.lUnit      = lunit
+        self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
     def lConvert(self, outputUnit:str):

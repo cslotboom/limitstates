@@ -13,7 +13,7 @@ from .. element import BeamColumn
 
 
 def convertBeamColumnToPlanesections(element: BeamColumn, meshSize: int = 100,
-                                     lunits = 'm', sunits = 'Pa'):
+                                     lUnit = 'm', sUnit = 'Pa'):
     """
     All output elements will be lines
     
@@ -27,12 +27,12 @@ def convertBeamColumnToPlanesections(element: BeamColumn, meshSize: int = 100,
         raise Exception('Only Monolotihic sections can currently be converted.')
     
     # Convert the section regular propreties
-    sfactor = element.section.mat.sConvert(sunits)
+    sfactor = element.section.mat.sConvert(sUnit)
     E = element.section.mat.E * sfactor
     G = element.section.mat.G * sfactor
     
     # Convert the section geometry propreties
-    slfactor = element.section.lConvert(lunits)
+    slfactor = element.section.lConvert(lUnit)
     A  = element.section.A  * slfactor ** 2
     Ix = element.section.Ix * slfactor ** 4
     Iy = element.section.Iy * slfactor ** 4

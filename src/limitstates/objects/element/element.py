@@ -40,7 +40,7 @@ class Element1D:
         A object that stores additional information needed for users. 
         The limitstates library will objects will not use this attribute. 
         The default is None.
-    displayProps : dataclass, optional
+    eleDisplayProps : dataclass, optional
         A object used to store information about output element geometry. 
         This includes information necessary for makign plots or rendering 
         geometry. The default is None.
@@ -54,7 +54,7 @@ class Element1D:
     member:Member 
     designProps:DefaultDesignProps
     userProps:UserProps
-    displayProps:EleDisplayProps
+    eleDisplayProps:EleDisplayProps
     
     @property
     def mat(self):
@@ -63,13 +63,13 @@ class Element1D:
     def getEIx(self, lUnit:str='m', sUnit:str='Pa'):
         """
         Returns EI about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^4  
+        strong axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ix in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -83,13 +83,13 @@ class Element1D:
     def getEIy(self, lUnit:str='m', sUnit:str='Pa'):
         """
         Returns EI about the sections local y axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^4  
+        strong axis. Returns in units of sUnit x lUnit^4  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Iy in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -103,13 +103,13 @@ class Element1D:
     def getGAx(self, lUnit:str='m', sUnit:str='Pa'):
         """
         Returns GA about the sections local x axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ax in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -124,13 +124,13 @@ class Element1D:
     def getGAy(self, lUnit:str='m', sUnit:str='Pa'):
         """
         Returns GA about the sections local y axis, which is generally the 
-        strong axis. Returns in units of sunit x lunit^2  
+        strong axis. Returns in units of sUnit x lUnit^2  
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ay in. The default is 'm'.
-        sunit : float, optional
+        sUnit : float, optional
             Stress units to output E in. The default is 'Pa'.
 
         Returns
@@ -153,7 +153,7 @@ class Element1D:
         
         Parameters
         ----------
-        lunit : float, optional
+        lUnit : float, optional
             The length units to output Ay in. The default is 'm'.
         
         """
@@ -161,7 +161,7 @@ class Element1D:
         blconvert = self.member.lConvert.convert(lUnit)        
         return self.member.L * self.section.A* slconvert**2 * blconvert
 
-    def _initProps(self, designProps, userProps, displayProps):
+    def _initProps(self, designProps, userProps, eleDisplayProps):
         """ Initializes the main propreties of the element.
         """
                 
@@ -173,12 +173,12 @@ class Element1D:
             userProps = UserProps()
         self.userProps = userProps
         
-        if displayProps is None:
-            displayProps = EleDisplayProps(self.section, self.member)
-        self.eleDisplayProps = displayProps
+        if eleDisplayProps is None:
+            eleDisplayProps = EleDisplayProps(self.section, self.member)
+        self.eleDisplayProps = eleDisplayProps
         
-    def setDisplayProps(self, displayProps):
-        self.eleDisplayProps = displayProps
+    def setEleDisplayProps(self, eleDisplayProps):
+        self.eleeleDisplayProps = eleDisplayProps
 
 class BeamColumn(Element1D):
     """
@@ -202,9 +202,9 @@ class BeamColumn(Element1D):
         A object that stores additional information needed for users. 
         The limitstates library will objects will not use this attribute. 
         The default is None.
-    geomProps : dataclass, optional
+    eleDisplayProps : dataclass, optional
         A object used to store information about output element geometry. 
-        This includes information necessary for makign plots or rendering 
+        This includes information necessary for making plots or rendering 
         geometry. The default is None.
 
     Returns
@@ -215,10 +215,10 @@ class BeamColumn(Element1D):
     
     def __init__(self, member:Member, section:SectionAbstract, 
                  designProps:dataclass = None, userProps:dataclass = None,
-                 geomProps:dataclass = None):
+                 eleDisplayProps:dataclass = None):
         
         self._initMain(member, section)
-        self._initProps(designProps, userProps, geomProps)
+        self._initProps(designProps, userProps, eleDisplayProps)
 
       
     def _initMain(self, member:Member, section:SectionAbstract, lUnit:str='m'):
@@ -243,7 +243,7 @@ def getBeamColumn(L:float, section:SectionAbstract, lUnit:str='m',
         The input length for the beamcolumn.
     section : SectionAbstract
         The section the beamcolumn ises.
-    lunit : str
+    lUnit : str
         the units for the input length.
     designProps : dict, optional
         Additional design propreties the section will use. The default is None.

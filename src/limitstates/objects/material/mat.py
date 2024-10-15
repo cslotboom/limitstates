@@ -8,8 +8,8 @@ __all__ = ["MaterialAbstract", "MaterialElastic"]
 
 class MaterialAbstract:
     """
-    A base class common to all material objects. It Contains interfaces 
-    relevant for all design, including unit initiation and converters.
+    A base class common to all material objects. It contains interfaces 
+    relevant for all materials, including unit initiation and converter
     objects.
     """
     E:float
@@ -70,8 +70,8 @@ class MaterialAbstract:
 
 class MaterialElastic(MaterialAbstract):
     """
-    The elastic material represents a generic Isotropic elastic material. 
-    This material is code agnostic and contains no strenght information.
+    The elastic material represents a isotropic material with no nonlinearity. 
+    This material is code agnostic and contains no strength information.
 
     Parameters
     ----------
@@ -86,7 +86,8 @@ class MaterialElastic(MaterialAbstract):
         The stress units to use for the material. The default is 'MPa'.
     rhoUnit : str, optional
         The density units to use for the material. The default is 'kg/m3'.
-
+    name : str, optional
+        An optional name for the material. By default is 'Elastic Material'.
     """
 
     def __init__(self, E:float, G:float=None, rho=None, 

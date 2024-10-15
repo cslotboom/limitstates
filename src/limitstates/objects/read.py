@@ -1,9 +1,13 @@
 """
-Contains common functions for reading material or section databases.
+The read module contains common functions for reading material or section 
+databases. 
+
+The functions getSteelSections and getRectangularSections are intended for 
+for users to use directly.
+
+
 Material DB functions are not inteded for use by user, instead they should use
 material files from the specific design library they are targeting.
-
-Some section files are intended for user by users.
 
 """
 
@@ -158,7 +162,6 @@ def _loadSectionRectangular(mat:MaterialAbstract, config:DBConfig, lUnit) -> lis
     
 
 def _getCodeUnits(code):
-    
     if code == 'us':
         return 'in'
     else:
@@ -180,14 +183,14 @@ def getRectangularSections(mat:MaterialAbstract,
     code : str
         The code to use, can be one of 'csa' or 'us'.
     dbType : str
-        The type of section to use, i.e. W, hss. 
+        The type of section to use, i.e. glulam.
     fileName : str
         The specific database file to read from.
 
     Returns
     -------
-    None.
-
+    sections : list[SectionRectangle]
+        A list of rectangular sections from the database.
     """
 
     lUnit = _getCodeUnits(code)
@@ -213,7 +216,29 @@ sectionDict = {'w':SectionSteel, 'hss':SectionSteel}
 def getSteelSections(mat:MaterialAbstract, 
                      code:str, 
                      dbName:str,
-                     steelShapeType:str) -> SectionSteel:
+                     steelShapeType:str) -> list[SectionSteel]:
+    """
+    Returns a list of steel sections from a section database.
+    The section database must be one of the steel databases here: 
+        https://limitstates.readthedocs.io/en/latest/rst/objects-section-db.html
+
+    Parameters
+    ----------
+    mat : MaterialAbstract
+        The material to apply to each section.
+    code : str
+        The code to use, can be one of 'csa' or 'us'.
+    dbType : str
+        The type of database to use, i.e. aisc, cisc
+    steelShapeType : str
+        The type of steel section to load, i.e. W, hss.
+
+    Returns
+    -------
+    list[SectionSteel]
+        The steel sections from the input database.
+
+    """
     
     steelShapeType = steelShapeType.lower()
     # !!! This is a bandaid

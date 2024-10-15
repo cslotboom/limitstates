@@ -105,6 +105,9 @@ def test_plot_I_beam():
     assert 13 == len(xy)
     assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.01)
 
+
+
+
 def test_plot_I_beam_raised():
     myMat = ls.MaterialElastic(200*1000)
 
@@ -125,6 +128,23 @@ def test_plot_I_beam_raised():
     assert xy[0][1] == pytest.approx(section.d , 0.01)
 
 
+def test_plot_I_beam_round():
+    myMat = ls.MaterialElastic(200*1000)
+    sectionName = 'W310x118'
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'W')
+    section         = ls.getByName(sections, sectionName)
+
+    section = sections[-1]
+
+    member  = ls.initSimplySupportedMember(L, 'm')
+    element = s16.BeamColumnSteelCsa24(member, section)
+    fig, ax = ls.plotElementSection(element)
+    xy = ax.patches[0].get_xy()
+    
+    # assert 13 == len(xy)
+    # assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.01)
+
 if __name__ == "__main__":
     # pass
     test_plot_glulam_condition_1()
@@ -132,6 +152,6 @@ if __name__ == "__main__":
     test_plot_glulam_condition_2_raised()
     test_plot_I_beam()
     test_plot_I_beam_raised()
-    # test_plot_I_beam_round()
+    test_plot_I_beam_round()
 else:
     plt.close('all')

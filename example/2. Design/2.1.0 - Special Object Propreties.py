@@ -1,6 +1,11 @@
 """
-This example shows how a basic glulam element can be checked for shear and
-moment.
+An example that overviews the special object propreties elements have,
+in particular, the design propreties.
+
+All structural sections have three objects, design sections
+
+This example is a work in progress
+
 """
 import limitstates as ls
 import limitstates.design.csa.o86.c19 as csa
@@ -29,41 +34,5 @@ mySection = ls.SectionRectangle(myMat, width, depth)
 # The default beam is simply supported and laterally suppored on the compression side
 myElement = csa.getBeamColumnGlulamCsa19(length, mySection, 'm')
 
-# Check the output using the design library.
-Mr = csa.checkMrGlulamBeamSimple(myElement)
-Vr = csa.checkVrGlulamBeamSimple(myElement)
 
-# =============================================================================
-# Manually create elements
-# =============================================================================
-"""
-It's also possible to manually define our beam. This can be useful for more
-complex problems.
-"""
-# Manually define a custom material.
-matDict = {'E':9500*MPa, 'fb':25*MPa, 'fv':1.5*MPa}
-myMat   = csa.MaterialGlulamCSA19(matDict)
-
-# Define a section .
-mySection   = ls.SectionRectangle(myMat, width, depth)   
-
-# Define the member manually by creating a line and defining supports.
-myline  = ls.getLineFromLength(length, 'm')
-
-# We collect the nodes and assign them support conditions.
-# A more complex beam could also be defined here, with different support
-n1, n2  = myline.n1, myline.n2
-pinCondition    = ls.SupportTypes2D.PINNED.value
-rollerCondition = ls.SupportTypes2D.ROLLER.value
-n1.setSupportType(pinCondition)
-n2.setSupportType(pinCondition)
-
-# We define the member. 
-myMember = ls.Member([n1, n2], [myline], 'm')
-
-# Define the design element
-myGlulamEle = csa.BeamColumnGlulamCsa19(myMember, mySection)
-
-# Check the output using the design library.
-Mr = csa.checkMrGlulamBeamSimple(myGlulamEle)
-Vr = csa.checkVrGlulamBeamSimple(myGlulamEle)
+# my
