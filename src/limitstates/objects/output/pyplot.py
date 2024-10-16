@@ -26,8 +26,6 @@ class SectionPlotter:
         self.geom = baseGeom
         self.maxFigsize = canvasProps.maxFigsize
 
-                
-    
     def _getPlotLimits(self, x:list[float], y:list[float]):
 
         dx = max(x) - min(x)
