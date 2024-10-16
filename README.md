@@ -71,6 +71,7 @@ The specific items required for version 1 are below:
 
 ### Object Library
 - [ ] Create a section element for reinforced concrete
+- [ ] Improve section and material database documentation
 - [ ] Support plotting for concrete elements / sections
 - [ ] Support plotting for CLT elements / sections
 - [ ] Add section summary to section plotting
