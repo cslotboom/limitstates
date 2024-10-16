@@ -34,7 +34,7 @@ def loadCltSections(db:str = 'prg320_2019', **sectionkwargs) -> list[SectionCLT]
     Parameters
     ----------
     dbType : str
-        The type of database to read from, can be 'si', or 'us'.
+        The type of database to read from.
 
     Returns
     -------

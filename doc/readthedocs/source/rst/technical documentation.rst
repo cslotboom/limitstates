@@ -1,6 +1,6 @@
 .. _technical reference:
 
-Technical Reference
-===================
+Technical Documentation
+=======================
 
 The technical reference is incomplete

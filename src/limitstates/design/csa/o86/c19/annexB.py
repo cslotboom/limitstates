@@ -3,7 +3,6 @@ Contains classes for working with fire design, and modifying sections according
 to CSA o86 Annex B.
 """
 
-#TODO: add panel once it's complete
 from .....objects import BeamColumn, SectionRectangle, SectionCLT, LayerClt, LayerGroupClt
 from .....objects.fireportection import FirePortection
 from .fireportection import GypusmFlatCSA19, GypusmRectangleCSA19
@@ -13,9 +12,6 @@ from enum import IntEnum
 import numpy as np
 from numpy import ndarray
 from copy import deepcopy
-
-# __all__ = ["FireConditions", "getFireDemands", "getGypsumFirePortection", "AssignFirePortection","getNetBurnTime",
-#            "getBurntRectangularDims", "getBurntRectangularSection", "setFireSectionGlulamCSA"]
 
 # =============================================================================
 # Constants

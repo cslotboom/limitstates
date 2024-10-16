@@ -10,6 +10,8 @@ All example are for CSA o86-19
 #. :doc:`examples-design-csa-o86-2.2.1.1-glulamBasic`
 #. :doc:`examples-design-csa-o86-2.2.1.2-glulamFire`
 #. :doc:`examples-design-csa-o86-2.2.1.4-glulamMultispan`
+#. :doc:`examples-design-csa-o86-2.2.1.5-cltBasic`
+#. :doc:`examples-design-csa-o86-2.2.1.6-cltFire`
 
 .. toctree::
    :maxdepth: 2
@@ -18,3 +20,5 @@ All example are for CSA o86-19
    examples-design-csa-o86-2.2.1.1-glulamBasic.rst
    examples-design-csa-o86-2.2.1.2-glulamFire.rst
    examples-design-csa-o86-2.2.1.4-glulamMultispan.rst
+   examples-design-csa-o86-2.2.1.5-cltBasic.rst
+   examples-design-csa-o86-2.2.1.6-cltFire.rst
