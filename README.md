@@ -1,6 +1,6 @@
-# limitstates
+
 <p align="center">
-  <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text.jpg" width="500">
+  <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text-2.jpg" width="500">
 </p>
 
 A structural design and representation library. Documentation can be viewed [here](https://limitstates.readthedocs.io/en/latest/index.html).
@@ -46,6 +46,9 @@ Mr = s16.checkBeamMrSupported(beam) / 1000
 `
 pip install limitstates
 `
+
+# Documentation
+https://limitstates.readthedocs.io/en/latest/
 
 # Library Organization
 There are four main parts of the limitstates library: units, objects, design, analysis.
