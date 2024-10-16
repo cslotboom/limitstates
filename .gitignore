@@ -12,6 +12,10 @@ doc/readthedocs/old/
 *.ai
 doc/marketing
 
+# testing
+*.xlsx
+
+
 # C extensions
 *.so
 
