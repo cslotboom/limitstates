@@ -8,7 +8,7 @@ A structural design and representation library.
 limitstates is a python library that can represent and design structural 
 elements according to code and material standards from various countries. Limit states has two main components: 
 a set of classes that representations structural objects, e.g. A Ibeam that is 6m long made or steel; 
-and design libraries that can act on elements and determine capacities, e.g. Canada's CSA s16 steel material standard.
+and design libraries that can act on elements and determine capacities, e.g. Canada's CSA s16 2024 steel material standard.
 **Limitstates is currently incomplete and in public beta testing.**
 **Expect breaking changes before the first version release.**
 
@@ -65,4 +65,34 @@ See [design api reference](https://limitstates.readthedocs.io/en/latest/rst/desi
 
 The Analysis library will contain functions that act on structural objects to analyze them. The analysis Library is a work in progress. 
 
+# Deveopment Roadmap
+Version one of limitstates will release when the library can design most major elements in canadian design codes, and the core objects can handle American/EU design codes. 
+The specific items required for version 1 are below:
 
+### Object Library
+- [ ] Create a section element for reinforced concrete
+- [ ] Support plotting for concrete elements / sections
+- [ ] Support plotting for CLT elements / sections
+- [ ] Add section summary to section plotting
+- [ ] Add an generic design example showing how database can be used.
+
+### Design
+
+#### CSA o86
+- [ ] Add Examples.
+- [ ] Add beam shear checks.
+
+#### CSA S16
+- [ ] Develop multi-span beam checks.
+- [ ] Add beam shear checks.
+
+#### CSA A23.3
+- [ ] Complete code checks for basic concrete beams in moment/shear.
+- [ ] Add section solvers for concrete that can determine steel required based on input capacities.
+- [ ] Complete code checks for basic concrete columns in compression / bending.
+- [ ] Complete code checks for basic concrete columns in compression / bending with slenderness effects.
+- [ ] Add examples for basic concrete checks
+- [ ] Add examples for concrete in compression
+
+#### US/EU Standards
+- [ ] Ensure all basic design objects are compatible with US codes and units.
