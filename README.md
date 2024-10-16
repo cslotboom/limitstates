@@ -2,7 +2,7 @@
 <p align="center">
   <img src="https://github.com/cslotboom/limitstates/raw/main/doc/logo/logo-text.jpg" width="500">
 </p>
-A structural design and representation library.
+A structural design and representation library. Documentation can be viewed [here](https://limitstates.readthedocs.io/en/latest/index.html)
 
 # Overview
 limitstates is a python library that can represent and design structural 
