@@ -177,8 +177,8 @@ class Element1D:
             eleDisplayProps = EleDisplayProps(self.section, self.member)
         self.eleDisplayProps = eleDisplayProps
         
-    def setEleDisplayProps(self, eleDisplayProps):
-        self.eleeleDisplayProps = eleDisplayProps
+    def setEleDisplayProps(self, eleDisplayProps: EleDisplayProps):
+        self.eleDisplayProps = eleDisplayProps
 
 class BeamColumn(Element1D):
     """

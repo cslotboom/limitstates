@@ -49,7 +49,7 @@ designProps = o86.DesignPropsGlulam19(Lex=[5,3],
                                       lateralSupport=[True, False])
 myElement   = o86.BeamColumnGlulamCsa19(member, mySection, designProps)
 
-myElement.eleDisplayProps.configCanvas.originLocation = 3
+myElement.eleDisplayProps.configObject.originLocation = 3
 ls.plotElementSection(myElement)
 
 """
@@ -83,10 +83,10 @@ xyBMD = beamPs.getBMD()
 diagram = ls.DesignDiagram(np.column_stack(xyBMD))
 xCoords = diagram.getIntersectionCoords()
 
-# Chek the capacity of the beam assuming it is laterally supported.
+# Check the capacity of the beam assuming it is laterally supported.
 Mr = o86.checkMrGlulamBeamSimple(myElement)
 Vr = o86.checkVrGlulamBeamSimple(myElement)
 
-# Chek the capacity of the beam assuming it is a multispan beam.
+# Check the capacity of the beam assuming it is a multispan beam.
 MrMulti, xSpans, kz, kL = o86.checkMrGlulamBeamMultiSpan(myElement, diagram)
 

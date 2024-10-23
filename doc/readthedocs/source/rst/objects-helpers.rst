@@ -7,7 +7,6 @@ There are a number of helper funcitons limitstates that can be used to help with
 Filtering Functions
 -------------------
    
-   
 .. automodule:: limitstates.objects.parse
 	:members:
 	

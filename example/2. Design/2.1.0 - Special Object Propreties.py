@@ -20,19 +20,5 @@ width = 356 # Section width in mm
 depth = 600 # Section depth in mm
 length = 6  # Beam length in m
 
-"""
-The simplest way to create a design element is to use helper functions, and
-material libraries. 
-For most problems, the default options assumed here will handle
-Code specific materials and elements.
-"""
-# Load a code specific csa glulam material
-myMat     = csa.loadGlulamMaterial('SPF', '20f-E')
-# Load a section. Sections are code agnostic, a generic rectangle is used.
-mySection = ls.SectionRectangle(myMat, width, depth) 
-# Load a code specifi glulam beamcolumn element. 
-# The default beam is simply supported and laterally suppored on the compression side
-myElement = csa.getBeamColumnGlulamCsa19(length, mySection, 'm')
-
-
+dispProps = csa.EleDisplayPropsGlulam19()
 # my

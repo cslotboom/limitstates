@@ -25,15 +25,15 @@ Some elements, such as CLT, may have design geometry that differs from their ana
 **Currently, only canadian codes are supported by limit states**
 
 
-#. :doc:`design-csa-o86-19`
-#. :doc:`design-csa-s16-19`
+#. :doc:`design-csa-o86`
+#. :doc:`design-csa-s16`
 
 .. toctree::
    :maxdepth: 6
    :hidden:
    
-   design-csa-o86-19.rst
-   design-csa-s16-19.rst
+   design-csa-o86.rst
+   design-csa-s16.rst
 
 
 

@@ -13,8 +13,8 @@ myMat.E90 = E/30
 myMat.grade = 'testing'
 myMat.lamGrade = 'testing'
 t = 35
-myLayer = LayerClt(35, myMat)
-myLayer2 = LayerClt(35, myMat, 90)
+myLayer  = LayerClt(35, myMat)
+myLayer2 = LayerClt(35, myMat, False)
 myLayer3 = LayerClt(15, myMat)
 
 
@@ -73,11 +73,30 @@ def test_layerGroup_ybar2():
     assert ybarout == pytest.approx(ybarSol)
     assert rmaxOut == pytest.approx(rmaxSol)
 
+def test_layer_orientation():
+    
+    layers = [myLayer, myLayer2, myLayer, myLayer2, myLayer3]
+    layerGroup = LayerGroupClt(layers)
+    orientations = layerGroup.getLayerOrientations()
+
+    assert np.all(orientations == [True, False, True, False, True])
+
+def test_layer_orientation_2():
+    
+    layers = [myLayer, myLayer2, myLayer, myLayer2, myLayer3]
+    layerGroup = LayerGroupClt(layers)
+    orientations = layerGroup.getLayerOrientations(False)
+
+    assert np.all(orientations == [False, True, False, True, False])
 
 
-# _getLayerE(isStrongAxis, layer)
+def test_layer_orientation_3():
+    
+    layers = [myLayer, myLayer, myLayer2, myLayer, myLayer]
+    layerGroup = LayerGroupClt(layers)
+    orientations = layerGroup.getLayerOrientations()
 
-
+    assert np.all(orientations == [True, True, False, True, True])
 
 if __name__ == '__main__':
     # pass
@@ -88,5 +107,8 @@ if __name__ == '__main__':
     
     test_layerGroup_ybar()
     test_layerGroup_ybar2()
+    test_layer_orientation()
+    test_layer_orientation_2()
+    test_layer_orientation_3()
 
     

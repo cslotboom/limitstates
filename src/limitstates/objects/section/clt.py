@@ -310,7 +310,7 @@ class LayerGroupClt:
 
     
     def getEA(self, parallelToStrong:bool = True, 
-              lUnits:str = 'm', sUnits:str = 'Pa'):
+              lUnits:str = 'm', sUnits:str = 'Pa') -> bool:
         """
         Gets EI for the layer group in the given global orientation.
 
@@ -340,6 +340,26 @@ class LayerGroupClt:
         lfactor = self.lConvert(lUnits)
         return EA * sfactor * lfactor
     
+    def getLayerOrientations(self, parallelToStrong:bool = True) -> list[bool]:
+        """
+        Gets the layer orientations in the given global direction.
+        to the strong or weak direction.
+
+        Parameters
+        ----------
+        globalOrientation : bool
+            The orientation of the global direction to check the layers are
+            parallel to.
+            
+        Returns
+        -------
+        list[bool]
+            True means the layer is parallel to global direction it's being
+            checked in.
+
+        """
+
+        return [layer._layerMatchesDirection(parallelToStrong) for layer in self.layers]
     
     
 # =============================================================================
@@ -483,7 +503,8 @@ class SectionCLT(SectionLayered):
         if not NlayerTotal:
             NlayerTotal = len(layers)
         self.NlayerTotal = NlayerTotal
-            
+        
+        self.layers = layers # the base section shouldn't be used for design.
         self.sLayers = LayerGroupClt(getActiveLayers(layers,True))
         self.wLayers = LayerGroupClt(getActiveLayers(layers,False))
     

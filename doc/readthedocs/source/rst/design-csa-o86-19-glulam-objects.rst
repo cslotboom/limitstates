@@ -14,6 +14,8 @@ The following objects are used to represent and work with glulam beams, sections
    :undoc-members:
    :show-inheritance:
 
- 
-.. automodule:: limitstates.design.csa.o86.c19.section.loadGlulamSections
-	:members: getBeamColumnGlulamCsa19
+.. automodule:: limitstates.design.csa.o86.c19.element
+   :members: getBeamColumnGlulamCsa19
+
+.. automodule:: limitstates.design.csa.o86.c19.section
+   :members: loadGlulamSections

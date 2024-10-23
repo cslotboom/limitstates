@@ -31,6 +31,7 @@ User Props:
 	- This provides a safe place for users to store any additional information they want in design. The limitstates library will objects will not use this attribute.
 Element Display Props
 	- This is used to store information about output element geometry. Examples include making plots or rendering geometry.
+
 Some elements, such as CLT, may have design geometry that differs from their analysis model. In the example of CLT, while it is a 2D plate, it is often modeled as if it was a beam.
 
 
@@ -39,6 +40,7 @@ Some elements, such as CLT, may have design geometry that differs from their ana
 #. :doc:`objects-geometry`
 #. :doc:`objects-element`
 #. :doc:`objects-helpers`
+#. :doc:`objects-display`
 
 
 .. toctree::
@@ -50,5 +52,6 @@ Some elements, such as CLT, may have design geometry that differs from their ana
    objects-geometry.rst
    objects-element.rst
    objects-helpers.rst
+   objects-display.rst
 
 

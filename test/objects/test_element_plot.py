@@ -20,13 +20,6 @@ if __name__ != "__main__":
 myMat       = ls.MaterialElastic(9.5*1000)
 section = ls.SectionRectangle(myMat, 215, 456)
 L = 7
-    
-# myElement = o86.getBeamColumnGlulamCsa19(L, section, 'm')
-# FRR = 60
-# FRR = o86.getFRRfromFireConditions(FRR, 1)
-# o86.setFireSectionGlulamCSA(myElement, FRR)   
-# fig, ax     = ls.plotElementSection(myElement)
-
 
 def PolyArea(x,y):
     """
@@ -79,7 +72,7 @@ def test_plot_glulam_condition_2_raised():
     FRR = o86.getFRRfromFireConditions(FRR)
     o86.setFireSectionGlulamCSA(myElement, FRR)
     
-    myElement.eleDisplayProps.configCanvas.originLocation = 2
+    myElement.eleDisplayProps.setPlotOrigin(2)
 
     fig, ax     = ls.plotElementSection(myElement)
     
@@ -117,7 +110,7 @@ def test_plot_I_beam_raised():
     member  = ls.initSimplySupportedMember(L, 'm')
     element = s16.BeamColumnSteelCsa24(member, section)
 
-    element.eleDisplayProps.configCanvas.originLocation = 3
+    element.eleDisplayProps.setPlotOrigin(3)
 
     fig, ax = ls.plotElementSection(element)
 
@@ -142,9 +135,30 @@ def test_plot_I_beam_round():
     fig, ax = ls.plotElementSection(element)
     xy = ax.patches[0].get_xy()
     
-    # assert 13 == len(xy)
-    # assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]),0.01)
+    # The plotted are will be bigger than the actual area
+    assert section.A == pytest.approx(PolyArea(xy[:,0], xy[:,1]), 0.05)
 
+def test_plot_CLT():
+    section = o86.loadCltSections()[1]
+    member = ls.initSimplySupportedMember(6, 'm')
+    
+    # Make a typical section
+    clt = o86.BeamColumnCltCsa19(member, section)
+    fig, ax = ls.plotElementSection(clt)
+    
+    children = ax.get_children()
+    
+    lines = children[2]
+    lineVerts =     lines.get_paths()
+    assert len(lineVerts) == 21 
+        
+    assert lineVerts[0]._vertices[0][1] == 140
+    assert lineVerts[3]._vertices[1][1] == 105
+    assert lineVerts[3]._vertices[0][1] == 140
+    
+    patches = children[3]
+    assert len(patches.get_paths()) == 2 
+   
 if __name__ == "__main__":
     # pass
     test_plot_glulam_condition_1()
@@ -153,5 +167,6 @@ if __name__ == "__main__":
     test_plot_I_beam()
     test_plot_I_beam_raised()
     test_plot_I_beam_round()
+    test_plot_CLT()
 else:
     plt.close('all')
