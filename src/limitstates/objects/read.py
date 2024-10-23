@@ -220,7 +220,7 @@ def getSteelSections(mat:MaterialAbstract,
     """
     Returns a list of steel sections from a section database.
     The section database must be one of the steel databases here: 
-        https://limitstates.readthedocs.io/en/latest/rst/objects-section-db.html
+    https://limitstates.readthedocs.io/en/latest/rst/objects-section-db.html
 
     Parameters
     ----------

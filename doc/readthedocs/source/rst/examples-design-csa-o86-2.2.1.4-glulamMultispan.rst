@@ -56,9 +56,8 @@ We'll check the Moment and shear for our beam. The simplified function :py:func:
 Finally, we check the moment for the multi-span beam. The results are broken up per section.
 
 .. literalinclude:: ../../../../example/2. Design/2.2 CSA/2.2.1 - o86/Ex 2.2.1.4 - Glulam Multi-Span Beam.py
-   :lines: 91-91
+   :lines: 92-92
 
-
- The whole design example is as below:
+The whole design example is as below:
  
 .. literalinclude:: ../../../../example/2. Design/2.2 CSA/2.2.1 - o86/Ex 2.2.1.4 - Glulam Multi-Span Beam.py

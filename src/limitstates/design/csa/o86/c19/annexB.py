@@ -289,10 +289,8 @@ def getCLTBurnDims(netBurnTime:ndarray[float], sectionCLT:SectionCLT, Bn:float =
         The depth of the fire section.
     """
     
-    burnAmount = float(getBurnDimensions(netBurnTime, Bn))
-    burntLayers = _getRemainingCLTLayers(sectionCLT, burnAmount)
 
-    return burntLayers
+    return getBurnDimensions(netBurnTime, Bn)
 
 
 
@@ -397,6 +395,8 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     # Convert the section back to mm.
     if convertBack:
         _convertBack(section, burnSection, oldUnits)
+        cfactor = section.lConvert('mm')
+        burnAmount *= cfactor
     
     return burnSection, burnAmount
 
@@ -439,15 +439,20 @@ def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float],
     convertBack, oldUnits = _convertUnits(section)
 
     # make the new section and convert it to 
-    burnLayers = getCLTBurnDims(netBurnTime, section, Bn)
+    burnAmount = getCLTBurnDims(netBurnTime, section, Bn)
+    burnLayers = _getRemainingCLTLayers(section, float(burnAmount))
+
     burnSection = SectionCLT(burnLayers, section.w, section.wWeak, 
                              section.lUnit, section.NlayerTotal)
     
     # Convert the section back to mm.
+    
     if convertBack:
         _convertBack(section, burnSection, oldUnits)
-    
-    return burnSection
+        cfactor = section.lConvert('mm')
+        burnAmount *= cfactor
+
+    return burnSection, burnAmount
 
 
 # =============================================================================
@@ -517,6 +522,8 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19,
     sectionFire, burnDims = getBurntRectangularSection(section, FRR, firePort)
     element.setSectionFire(sectionFire, burnDims)    
 
+
+# TODO: this needs to updated when we do walls.
 def setFireSectionCltCSA(element:BeamColumnGlulamCsa19, 
                          FRR:float|list[float]|ndarray[float],
                          Bn:float = 0.8):
@@ -559,10 +566,10 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCsa19,
     if isinstance(FRR, int) or isinstance(FRR, float):
         FRR = np.array([FRR])
     
-    sectionFire = getBurntCLTSection(section, FRR, firePort, Bn)    
+    sectionFire, burnAmount = getBurntCLTSection(section, FRR, firePort, Bn)    
     # fireSection.NlayerTotal = len(section.sLayers)
     # element.designProps.sectionFire = sectionFire
-    element.setSectionFire(sectionFire)    
+    element.setSectionFire(sectionFire, burnAmount)    
 
 
 

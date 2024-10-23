@@ -3,7 +3,7 @@ Represents netral geometry objects - these represent objects in space and are
 independant of any type of design
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .support import Support, SupportTypes2D
 from .. units import ConverterLength
 import numpy as np
@@ -37,7 +37,7 @@ class Node:
     p1:np.ndarray | list
     units:str = 'm'
     label:str = None
-    support:Support = SupportTypes2D.FREE.value
+    support:Support = field(default_factory=lambda: SupportTypes2D.FREE.value)
     
     def __post_init__(self):
         if not isinstance(self.p1, np.ndarray):

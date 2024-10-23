@@ -6,7 +6,6 @@ import limitstates as ls
 import limitstates.design.csa.o86.c19 as o86
 
 section = o86.loadCltSections()[11]
-
 firePortection = o86.GypusmFlatCSA19('15.9mm')
 designProps = o86.DesignPropsClt19(firePortection)
 
@@ -18,3 +17,6 @@ o86.setFireSectionCltCSA(clt, FRR)
 knet = o86.kdfi*o86.kfi['cltV']
 
 Mr = o86.checkMrCltBeam(clt, knet, useFire = True) 
+
+ls.plotSection(clt.section)
+ls.plotElementSection(clt)

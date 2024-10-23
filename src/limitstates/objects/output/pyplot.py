@@ -1,30 +1,33 @@
 """
-Manages matplotlib plotting of sections.
-
-
+These functions manages matplotlib plotting of sections.
+"""
+"""
 Features of a plot:
     - Create a visualization of the section
     - Show a dictionary of common propreties Ix, Sx, Zx, etc.
-    - SHow a dictionary of results
+    - Show a dictionary of results
 
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
+from matplotlib.collections import LineCollection, PatchCollection
+from matplotlib.patches import Circle, Polygon
 
 from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT
 from .. element import BeamColumn
 from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPosition
-from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
+# from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
+import limitstates.objects.output.model as md
+
 
 
 class SectionPlotter:
     
     plotOffset = 0.05
-    def __init__(self, baseGeom:GeomModel, canvasProps:PlotConfigCanvas):
+    def __init__(self, baseGeom:md.GeomModel, canvasProps:PlotConfigCanvas):
         
         self.geom = baseGeom
-        self.maxFigsize = canvasProps.maxFigsize
+        self.canvasConfig = canvasProps
 
     def _getPlotLimits(self, x:list[float], y:list[float]):
 
@@ -44,7 +47,8 @@ class SectionPlotter:
         self.dx = dx
         self.dy = dy
         dmax = max(dy, dx)
-        return dx / dmax * self.maxFigsize, dy / dmax * self.maxFigsize
+        maxFigsize = self.canvasConfig.maxFigsize
+        return dx / dmax * maxFigsize, dy / dmax * maxFigsize
     
     def initPlot(self):
         x, y = self.geom.getVerticies()
@@ -53,42 +57,43 @@ class SectionPlotter:
         xplot, yplot = self._getPlotSize(xlims, ylims)
 
         # Set the dimensions / aspect ratio of the plot
-        fig, ax = plt.subplots(figsize=(xplot, yplot))
+        fig, ax = plt.subplots(figsize=(xplot, yplot), dpi = self.canvasConfig.dpi)
+        
+        if self.canvasConfig.showAxis != True:
+            ax.axis('off')
         
         # Set the dimensions /     
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
         
-        return fig, ax
+        return fig, ax  
+    
+    def _getFillColour(self, objectConfig, kwargs):
+        # overwrite teh colour if needed.
+        if 'c' in kwargs:
+            c = kwargs['c']
+            kwargs.pop('c', None)
+        else:
+            c = objectConfig.c
+        return c
+    
     
     def plot(self, ax, xy, objectConfig, *args, **kwargs):
         """
         plot a set of xy points on the canvas.
         """
-        c = objectConfig.c
-        # x, y = self.geom.getPlotVerticies()
-        ax.fill(xy[:,0], xy[:,1], *args, c = c, **kwargs)
-        if objectConfig.showOutline:
-            ax.plot(xy[:,0], xy[:,1], linewidth = objectConfig.lineWidth)
         
-        return ax
+        c = self._getFillColour(objectConfig, kwargs)
 
-    
-    def plotInterior(self, ax, xy, objectConfig, *args, **kwargs):
-        """
-        Plots the interior of an geometry. This could include line hashing
-        indicating.
-        
-        It could also be a series of internal points
-        """
-        c = objectConfig.c
-        # x, y = self.geom.getPlotVerticies()
         ax.fill(xy[:,0], xy[:,1], *args, c = c, **kwargs)
-        if objectConfig.showOutline:
-            ax.plot(xy[:,0], xy[:,1], linewidth = objectConfig.lineWidth)
+        
+        
+        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
+            ax.plot(xy[:,0], xy[:,1], 
+                    linewidth = objectConfig.lineWidth, 
+                    c=objectConfig.cLine)
         
         return ax
-    
     
     def _getPlotLabel(infoDict):
         """
@@ -105,16 +110,6 @@ class SectionPlotter:
             line = str(item) + ' = ' + str(round(infoDict[item])) + '\n'
             label += line
         return label
-    
-    # def _plotInformation(infoDict):
-    #     """
-    #     """
-        
-    #     label = ''
-    #     for item in infoDict:
-    #         items = str(item) + ' ' for item in 
-    #         label += 
-    #     return label
     
     def plotDesignInfo(self, fig, ax, infoDict):
         # x0 = np.average(ax.get_xlim())
@@ -136,83 +131,87 @@ class SectionPlotter:
 
 
 
-def _getPlotOrigin(option, d, b):
+def _getPlotOrigin(option, b, d,  xy0):
     if option == PlotOriginPosition.centered:
-        return (0,0)
+        return (0 + xy0[0],   0 + xy0[1])
     elif option == PlotOriginPosition.bottomCenter:
-        return (0, d/2)
+        return (0 + xy0[0], d/2 + xy0[1])
     elif option == PlotOriginPosition.bottomLeft:
-        return (b/2, d/2)
+        return (b/2 + xy0[0], d/2 + xy0[1])
     
     else:
         raise Exception()
 
 
+
+"""
+We can combine the following two funcitons by assigning each section a plot
+enumeration, i.e. 1 = glulam, 2 = steel, 3 = CLT,
+Then checking against that enumeration.
+This allow for slightly faster section checking behaviour
+"""
+
+def _defaultConfigFactory(section):
+    
+    
+    if isinstance(section, SectionRectangle): # typical section
+        defaultProps = PlotConfigObject(c = MATCOLOURS['glulam'], originLocation= 1)
+    elif isinstance(section, SectionSteel): # steel section
+        defaultProps = PlotConfigObject(c = MATCOLOURS['steel'],  originLocation= 1)
+    elif isinstance(section, SectionCLT): # CLT section
+        defaultProps = PlotConfigObject(c = MATCOLOURS['clt'], originLocation= 3)
+        defaultProps.cFillLines = MATCOLOURS['black']
+        defaultProps.cFillPatch = MATCOLOURS['cltWeak']
+    else:
+        raise Exception(f'Section of type {section} is not supported.')
+    return defaultProps
+
 def _plotGeomFactory(section: SectionAbstract, 
-                     originPosition: PlotOriginPosition|int,
-                     xy) -> (GeomModel, PlotConfigObject):
+                     originLocation: int|PlotOriginPosition,
+                     xy0) -> md.GeomModel:
     """
-    Gets the appropriate geometry and dispalay propreties 
+    A function that returns the appropriate geometry object given a section.
+    
+    A thought - why haven't we made this an object attribute?
 
     """
-    
-    # !!! I don't like how we have a different factory for plotting elements
-    # vs. plotting sections.
-    
-    # We could return an enumeration instead of using this factory, and have
-    # a 'switch'
+
     if isinstance(section, SectionRectangle):
         b, d = section.b, section.d
-        dx, dy = _getPlotOrigin(originPosition, d, b)
-        xy[0] += dx
-        xy[1] += dy
-        geom = GeomModelRectangle(b, d, *xy)
-        defaultProps = PlotConfigObject(c = MATCOLOURS['glulam'])
-    
-    
+        xy   = _getPlotOrigin(originLocation, b, d, xy0)
+        geom = md.GeomModelRectangle(b, d, *xy)
     elif isinstance(section, SectionSteel):
-        b,  d  = section.bf, section.d
-        dx, dy = _getPlotOrigin(originPosition, d, b)
-        xy[0] += dx
-        xy[1] += dy
-        
-        geom = _plotFactorySteel(section, *xy)
-        defaultProps = PlotConfigObject(c = MATCOLOURS['steel'])
-    
+        b, d  = section.bf, section.d        
+        xy    = _getPlotOrigin(originLocation, b, d, xy0)
+        geom  = _plotFactorySteel(section, *xy)
     elif isinstance(section, SectionCLT):
-        b, d = section.b, section.d
-        dx, dy = _getPlotOrigin(originPosition, d, b)
-        xy[0] += dx
-        xy[1] += dy
-        
-        geom = _plotFactorySteel(section, *xy)
-        defaultProps = PlotConfigObject(c = MATCOLOURS['steel'])
-        
-    
+        b, layers = section.w, section.sLayers
+        xy        = _getPlotOrigin(originLocation, b, layers.d, xy0)
+        geom      = md.GeomModelClt(layers, b, *xy)
     else:
         raise Exception(f'Section of type {section} is not supported.')
         
-    return geom, defaultProps
+    return geom
 
 def _plotFactorySteel(section:SectionSteel, *args):
     
     if SteelSectionTypes.w == section.typeEnum:
         # If there is information about the rounded section, plot that
         if hasattr(section, 'r1') and hasattr(section, 'r2'):
-            geom = GeomModelIbeamRounded(section.d, 
-                                         section.tw, 
-                                         section.bf, 
-                                         section.tf,  
-                                         section.r2,  
-                                         section.r1,  
-                                         *args)
+            geom = md.GeomModelIbeamRounded(section.d, 
+                                            section.tw, 
+                                            section.bf, 
+                                            section.tf,  
+                                            section.r2,  
+                                            section.r1,  
+                                            *args)
         # If there is information about the rounded section, plot that
         else:
-            geom = GeomModelIbeam(section.d, 
-                                  section.tw, 
-                                  section.bf, 
-                                  section.tf,  
-                                  *args)
+            geom = md.GeomModelIbeam(section.d, 
+                                    section.tw, 
+                                    section.bf, 
+                                    section.tf,  
+                                    *args)
     return geom
 
 
@@ -220,43 +219,58 @@ def _setupSummaryDict(listIn, ):
     pass
 
 
+def _plotfillLines(ax, geom, objectConfig):
+    linex, liney = geom.getFillVerticies()
+    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    lines = LineCollection(lverts, colors = objectConfig.cFillLines,
+                           linewidth = 0.5)
+    ax.add_collection(lines)
+
+
+def _plotfillPatches(ax, geom, objectConfig):
+    linex, liney = geom.getFillAreas()
+    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    
+    p = PatchCollection([Polygon(vert) for vert in lverts], color = objectConfig.cFillPatch)
+    ax.add_collection(p)
+
+
 def plotSection(section:SectionAbstract, 
                 xy0: list[float,float] = None, 
                 canvasConfig: PlotConfigCanvas = None,
                 objectConfig: PlotConfigObject = None,
                 summarizeGeometry: bool|list[str]=False,
-                originPosition: PlotOriginPosition|int = 1,
                 *args, **kwargs):
     """
     Creates a plot of the section centered at xy0.
     
     A default set of propreties will be chosen for the section depending on 
-    it's type.
-    
-    Custom propreties can also be given to the canvas and object by passing in
+    it's type. Custom propreties can also be given to the canvas and object by passing in
     a canvasConfig object.
     
     The figure propreties can be set by using a custom PlotDisplayProps object.
+    
+    Steel sections will be plotted with rounded corners, if information about
+    the corner radius exists in r1 / r2.
+    
+    Where additional arguemts passed to args and kwargs confict with arguments
+    passed in the config object, the arg/kwargs will overwrite the config 
+    objects.
 
     Parameters
     ----------
     section : SectionAbstract
         The sectin to be plotted.
     xy0 : float, optional
-        The x/y point to use for the center of the plot. The default is (0,0).
+        The x/y point to use for the orign of the plot. The default is (0,0).
+        Note that the object may be plotted at a different location
     dispProps : PlotDisplayProps, optional
         The display propreties to use. The default is None.
     summarizeGeometry : bool|list[str], optional
+        XXX does not work currently.
         A list of the input attributes to summarize. The default is False.
-    originPosition : plotOriginPosition, bool
-        A flag that changes the defult location the plot is placed at.
-        
-        1 is plotted at the centroid.
-        2 is plotted with the bottom at y = 0, and at the centroid on x.
-        3 is plotted with the bottom at y = 0, x = 0.
     args  
         Additional arguments for matplotolib's ax.fill function
-                
     kwargs  
         Additional arguments for matplotolib's ax.fill function
         
@@ -269,30 +283,30 @@ def plotSection(section:SectionAbstract,
         The output matplotlib axis.
 
     """
-    if xy0 is None:
-        xy0 = [0,0]
-    
-    geom, defaultObjectConfig = _plotGeomFactory(section, originPosition, xy0)
-
     if not canvasConfig:
         canvasConfig = PlotConfigCanvas()
-        
+            
     if not objectConfig:
-        objectConfig = defaultObjectConfig
-
+        objectConfig = _defaultConfigFactory(section)        
+    
+    # Setup default xy0 plot center
+    if xy0 is None:
+        xy0 = [0,0]
+        
+    geom    = _plotGeomFactory(section, objectConfig.originLocation, xy0)
     plotter = SectionPlotter(geom, canvasConfig)
+    
     fig, ax = plotter.initPlot()
+    xyVerts = np.column_stack(geom.getVerticies())
     
-    plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig, 
-                 *args, **kwargs)
+    plotter.plot(ax, xyVerts, objectConfig, *args, **kwargs)
 
-    
-    # if summarizeGeometry:
-    #     summaryAttrList = {'Iy':section.Iy, 'Ix':section.Ix}
-    #     plotter.plotDesignInfo(fig, ax, summaryAttrList)
-    
-    
-    # Make the plot display.
+    if hasattr(geom, 'getFillVerticies'):
+        _plotfillLines(ax, geom, objectConfig)
+
+    if hasattr(geom, 'getFillAreas'):
+        _plotfillPatches(ax, geom, objectConfig)
+
     ax.plot()
 
     return fig, ax
@@ -300,12 +314,7 @@ def plotSection(section:SectionAbstract,
 
 
 
-
-
-# class PlotDisplayConfig:
-#     c = 
-
-def _getFireSectionPositon(burnDims):
+def _getFireSectionPositonGL(burnDims):
     """
     Figures out how much to offset the fire section by.
     This will depend on the fire condition used.
@@ -318,12 +327,36 @@ def _getFireSectionPositon(burnDims):
     dy = (burnDims[2] - burnDims[0]) / 2 
     
     return dx, dy
+
+
+def _getFireSectionPositonCLT(burnDims):
+    """
+    Figures out how much to offset the fire section by.
+    This will depend on the fire condition used.
     
+    The if statement logic for this function may be too complex.
+    In that case, a seperate way of tracking how much each side is burned
+    will be needed.
+    """
+    dx = 0
+    # dy = (burnDims[2] - burnDims[0]) / 2
+    #TODO: this will need to be updated when we do walls.
+    dy = burnDims[0]/2
+    
+    
+    return dx, dy
+    
+
+
 def _hasFireSection(dispProps):
     return (hasattr(dispProps, 'sectionFire') and dispProps.sectionFire)
 
+def _isCLTSection(dispProps):
+    return isinstance(dispProps.section, SectionCLT)
+
 def _isGlulamSection(dispProps):
     return hasattr(dispProps, 'sectionFire')
+
 
 
 # def _isGlulamSection(dispProps):
@@ -334,9 +367,15 @@ def _isGlulamSection(dispProps):
 # that have a interface, "plot", and a factory for them.
 
 def _plotFactory(dispProps):
+    """
+    Figures out what type of plot function to use.
+    """
     
+    
+    if _isCLTSection(dispProps):
+        return _plotCLT(dispProps)
     if _isGlulamSection(dispProps):
-        return _plotGlulam(dispProps)
+        return _plotGlulam(dispProps)    
     else:
         return _plotBasic(dispProps)
 
@@ -349,8 +388,8 @@ def _plotBasic(dispProps):
     
     cPlotConfig = dispProps.configCanvas
     cObjConfig  = dispProps.configObject
-            
-    geom, _ = _plotGeomFactory(dispProps.section, cPlotConfig.originLocation, [0,0])
+    
+    geom = _plotGeomFactory(dispProps.section, cObjConfig.originLocation, [0,0])
     plotter = SectionPlotter(geom, cPlotConfig)
     
     fig, ax = plotter.initPlot()
@@ -365,11 +404,11 @@ def _plotGlulam(dispProps):
     Plots a glulam section, showing the fire section in the center if it is
     present.
     
-    We also show some fill lines for the CLT
+    We also show some fill lines for the 
     """
     
     cPlotConfig = dispProps.configCanvas
-    section = dispProps.section
+    section     = dispProps.section
 
     hasFireSection = _hasFireSection(dispProps)
     
@@ -378,10 +417,54 @@ def _plotGlulam(dispProps):
     else:            
         canvasObjConfig     = dispProps.configObject
     
+    # Find the offset for the base section
     b, d = section.b, section.d
-    dx0, dy0 = _getPlotOrigin(cPlotConfig.originLocation, d, b)
+    dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])
 
-    geom    = GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
+    # Get the geometry and initilziet the plot for the base section
+    geom    = md.GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
+    plotter = SectionPlotter(geom, cPlotConfig)
+    fig, ax = plotter.initPlot()
+    
+    # Plot the base object
+    plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
+    
+    # Plot the fire section.
+    if hasFireSection:
+        sFire  = dispProps.sectionFire
+        
+        
+        
+        dx, dy       = _getFireSectionPositonGL(dispProps.burnDimensions)
+        dh           = dispProps.displayLamHeight
+        geom         = md.GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
+        objectConfig = dispProps.configObject
+        plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+    
+    # Plot the internal fill lines
+    _plotfillLines(ax, geom, canvasObjConfig)
+
+    
+    return fig, ax
+
+def _plotCLT(dispProps):
+    
+    cPlotConfig = dispProps.configCanvas
+    section     = dispProps.section
+    
+    hasFireSection = _hasFireSection(dispProps)
+       
+    if hasFireSection:
+        canvasObjConfig     = dispProps.configObjectBurnt
+    else:            
+        canvasObjConfig     = dispProps.configObject
+    
+        
+    b, d = section.w, section.sLayers.d
+    dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])    
+        
+    geom    = md.GeomModelClt(section.sLayers, b, dx0 = dx0, dy0 = dy0)
+
     plotter = SectionPlotter(geom, cPlotConfig)
     fig, ax = plotter.initPlot()
     
@@ -390,42 +473,48 @@ def _plotGlulam(dispProps):
     
     if hasFireSection:
         sFire  = dispProps.sectionFire
-        dx, dy       = _getFireSectionPositon(dispProps.burnDims)
-        dh           = dispProps.displayLamHeight
-        geom         = GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
+        # plotLayers = _getPlotLayers(sFire)
+        plotLayers = sFire.layers
+        dx, dy       = _getFireSectionPositonCLT(dispProps.burnDimensions)
+        geom         = md.GeomModelClt(plotLayers, b, dx + dx0, dy + dy0)
         objectConfig = dispProps.configObject
+        
         plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
-    
-    linex, liney = geom.getFillVerticies()
-    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
-    ax.add_collection(LineCollection(lverts, colors = dispProps.displayColorLines))
+
+    _plotfillLines(ax, geom, canvasObjConfig)
+    _plotfillPatches(ax, geom, canvasObjConfig)
     
     return fig, ax
 
-def _plotCLT():
-    pass
+def _getPlotLayers(sFire):
+    """
+    Return the biggest between the strong/weak axis layer group
+    """
+    layersOut = [layer for layer in sFire.sLayers]
+    if len(sFire.sLayers) == len(sFire.wLayers):
+        return sFire.wLayers
+    else:
+        return sFire.sLayers
 
 
 def plotElementSection(element:BeamColumn, 
                        summarizeGeometry: bool|list[str]=False):
     """
-    Creates a plot of the section centered at xy0.
+    Creates a plot of the section the element is using. Only applies to 
+    elements that have a "eleDisplayProps" set.
     
     The figure propreties can be set by modifying or replacing the element's 
     eleDisplayProps object.
     
     If the element has a plot section set, that will be used for plotting
-    instead of the bas element.
+    instead of the base element.
 
     Parameters
     ----------
-    section : SectionAbstract
+    element : BeamColumn
         The sectin to be plotted.
-    xy0 : float, optional
-        The x/y point to use for the center of the plot. The default is (0,0).
-    dispProps : PlotDisplayProps, optional
-        The display propreties to use. The default is None.
     summarizeGeometry : bool|list[str], optional
+        XXX currently unused XXX
         If false, dispalys nothing.    
         If true, tries to find a default proprety list defined in the 
         element.eleDisplayProps

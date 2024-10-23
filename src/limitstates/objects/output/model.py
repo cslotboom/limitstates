@@ -1,6 +1,6 @@
 """
 Returns the raw data that can be plotted or rendered.
-All classes are unit agnostic.
+all classes are unit agnostic.
 
 """
 from abc import ABC, abstractmethod
@@ -10,17 +10,11 @@ from  .. section import LayerGroupClt
 
 import numpy as np
 
-
-
-
 class GeomModel(ABC):
     """
     Represents a geometry and can return a set of verticies
     """
-    
-    
-    getFillVerticies = None
-    
+       
     @abstractmethod
     def getVerticies(self):
         pass
@@ -71,8 +65,10 @@ class GeomModelGlulam(GeomModel):
         y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0 
         return list(x), list(y)
     
-        
     def getFillVerticies(self):
+        """
+        Returns the verticies for the input fill lines.
+        """
         
         h = self.h
         b = self.b
@@ -102,49 +98,108 @@ class GeomModelGlulam(GeomModel):
 class GeomModelClt(GeomModel):
     """
     Represents a glulam rectangle and can return a fill showing the lamination
-    thickness
+    thickness.
+    This won't work with imperial units.'
+    
     """
     cltLayers:LayerGroupClt
     w:float = 1000
-    dhTarget:float = 38
+
     dx0:float = 0
     dy0:float = 0
+
+    Nboard:int = 8 
+    dstart:int = 0.05 
         
     def getVerticies(self):
         
-        cltLayers  = self.cltLayers.lBoundaries
         # directions = self.cltLayers.
-        h = self.b
-        b = self.b
+        h = self.cltLayers.d
+        b = self.w
         dx0 = self.dx0
         dy0 = self.dy0
-        x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
-        y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
-        return list(x), list(y)
+        
+        
+        bmin = -b/2  + dx0
+        bmax = b/2 + dx0
+                
+        hmin = -h/2  + dy0
+        hmax = h/2 + dy0
+        
+        x = [bmin, bmin , bmax, bmax, bmin]
+        y = [hmin, hmax , hmax, hmin, hmin]
+        return x, y
     
         
     def getFillVerticies(self):
         
-        h = self.h
-        b = self.b
+        h = self.cltLayers.d
+        b = self.w
         dx0 = self.dx0
         dy0 = self.dy0
-        dhTarget = self.dhTarget
         
-        Nline = ceil(h / dhTarget)
-        dh    = h / Nline
+        boundaries   = h - np.array(self.cltLayers.lBoundaries)
+        orientations = self.cltLayers.getLayerOrientations()
+        Nlayers      = len(self.cltLayers)
+        # h = [layer.t for layer in self.cltLayers]
 
         
-        x0 = [-b/2  + dx0, b/2 + dx0]
-        xlines = []
-        ylines = []
-        dy = -h/2 + dy0
-        for ii in range(Nline-1):
-            y = (ii +1)* dh  + dy
-            xlines.append(x0)
-            ylines.append([y, y])
+        bmin = -b/2  + dx0
+        bmax = b/2 + dx0
+        x0 = [bmin, bmax]
+        xlayers = []
+        ylayers = []
+        
+        dstart = b*self.dstart
+        Nboard = self.Nboard
+        xverticals = np.linspace(dstart, b - dstart, Nboard)
+        for ii in range(Nlayers):
+            
+            ort = orientations[ii]
+            ymin = boundaries[ii] -h/2 + dy0  
+            ymax = boundaries[ii + 1] -h/2 + dy0
+            
+            xlayers.append(x0)
+            ylayers.append([ymax, ymax])
+            
+            if not ort:
+                for jj in range(Nboard):
+                    xlayers.append([xverticals[jj],xverticals[jj]])
+                    ylayers.append([ymin, ymax])
 
-        return xlines, ylines
+        return xlayers, ylayers
+    
+    
+    
+    def getFillAreas(self):
+        h = self.cltLayers.d
+        b = self.w
+        dx0 = self.dx0
+        dy0 = self.dy0        
+        
+        boundaries  = h - np.array(self.cltLayers.lBoundaries)
+        orientations = self.cltLayers.getLayerOrientations()
+        Nlayers     = len(self.cltLayers)
+        # h = [layer.t for layer in self.cltLayers]
+
+        
+        bmin = -b/2  + dx0
+        bmax = b/2 + dx0
+        x0 = [bmin, bmax, bmax, bmin, bmin]
+        xlayers = []
+        ylayers = []
+        for ii in range(Nlayers):
+            
+            ort  = orientations[ii]
+            ymin = boundaries[ii] -h/2  + dy0
+            ymax = boundaries[ii + 1] -h/2  + dy0
+            if not ort:
+
+                xlayers.append(x0)
+                ylayers.append([ymax, ymax, ymin, ymin, ymax])
+
+        return xlayers, ylayers
+    
     
 
 
@@ -168,9 +223,11 @@ class GeomModelIbeam(GeomModel):
         dy0 = self.dy0
         
         x = np.array([-w/2, w/2, w/2, tw/2, tw/2, w/2,  
-                      w/2, -w/2, -w/2, -tw/2, -tw/2, -w/2])
+                      w/2, -w/2, -w/2, -tw/2, -tw/2, -w/2,
+                      -w/2])
         y = np.array([ h/2, h/2, h/2 - tf, h/2 - tf, -h/2 + tf,  
-             -h/2 + tf, -h/2,-h/2, -h/2+tf, -h/2+tf, h/2-tf, h/2-tf])
+             -h/2 + tf, -h/2,-h/2, -h/2+tf, -h/2+tf, h/2-tf, h/2-tf,
+             h/2])
         
         return list(x + dx0), list(y + dy0)    
 
@@ -264,8 +321,8 @@ class GeomModelIbeamRounded(GeomModel):
         tlfx = tlfx[::-1]
         tlfy = tlfy[::-1]        
         
-        x = tLeg_x + trfx + trwx + brwx + brfx + bLeg_x + blfx + blwx + tlwx + tlfx
-        y = tLeg_y + trfy + trwy + brwy + brfy + bLeg_y + blfy + blwy + tlwy + tlfy        
+        x = tLeg_x + trfx + trwx + brwx + brfx + bLeg_x + blfx + blwx + tlwx + tlfx + [-w/2]
+        y = tLeg_y + trfy + trwy + brwy + brfy + bLeg_y + blfy + blwy + tlwy + tlfy  + [ h/2]       
         
         return list(np.array(x) + dx0), list(np.array(y) + dy0)    
 

@@ -3,7 +3,7 @@ CSA S16 - Steel Design
 
 
 
-#. :doc:`design-csa-s16-19`
+#. :doc:`design-csa-s16-24`
 
 
 
@@ -11,7 +11,7 @@ CSA S16 - Steel Design
    :maxdepth: 3
    :hidden:
    
-   design-csa-s16-19.rst
+   design-csa-s16-24.rst
 
 
 
