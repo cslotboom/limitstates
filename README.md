@@ -69,7 +69,7 @@ See [design api reference](https://limitstates.readthedocs.io/en/latest/rst/desi
 
 The Analysis library will contain functions that act on structural objects to analyze them. The analysis Library is a work in progress. 
 
-# Deveopment Roadmap
+# Development Roadmap
 Version one of limitstates will release when the library can design most major elements in canadian design codes, and the core objects can handle American/EU design codes. 
 The specific items required for version 1 are below:
 
@@ -77,7 +77,7 @@ The specific items required for version 1 are below:
 - [ ] Create a section element for reinforced concrete
 - [ ] Improve section and material database documentation
 - [ ] Support plotting for concrete elements / sections
-- [ ] Support plotting for CLT elements / sections
+- [x] Support plotting for CLT elements / sections
 - [ ] Add section summary to section plotting
 - [ ] Add an generic design example showing how database can be used.
 
