@@ -4,7 +4,7 @@ These are largely set up to ease development and provide type hints.
 """
 
 from dataclasses import dataclass
-from .....objects import (Member, SectionRectangle, initSimplySupportedMember, SectionSteel)
+from limitstates import (Member, SectionRectangle, initSimplySupportedMember, SectionSteel)
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
 from limitstates import BeamColumn, EleDisplayProps
@@ -27,6 +27,7 @@ class DesignPropsSteel24:
     Lex:float = None
     Ley:float = None
     Lez:float = None
+    webStiffened = False
     
     def setkx(self, kx):
         self.kx  = kx

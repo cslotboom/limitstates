@@ -409,7 +409,7 @@ class SectionSteel(SectionMonolithic):
     etc.
     
     All steel sections will have a "type attribute, which will be either "w"
-    for W sections, 'hss' for hss sections, or 'hss4' for round hss sections.
+    for W sections, 'hss' for hss sections, or 'hssr' for round hss sections.
     
     Steel sections are defined by importing from a database. See section 
     databases for all availible databases.

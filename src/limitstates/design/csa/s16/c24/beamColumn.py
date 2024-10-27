@@ -4,7 +4,8 @@ Contains functions for managing sections specific to CSAo86-19
 Note, right now all limits are calculated at once BEFORE the 
 """
 
-from .element import BeamColumnSteelCsa24, SectionSteel
+from .element import BeamColumnSteelCsa24
+from limitstates import SectionSteel, SteelSectionTypes
 from typing import Callable
 from numpy import pi
 from enum import IntEnum
@@ -427,6 +428,97 @@ def getBeamMr(beam:BeamColumnSteelCsa24, ):
     pass
 
 
+# =============================================================================
+# Shear
+# =============================================================================
+
+def getFsWUnstiffened(h:float, tw:float, Fy:float):
+    """
+    uses c.l. 13.4.1.1 To calculate the Fs for a W section.
+    
+    Inputs are in mm and MPa.
+    
+    Force out is in N.
+
+    Parameters
+    ----------
+    h : float
+        The clear depth of the web between flanges of the flange.
+    tw : float
+        The thickness of the web of the flange.
+    Fy : float
+        The yield stress for the material used.
+
+    Returns
+    -------
+    Fs : TYPE
+        DESCRIPTION.
+
+    """
+    
+    ratio = h / tw
+    
+    sqrtFy = Fy**0.5
+    
+    r1 = 1014/sqrtFy
+    if ratio <= r1:
+        Fs = 0.66*Fy
+    elif (r1 < ratio) and (ratio <= 1435/sqrtFy):
+        Fs = 670*sqrtFy / ratio
+    elif ratio <= 1014/sqrtFy:
+        Fs = 961200 / (ratio)
+        
+    return Fs
+
+
+
+def checkFsBeam(beam:BeamColumnSteelCsa24):
+    """
+    uses c.l. 13.4.1.1 To calculate the Fs for a W section.
+    
+    Inputs are in mm and MPa.
+    
+    Force out is in N.
+
+    Parameters
+    ----------
+    h : float
+        The clear depth of the web between flanges of the flange.
+    tw : float
+        The thickness of the web of the flange.
+    Fy : float
+        The yield stress for the material used.
+
+    Returns
+    -------
+    Fs : TYPE
+        DESCRIPTION.
+
+    """
+    phi = 0.9
+    section = beam.section
+    lfactor = section.lConvert('mm')
+    
+    Fy = section.mat.Fy
+    
+    if section.typeEnum == SteelSectionTypes.w:
+        
+        if hasattr(section, 'ho'):
+            h = section.ho * lfactor
+        else:
+            h = section.d - section.tf *2
+            h *= lfactor
+        
+        tw = section.tw * lfactor            
+        As = section.d  * lfactor * tw
+        if beam.designProps.webStiffened != True:
+            Fs = getFsWUnstiffened(h, tw, Fy)
+        else:
+            raise Exception('Only unstiffned webs are currently supported.')        
+        
+    return phi* Fs * As
+
+
 
 
 
@@ -442,7 +534,7 @@ def checkCompressionLimits(section:SectionSteel):
     _checkType(section)
     sconvert = section.mat.sConvert('MPa')
 
-    isW = section.type == 'W'  
+    isW = section.typeEnum == SteelSectionTypes.w
     Fy = section.mat.Fy*sconvert
     lim  = 1/Fy**0.5
 
