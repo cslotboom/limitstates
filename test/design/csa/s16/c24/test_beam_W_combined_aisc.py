@@ -41,7 +41,7 @@ def test_combined_blueBook():
     util_solB = 0.625
     util_solC = 0.94
     assert u[0] == pytest.approx(util_solA, rel = 0.01)
-    assert u[1] == pytest.approx(util_solB, rel = 0.01)
+    assert u[1] == pytest.approx(util_solB, rel = 0.01) #Note, this solution may be off because the the old code doesn't have a Fz factor.
     assert u[2] == pytest.approx(util_solC, rel = 0.01)
     
 def test_combined_LSDSS_EX8_4():

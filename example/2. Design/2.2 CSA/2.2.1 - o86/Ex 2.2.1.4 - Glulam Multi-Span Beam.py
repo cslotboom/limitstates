@@ -1,7 +1,7 @@
 """
 This example shows how a multi-span glulam beam can be checked for Moment.
 
-We start by importing 
+
 The base limitstates library is imported for object manipulation.
 The design library for csa o86's is imported for specific objects and checks
 The library Planesections is used for beam analysis.
@@ -44,7 +44,7 @@ line2  = ls.getLineFromNodes(n2, n3)
 member = ls.Member([n1, n2, n3], [line1, line2])
 
 
-designProps = o86.DesignPropsGlulam19(Lex=[5,3], 
+designProps = o86.DesignPropsGlulam19(Lx=[5,3], 
                                       kexB=[1.92, 1.92], 
                                       lateralSupport=[True, False])
 myElement   = o86.BeamColumnGlulamCsa19(member, mySection, designProps)

@@ -18,16 +18,14 @@ class DesignPropsSteel24:
     Design propreties specifically for a glulam beamcolumn element
     """
     lateralSupport:bool = True
-    kx:float = 1
-    ky:float = 1
-    kz:float = 1
-    Lx:float = None    
-    Ly:float = None    
-    Lz:float = None    
-    Lex:float = None
-    Ley:float = None
-    Lez:float = None
-    webStiffened = False
+    kx:float|list[float] = 1
+    ky:float|list[float] = 1
+    kz:float|list[float] = 1
+    Lx:float|list[float] = None    
+    Ly:float|list[float] = None    
+    Lz:float|list[float] = None    
+
+    webStiffened:float = False
     
     def setkx(self, kx):
         self.kx  = kx
@@ -39,9 +37,17 @@ class DesignPropsSteel24:
         
     def setkz(self, kz):
         self.kz  = kz
-        self.Lez = self.Lz * self.kz 
-    
-    
+        self.Lez = self.Lz * self.kz
+        
+    def __post_init__(self):
+        pass
+        # if self.Lx and self.kx:
+        #     self.Lex = self.Lx * self.kx
+        # if self.Ly and self.ky:
+        #     self.Ley = self.Ly * self.ky
+        # if self.Lz and self.kz:
+        #     self.Lez = self.Lz * self.kz
+                
 class BeamColumnSteelCsa24(BeamColumn):
     designProps:DesignPropsSteel24
     
@@ -86,11 +92,11 @@ class BeamColumnSteelCsa24(BeamColumn):
 
         self._initProps(designProps, userProps, eleDisplayProps)
         
-    def setLex(self, Lex):
-        self.designProps.Lex = Lex
+    def setLx(self, Lx):
+        self.designProps.Lx = Lx
         
-    def setLey(self, Ley):
-        self.designProps.Ley = Ley       
+    def setLey(self, Ly):
+        self.designProps.Ly = Ly       
         
 def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m', 
                             kx:float = 1, 

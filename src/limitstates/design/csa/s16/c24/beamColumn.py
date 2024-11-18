@@ -5,9 +5,9 @@ Note, right now all limits are calculated at once BEFORE the
 """
 
 from .element import BeamColumnSteelCsa24
-from limitstates import SectionSteel, SteelSectionTypes
+from limitstates import SectionSteel, SteelSectionTypes, DesignDiagram
 from typing import Callable
-from numpy import pi
+from numpy import pi, cumsum
 from enum import IntEnum
 
 """
@@ -29,13 +29,14 @@ class DesignSectionSteel:
 
 
 
-def _checkType(sectionType:str):
+def _checkType(section):
     SUPPORTEDTYPES = ['W', 'HSS']
 
-    if sectionType.type not in SUPPORTEDTYPES:
-        raise Exception(f'Section of type {sectionType.type} not supported, expected one of {SUPPORTEDTYPES}')
+    if section.type not in SUPPORTEDTYPES:
+        _SectionUnsupporedError(section, SUPPORTEDTYPES)
 
-
+def _SectionUnsupporedError(secton, SUPPORTEDTYPES):
+        raise Exception(f'Section of type {secton.type} not supported, expected one of {SUPPORTEDTYPES}')
 # =============================================================================
 # 
 # =============================================================================
@@ -88,10 +89,70 @@ def _checkType(sectionType:str):
 
 #     return K*L/r
 
+# =============================================================================
+# Tension
+# =============================================================================
+
+
+def checkTg(Ag, Fy):
+    """
+    Get the yield capacity for the goss section using c.l. 13.2
+
+    Parameters
+    ----------
+    Ag : float
+        The sections area in mm.
+    Fy : float
+        The yield capacity of the section in MPa.
+
+    Returns
+    -------
+    Tg : float
+        The gross tension capacity of the section..
+
+    """
+    
+    phi = 0.9
+    return phi*Ag*Fy
+
+
+# TODO! Test
+def checkTgElement(beam:BeamColumnSteelCsa24):
+    """
+    Uses c.l. 13.4.1.1 To calculate the Fs for a W section.
+    
+    Inputs are in mm and MPa.
+    
+    Force out is in N.
+
+    Parameters
+    ----------
+    h : float
+        The clear depth of the web between flanges of the flange.
+    tw : float
+        The thickness of the web of the flange.
+    Fy : float
+        The yield stress for the material used.
+
+    Returns
+    -------
+    Fs : TYPE
+        DESCRIPTION.
+
+    """
+    section = beam.section
+    lconvert = section.lConvert('mm')
+        
+    sfactor = section.mat.sConvert('MPa')
+    Fy      = section.mat.Fy*sfactor
+    
+    A = section.A * lconvert**2
+        
+    return checkTg(A, Fy)
 
 
 # =============================================================================
-# 
+# Bending
 # =============================================================================
 
 def classifySection(section:SectionSteel, useX=True, Cf = 0):
@@ -120,18 +181,20 @@ def classifySection(section:SectionSteel, useX=True, Cf = 0):
 
     _checkType(section)
 
-    isW = section.type == 'W'    
-    if isW:
+    if section.typeEnum == SteelSectionTypes.w:
         cflange = classifyFlangeWSection(section, useX)
         cweb    = classifyWebWSection(section, useX, Cf)
         return max(cflange, cweb)
-
-# def setElementClass(beam:BeamColumnSteelCsa24):
-
-
+    elif section.typeEnum == SteelSectionTypes.hss:
+        cflange = classifyFlangeHssSection(section, useX)
+        cweb    = classifyWebHssSection(section, useX, Cf)
+        return max(cflange, cweb)
+    else:
+        raise Exception(r'Section {section.type} not supported')
+    
 
 def classifyFlangeWSection(section:SectionSteel, useX = True):
-    
+    # section.mat.sConvert()
     Fy  = section.mat.Fy * section.mat.sConvert('MPa')
     t   = section.tf
     bel = section.bf / 2
@@ -157,6 +220,96 @@ def classifyWebWSection(section:SectionSteel, useX = True, Cf:float= 0):
         return classifyWebWMajor(h, t, Fy, Cf, Cy)
     else:
         return classifyWebWMinor(h, t, Fy, Cf, Cy)
+
+
+
+def classifyWebHssSection(section:SectionSteel, useX = True, Cf:float= 0):
+    """
+    Classifys a HSS web. The web is the portion of hss the which is in both 
+    compression and tension.
+    
+    If useX is toggled true the web is the vertical edge, i.e. height. 
+    Otherwise it's the horizontal edge, i.e. width.
+    Assumes that the section is supported along two edges, and has bending
+    and compression.
+    
+    
+    see #11.3.2.c. for a definittion of h
+    
+    Parameters
+    ----------
+    section : SectionSteel
+        DESCRIPTION.
+    useX : TYPE, optional
+        A toggle that activates the X direction. The default is True.
+    Cf : float, optional
+        The factored compression force of the section in N. The default is 0.
+
+    Returns
+    -------
+    int
+        The section class.
+
+    """
+    
+    Fy  = section.mat.Fy * section.mat.sConvert('MPa')
+    t   = section.t
+    Cy  = section.Cy
+    
+    if useX:
+        h   = section.h -  t*4
+    else:
+        h   = section.b -  t*4
+    return classifyWebWMajor(h, t, Fy, Cf, Cy)
+        
+
+def _getBelHSSSection(section:SectionSteel, useX = True):
+    """
+    see #11.3.2.b. for a definition of bel    
+    """
+    
+    
+    # In the strong axis, use the section 
+    if useX:
+        return  section.b -  section.t*4
+    else:
+        return  section.h -  section.t*4
+
+def classifyFlangeHssSection(section:SectionSteel, useX = True):
+    """
+    Classifys a HSS flange
+    
+    If useX is toggled true the web is the vertical edge, i.e. height. 
+    Otherwise it's the horizontal edge, i.e. width.
+    Assumes that the section is supported along two edges, and has bending
+    and compression.
+    
+    
+    see #11.3.2.b. for a definittion of bel    
+    
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to classify.
+    useX : TYPE, optional
+        A toggle that activates the X direction. The default is True.
+    Cf : float, optional
+        The factored compression force of the section in N. The default is 0.
+
+    Returns
+    -------
+    int
+        The section class.
+
+    """
+    
+    Fy  = section.mat.Fy * section.mat.sConvert('MPa')
+
+    # units are not needed because bel and t divide eachother.
+    t   = section.t
+    bel = _getBelHSSSection(section,useX)
+    
+    return classifyHssRectFlange(bel, t, Fy)
         
 def _categorize(ratio:float, lims:list[float]):
 
@@ -173,6 +326,8 @@ def classifyFlangeW(bel, t, Fy):
     """
     Classify a W section for bending about it's major axis.
     Assumes that the section is supported along one edge.
+    
+    See c.l. 11.3.2.b. for a definition of bel    
     """
     
     lim  = 1/Fy**0.5
@@ -187,6 +342,9 @@ def classifyFlangeWMinor(bel, t, Fy):
     """
     Classify a W section for bending about it's major axis.
     Assumes that the section is supported along one edge.
+    
+    See c.l. 11.3.2.b. for a definition of bel    
+
     """
     
     lim  = 1/Fy**0.5
@@ -200,7 +358,9 @@ def classifyFlangeWMinor(bel, t, Fy):
 def classifyWebWMajor(h, w, Fy, Cf, Cy):
     """
     Classify a W section for bending about it's major axis.
-    Assumes that the section is supported along one edge.
+    Assumes that the section is supported along two edges, and has bending
+    and compression.
+    Table 1
     """
     phi     = 0.9
     ratio   = Cf / (phi*Cy)
@@ -212,11 +372,11 @@ def classifyWebWMajor(h, w, Fy, Cf, Cy):
 
     return _categorize(h/w, [lim1, lim2, lim3])
 
-
 def classifyWebWMinor(h, w, Fy, Cf, Cy):
     """
     Classify a W section for bending about it's major axis.
     Assumes that the section is supported along one edge.
+    From Table 2
     """
     phi     = 0.9
     ratio   = Cf / (phi*Cy)
@@ -239,11 +399,30 @@ def classifyWebWMinor(h, w, Fy, Cf, Cy):
 
     return _categorize(h/w, [lim1, lim2, lim3])
 
-def classifyHSSRect(bel, t, Fy):
+
+def classifyHssRectFlange(bel, t, Fy):
     """
-    Classify a W section for bending about it's major axis.
-    Assumes that the section is supported along one edge.
+    Classify a square or rectangular HSS section for bending about an axis. 
+    The flange is the portion of the section which is fully in compression.
+        
+    Parameters
+    ----------
+    bel : float
+        The effective width, factoring in the curvature of the HSS
+        See c.l. 11.3.2.b. for a definition of bel    
+
+    t : float
+        The wall thickness in mm.
+    Fy : float
+        The yield stress in MPa.
+
+    Returns
+    -------
+    float
+        The class for the flange.
+
     """
+
     
     lim = 1/Fy**0.5
     lim1 = 420*lim
@@ -297,8 +476,32 @@ def getMy(S, Fy):
     
 def checkBeamMrSupported(beam:BeamColumnSteelCsa24, useX:bool=True, Cf:float = 0):
     """
-    Calcualtes Mr for a supported member in Nm
+    Calcualtes Mr for a supported member in Nm.
+    For laterally supported members, Mr is calculated the same way for HSS and
+    W sections. The only exception is class 4 sections, which are not supported
+    by limitstates currently.
+    
+    Parameters
+    ----------
+    beam : BeamColumnSteelCsa24
+        The beam to check the capacity of.
+    useX : TYPE, optional
+        A toggle that activates the X direction. The default is True.
+    Cf : float, optional
+        The factored compression force of the section in N. The default is 0.
+
+    Raises
+    ------
+    Exception
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
     """
+
     section = beam.section
     _checkType(section)
     
@@ -312,7 +515,7 @@ def checkBeamMrSupported(beam:BeamColumnSteelCsa24, useX:bool=True, Cf:float = 0
         S = section.getS(useX, 'mm')
         return getMy(S, Fy) 
     else:
-        raise Exception(f'{section} recieved is class 4, limitstates currently cannot design class 4 sections.')
+        raise Exception(f'{section} recieved is class 4, limitstates currently cannot design class 4 sections.')   
     
 def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1, 
                             Lu:float = None, Cf = 0):
@@ -323,6 +526,61 @@ def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1,
     supported strength
     
     For loads applied to a top flange, Mu can be calculated with omega = 1
+    and Lu = 1.2 for simply supported members, and Lu = 1.4 for other member
+    types.
+    The user should set the length of the beam
+    
+    These can be modified by changing the keff factor in the x direction
+
+    Parameters
+    ----------
+    section : SectionSteel
+        A W section.
+    omega : float, optional
+        The moment distribution factor. The default is 1.
+    Lu : float
+        An override for the unbraced length in mm.
+        By defult is none, which will use the design length of the beam in 
+        it's x direction.
+    Cf : float, optional
+        The factored compression force of the section in N. The default is 0.
+
+    Returns
+    -------
+    Moment
+        The output moment in Nm.
+
+    """
+    # sectionClass = _getSectionClassIfNotSet(beam.sectionsection, True, Cf)
+    
+    # if 
+    
+    if not Lu:
+        lconvert = beam.member.lConvert('mm')
+        Lu = beam.designProps.Lx * beam.designProps.kx * lconvert
+    
+    phi = 0.9
+    Mu = checkSectionMu(beam.section, Lu, omega)*phi
+    Mx = checkBeamMrSupported(beam, True, Cf)
+    
+    if 0.67*Mx < Mu:
+        return min(1.15*Mx*(1 - 0.28*Mx / Mu), Mx)
+
+    else:
+        return Mu 
+
+    
+def checkBeamMrUnsupported(beam:BeamColumnSteelCsa24, omega:float=1, 
+                            Lu:float = None, Cf = 0):
+    """
+    Calculates Mr for an unsupported W section according to c.l.13.6.1.a.
+    Does not apply to cantilevers.
+    Note that in the weak axis, the unsupported strength is equal to the
+    supported strength
+    For Hss sections, the unsupported results are the same as the supported
+    results.
+    
+    For loads applied to a top flange, Mu should be calculated with omega = 1
     and Lu = 1.2 for simply supported members, and Lu = 1.4 for other member
     types.
     
@@ -347,21 +605,15 @@ def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1,
     """
     # sectionClass = _getSectionClassIfNotSet(beam.sectionsection, True, Cf)
     
-    # if 
-    
-    if not Lu:
-        lconvert = beam.member.lConvert('mm')
-        Lu = beam.designProps.Lx * lconvert
-    
-    phi = 0.9
-    Mu = checkSectionMu(beam.section, Lu, omega)*phi
-    Mx = checkBeamMrSupported(beam, True, Cf)
-    
-    if 0.67*Mx < Mu:
-        return min(1.15*Mx*(1 - 0.28*Mx / Mu), Mx)
+    if beam.section.typeEnum == SteelSectionTypes.w:
+        return checkBeamMrUnsupportedW(beam, omega, Lu, Cf)
 
-    else:
-        return Mu 
+    elif beam.section.typeEnum == SteelSectionTypes.hss:
+        return checkBeamMrSupported(beam,  Cf = Cf)
+
+    else: 
+        raise Exception(f'Section type {beam.section.type} is unsupported' )
+
 
 # !!! This might not be the correct place to store the section class.
 def _getSectionClassIfNotSet(section:SectionSteel, 
@@ -375,9 +627,24 @@ def _getSectionClassIfNotSet(section:SectionSteel,
 
 def checkSectionMu(section:SectionSteel, Lu:float, omega:float):
     """
-    cl 13.6.1.a.
-    length is input in mm.
-    Returns in N*m
+    Calculates Mu as per c.l. 13.6.1.a, assuming length is input in mm.
+    
+    Returns capacity in N*m
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check.
+    Lu : float
+        The input length in mm.
+    omega : float
+        The omega factor to apply to the span..
+
+    Returns
+    -------
+    float
+        The buckling moment for the beam.
+
     """
     
 
@@ -393,32 +660,33 @@ def checkSectionMu(section:SectionSteel, Lu:float, omega:float):
     
     return checkMu(E, Iy, G, J, Cw, Lu, omega) / 1000
 
-def checkMu(E:float, Iy:float, G:float, J:float, 
-            Cw:float, Lu:float, omega:float):
+def checkMu(E:float, Iy:float, G:float, J:float, Cw:float, Lu:float, 
+            omega:float):
     """
     Calculates critical bucklimg moment for a beam.
 
     Parameters
     ----------
     E : float
-        DESCRIPTION.
+        The elastic modulus of the section in MPa.
     Iy : float
-        DESCRIPTION.
+        The weak axis moment of inetia in mm4.
     G : float
-        DESCRIPTION.
+        The shear modulus of the section in MPa.
     J : float
-        DESCRIPTION.
+        The polar moment of enrtia for the section in mm4.
     Cw : float
-        DESCRIPTION.
+        The warpping torsion constant in mm6 (mm$^6$).
     Lu : float
-        DESCRIPTION.
+        The unsupported length of the beam for bending in the strong axis in 
+        mm.
     omega : float
-        DESCRIPTION.
+        The omega load factor.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    float
+        Mu for the element.
 
     """
     return (omega*pi / Lu) * (E*Iy*G*J + Iy*Cw*(pi*E/Lu)**2)**0.5
@@ -426,6 +694,188 @@ def checkMu(E:float, Iy:float, G:float, J:float,
 
 def getBeamMr(beam:BeamColumnSteelCsa24, ):
     pass
+
+def checkOmega(Mmax, Ma, Mb, Mc):
+    
+    return min(4 * Mmax / (Mmax**2 + 4*Ma**2 + 7*Mb**2 + 4*Mc**2)**0.5, 2.5)
+    
+
+# =============================================================================
+# Multispan
+# =============================================================================
+
+
+
+class SegmentSupportTypes(IntEnum):
+    """
+    Options for multispan design checks.
+            
+    - If option 1 is selected, the beam is assumed to be continously laterally 
+    supported over the entire beam. Note, Mr is the same for each segment.
+    
+    - If option 2 is selected, the beam is assumed to be laterally unsupported 
+    between supports. In this case, it is assumed the load is applied to the 
+    compression flange, and torsional fixity is provided at each support. 
+    For W sections, the length is increased by 1.4 per c.l. 13.6.1.
+    
+    - If option 3 is selected, then the design propreties will be used to.
+    The user should manually set the attributed Lx, kx, and lateralSupport
+    in the designpropreties. Note, in this case Lx should be the actual length 
+    (Not a design length), and kx should be the effective lenght factor.
+
+    """
+    continuous = 1
+    supoorts = 2
+    supportsAndTopFlange = 3
+    manual = 4
+
+def _getOmegas(bmd, Nspan, Lsegs):
+    
+    omegas = [None]*Nspan
+
+    x1 = x2 = 0
+    for ii in range(Nspan):
+        dx  = Lsegs[ii]
+        x2 = x1 + dx
+        xa = 0.25*dx + x1
+        xb = 0.5*dx + x1
+        xc = 0.75*dx + x1
+        
+        ya, yb, yc = bmd.getForceAtx([xa, xb, xc])
+        ymax = bmd.getMaxForceInRange(x1, x2)
+        omegas[ii] = checkOmega(ymax, ya, yb, yc)
+        x1 = x2
+        
+    return omegas
+
+
+def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24, 
+                         bmd: DesignDiagram = None, 
+                         lateralSupportType: SegmentSupportTypes | int = 3):
+    """
+    Returns the Mr value for each region of a multiSpanBeam.
+    Each span is given a value for Mr.
+    
+    The beam is assumed to bend about it's strong axis.
+
+    Assumes the BMD and member have the same units for length. The designer 
+    must judge the torsional support conditions provided and select an option
+    as per below:
+        1, the beam is assumed to be continously laterally supported over the 
+        entire beam. Where there are regions of siginficant negative bending, 
+        the bottom chord of the stucture must also be continously braced.
+        
+        2, the beam is assumed to be laterally unsupported between supports, 
+        **the load is applied to the at the shear center**, and torsional 
+        fixity is provided at each support. Omega is calculated per the BMD.
+    
+        3, the beam is assumed to be laterally unsupported between supports, 
+        **the load is applied to the top chord**, and torsional fixity is 
+        provided at each support. 
+        For W sections, the length is increased by 1.4 per c.l. 13.6.1.,
+        and omega is set to be equal to one.
+        
+        4, The user should manually set the attributed Lx, kx, and 
+        lateralSupportin the designpropreties. Note, in this case Lx should be 
+        the actual length (Not a design length), and kx should be the 
+        effective lenght factor.
+        Lu = Lx * kx
+        
+    Parameters
+    ----------
+    element : BeamColumnGlulamCsa19
+        The multi-span element to check.
+    bmd : DesignDiagram
+        The bending moment diagram for the load case to be checked.
+    lateralSupportType : SegmentSupportTypes | int, optional
+        The type of lateral support condition for bending. The default is 3:
+        - 1 will return a beam lateral restraint on all segments
+        - 2 will return a beam with no lateral restraint except at supports
+        - 3 will return a beam with no lateral restraint except at supports, 
+        and load applied at the top flange.
+        - 4 will use the user define support conditions. The Lx, kex, and 
+        lateralSupport must be set for each beam segment
+        
+    Returns
+    -------
+    MrOut : list[float]
+        The Mr out for each design segment.
+    xOut : list[float]
+        The breakpoints for the beam, including the end of the beam. Moment 
+        applies, i.e.
+        Mr = MrOut[0] from         0 to xOut[0]
+        Mr = MrOut[1] from   xOut[0] to xOut[1]
+    omega : list[float]
+        The omega factor for each span.
+
+    """
+        
+    mlfactor = element.member.lConvert('mm')
+    
+    if True in element.member.isCantilever:
+        raise Exception('A cantilever was found in the input beam. Cantilevers are not currently supported.')
+        
+    # Get the positive and negative bending regions.
+    member  = element.member
+
+    # Get the kL factor depending on the condition used.
+    if lateralSupportType == 1:
+        Nspan = member.Nspan
+        isContinouslyBraced = [True] * Nspan
+        Lsegs    = [line.L for line in member.curves]
+        Ldesign  = [-1]*Nspan
+        omegas = [None]*Nspan
+        
+    if lateralSupportType == 2:
+        Nspan = member.Nspan
+        isContinouslyBraced = [False] * Nspan
+        
+        Lsegs   = [line.L for line in member.curves]
+        Ldesign = [L*mlfactor for L in Lsegs]
+        omegas = _getOmegas(bmd, Nspan, Lsegs)
+        
+    if lateralSupportType == 3:
+        Nspan = member.Nspan
+        isContinouslyBraced = [False] * Nspan
+        
+        Lfactor = 1.4
+        Lsegs    = [line.L for line in member.curves]
+        Ldesign    = [L*Lfactor*mlfactor for L in Lsegs]
+        omegas   = [1]*Nspan
+        
+    if lateralSupportType == 4:
+        
+        dProps = element.designProps
+        Nspan  = len(dProps.Lx)
+        isContinouslyBraced = dProps.lateralSupport
+        Lsegs    = dProps.Lx
+        Ldesign  = [L * kx * mlfactor for kx, L in zip(dProps.kx, Lsegs)]
+        
+        omegas = _getOmegas(bmd,Nspan,Lsegs)
+
+    # xSeg  = cumsum(Lseg)
+    # xbreakpoints.sort()
+    
+    # xOut, kzbgout, kLout = getMultispanRegions(Lkzbg, kzbg, Lseg, kL)
+    # xOut = [L / mlfactor for L in xOut]
+    
+    MrOut = [None]* Nspan
+    for ii in range(Nspan):
+        spanSupport = isContinouslyBraced[ii]
+        L = Ldesign[ii]
+        if spanSupport:
+            Mr = checkBeamMrSupported(element)
+        else:
+            omega = omegas[ii]
+            Mr = checkBeamMrUnsupported(element, omega, L)
+        MrOut[ii] = Mr
+    
+    xOut = cumsum(Lsegs)
+    return MrOut, xOut, omegas
+
+
+
+
 
 
 # =============================================================================
@@ -470,8 +920,6 @@ def getFsWUnstiffened(h:float, tw:float, Fy:float):
         
     return Fs
 
-
-
 def checkFsBeam(beam:BeamColumnSteelCsa24):
     """
     uses c.l. 13.4.1.1 To calculate the Fs for a W section.
@@ -491,18 +939,20 @@ def checkFsBeam(beam:BeamColumnSteelCsa24):
 
     Returns
     -------
-    Fs : TYPE
-        DESCRIPTION.
+    Fs : float
+        The shear capacity of the beam in N.
 
     """
     phi = 0.9
     section = beam.section
     lfactor = section.lConvert('mm')
     
-    Fy = section.mat.Fy
+    sfactor = section.mat.sConvert('MPa')
+    Fy = section.mat.Fy*sfactor
     
     if section.typeEnum == SteelSectionTypes.w:
         
+        # Some section databases do not explicitly set this term
         if hasattr(section, 'ho'):
             h = section.ho * lfactor
         else:
@@ -539,30 +989,93 @@ def checkCompressionLimits(section:SectionSteel):
     lim  = 1/Fy**0.5
 
     if isW:
-        # flange propreties
-        tf   = section.tf
-        bel = section.bf / 2
-        flangeLim = 250*lim
-        flangePasses = (bel / tf) < flangeLim
-        
-        # Web propreties
-        tw   = section.tw
-        h   = section.d -  section.tf*2
-        webLim = 670*lim
-        webPasses = (h / tw) < webLim
+        return _checkCompresionLimitsW(section, lim)
 
-        if flangePasses and webPasses:
-            return True
-        else:
-            raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
+    else:
+        return _checkCompresionLimitsHss(section, lim)
 
 
+def _checkCompresionLimitsW(section, lim):
+    """
+    
+    See c.l. 11.3.2.b. for a definition of bel    
+
+    Parameters
+    ----------
+    section : TYPE
+        DESCRIPTION.
+    lim : TYPE
+        DESCRIPTION.
+
+    Raises
+    ------
+    Exception
+        DESCRIPTION.
+
+    Returns
+    -------
+    bool
+        DESCRIPTION.
+
+    """
+    # flange propreties
+    tf   = section.tf
+    bel = section.bf / 2
+    flangeLim = 250*lim
+    flangePasses = (bel / tf) < flangeLim
+    
+    # Web propreties
+    tw   = section.tw
+    h   = section.d -  section.tf*2
+    webLim = 670*lim
+    webPasses = (h / tw) < webLim
+
+    if flangePasses and webPasses:
+        return True
+    else:
+        raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
+
+def _checkCompresionLimitsHss(section, lim):
+    # flange propreties
+    tf   = section.t
+    flangeLim = 670*lim    
+    belFange = _getBelHSSSection(section, True)
+    flangePasses = (belFange / tf) < flangeLim
+    
+    # Web propreties
+    tw   = section.t
+    webLim = 670*lim
+    belWeb = _getBelHSSSection(section, False)
+    webPasses = (belWeb / tw) < webLim
+
+    if flangePasses and webPasses:
+        return True
+    else:
+        raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
 
 def checkCr(A:float, Fy:float, lamda:float, n:float = 1.34):
     """
     Calculates compression resistance per 13.3.1.1
-    
+
+    Parameters
+    ----------
+    A : float
+        The sections area in sqmm.
+    Fy : float
+        The sections yield stress in MPa.
+    lamda : float
+        The ratio of yeld stress to the euler buckling stress.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+
+    Returns
+    -------
+    float
+        The compression resistance for the system in N.
+
     """
+
     phi = 0.9
     
     return phi*A*Fy / (1 + lamda**(2*n))**(1/n)
@@ -570,6 +1083,8 @@ def checkCr(A:float, Fy:float, lamda:float, n:float = 1.34):
 
 def checkFe(E:float, Leff:float, reff:float):
     """
+    Calculates the euler buckling stress for a column in a given direction.
+    
     Effective buckling stress per c.l. 13.3.1.2
     Leff is the effective buckling length, i.e. k*L
     
@@ -578,13 +1093,13 @@ def checkFe(E:float, Leff:float, reff:float):
 
     
 
-def checkCe(E:float, I:float, Leff:float):
-    """
-    Effective buckling stress per c.l. 13.3.1.2
-    Leff is the effective buckling length, i.e. k*L
+# def checkCe(E:float, I:float, Leff:float):
+#     """
+#     Effective buckling stress per c.l. 13.3.1.2
+#     Leff is the effective buckling length, i.e. k*L
     
-    """
-    return pi**2 * E * I (Leff)
+#     """
+#     return pi**2 * E * I*(Leff)
 
 
 
@@ -619,9 +1134,10 @@ def checkColumnFeDirection(column:BeamColumnSteelCsa24, useX = True):
     Parameters
     ----------
     beam : BeamColumnSteelCsa24
-        The structural element to check..
-    useX : TYPE, optional
-        The x direction to check the column in. The default is True.
+        The structural element to check.
+    useX :  bool, optional
+        A flag that specifies the direction to check the column in. 
+        The default is True, which checks the x direction.
 
     Returns
     -------
@@ -637,16 +1153,16 @@ def checkColumnFeDirection(column:BeamColumnSteelCsa24, useX = True):
     
     if useX:
         Le = column.designProps.Lex * lconvert
-        r  = column.section.rx*lsconvert
+        r  = column.section.rx * lsconvert
     else:
-        Le = column.designProps.Ley*lconvert
-        r  = column.section.ry*lsconvert
+        Le = column.designProps.Ley * lconvert
+        r  = column.section.ry * lsconvert
         
     return checkFe(E, Le, r)
 
 def checkColumnCeDirection(column:BeamColumnSteelCsa24, useX = True):
     """
-    Calculates buckling stress in a single direction stress per 13.3.1.1
+    Calculates buckling force (Fe*A) in a single direction stress per 13.3.1.1
     
     Only applies to double symettric sections, i.e. W sections and
     HSS sections.
@@ -663,15 +1179,12 @@ def checkColumnCeDirection(column:BeamColumnSteelCsa24, useX = True):
     Returns
     -------
     float
-        The buckling stress in MPa.
+        The buckling force in N.
 
     """
     lsconvert   = column.section.lConvert('mm')
     A = column.section.A * lsconvert**2
     return checkColumnFeDirection(column, useX) * A
-
-
-
 
 def checkColumnFeTorsion(beam:BeamColumnSteelCsa24, x0:float=0, y0:float=0):
     """
@@ -690,8 +1203,9 @@ def checkColumnFeTorsion(beam:BeamColumnSteelCsa24, x0:float=0, y0:float=0):
     ----------
     beam : BeamColumnSteelCsa24
         The structural element to check..
-    useX : TYPE, optional
-        The x direction to check the column in. The default is True.
+    useX :  bool, optional
+        A flag that specifies the direction to check the column in. 
+        The default is True, which checks the x direction.
 
     Returns
     -------
@@ -753,15 +1267,17 @@ def checkColumnFe(beam:BeamColumnSteelCsa24):
     
     # Check the member class and raise an exception if
     _checkType(beam.section)
-    isNotHSS = beam.section.type != 'W'  
+    enum = beam.section.typeEnum 
+    isNotHss = (enum != SteelSectionTypes.hss) and (enum != SteelSectionTypes.hssr)
+    
 
     # Get the stress in each direction.
     Fex = checkColumnFeDirection(beam)
     Fey = checkColumnFeDirection(beam, False)
 
-    # If the section is a HSS we have to check torsion and return that.
+    # If the section is a W we have to check torsion and return that.
     # For now, assume that X0 and y0 are part of the cross section.
-    if isNotHSS:
+    if isNotHss:
         Fez = checkColumnFeTorsion(beam, 0, 0)    
         return min(Fex, Fey, Fez)
     return min(Fex, Fey)
@@ -788,15 +1304,16 @@ def checkColumnCr(column:BeamColumnSteelCsa24, n:float = 1.34,
     beam : BeamColumnSteelCsa24
         The steelbeamcolumn to check.
     n : float, optional
-        DESCRIPTION. The default is 1.34.
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
     lam : float, optional
         A manual override on the lambda factor. The default is calcualted using
         clause 13.3.1.2.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    float
+        The strength of the column in N.
 
     """
     
@@ -974,11 +1491,9 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n,
     """
     Cr = checkColumnCr(beamColumn, n)
     
-    # !!! only works for W sections
-    Mrx = checkBeamMrUnsupportedW(beamColumn, True, Cf = Cf)
+    Mrx = checkBeamMrUnsupported(beamColumn, True, Cf = Cf)
     Mry = checkBeamMrSupported(beamColumn, False, Cf)       
  
-    
     if isBracedFrame:
         Cex = checkColumnCeDirection(beamColumn,True)
         Cey = checkColumnCeDirection(beamColumn,False)
@@ -999,19 +1514,61 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n,
  
     return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
-def checkCombinedCaseD():
+def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, 
+                       isBracedFrame = False):
     """
     Biaxial Bending
     
     Members are calulated with 
     """
-    # Cr, Mrx, Mry = _getCaseAResistance(beamColumn, n)
+    
+    Mrx = checkBeamMrUnsupported(beamColumn, True, Cf = Cf)
+    Mry = checkBeamMrSupported(beamColumn, False, Cf)              
        
-       
+    
+    return getUtil(Cf, 0, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
+
 
 def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
-                            Mfx:float, Mfy:float = 0, n:float = 1.24, 
+                            Mfx:float, Mfy:float = 0, n:float = 1.34, 
                             omegax1:float = 1.0, isBracedFrame = False):
+    """
+    Checks the 4 cases required to assess a steel element in combined bending
+    and shear: cross section strength (c.l. 13.8.2a);
+    Overall member strength (c.l. 13.8.2b); Lateral Torsional Buckling 
+    (c.l. 13.8.2c); and biaxial bending (c.l. 13.8.2d).
+    
+
+    Parameters
+    ----------
+    beamColumn : BeamColumnSteelCsa24
+        DESCRIPTION.
+    Cf : float
+        The applied compressive load.
+    Mfx : float
+        The applied moment in the strong axis direction (N).
+    Mfy : float, optional
+        The applied moment in the strong weak direction (N). The default is 0.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+    omegax1 : float, optional
+        DESCRIPTION. The default is 1.0.
+    isBracedFrame : TYPE, optional
+        DESCRIPTION. The default is False.
+
+    Returns
+    -------
+    u1 : TYPE
+        DESCRIPTION.
+    u2 : TYPE
+        DESCRIPTION.
+    u3 : TYPE
+        DESCRIPTION.
+    u4 : TYPE
+        DESCRIPTION.
+
+    """
     
     if isBracedFrame:
         u1 = checkCombinedCaseA(beamColumn, Cf, Mfx, Mfy, n, omegax1)
@@ -1019,8 +1576,9 @@ def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float,
         u1 = 0
     u2 = checkCombinedCaseB(beamColumn, Cf, Mfx, Mfy, n, omegax1, isBracedFrame)
     u3 = checkCombinedCaseC(beamColumn, Cf, Mfx, Mfy, n, omegax1, isBracedFrame)
+    u4 = checkCombinedCaseD(beamColumn, Cf, Mfx, Mfy, isBracedFrame)
     
-    return u1, u2, u3
+    return u1, u2, u3, u4
     
 
 

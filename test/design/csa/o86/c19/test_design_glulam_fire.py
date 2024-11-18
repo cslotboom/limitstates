@@ -82,12 +82,12 @@ def test_compression_example_1():
     d = 304
     section = ls.SectionRectangle(myMat, b, d)
     L = 9
-    Lex = 4.5
-    Ley = 4.5
+    Lx = 4.5
+    Ly = 4.5
     port = o86.GypusmFlatCSA19(['12.7mm'])
 
     column = o86.getBeamColumnGlulamCsa19(L, section, 'm', port,
-                                          Lex = Lex, Ley = Ley)
+                                          Lx = Lx, Ly = Ly)
         
     FRR = [60,60,60,60]
     o86.setFireSectionGlulamCSA(column, FRR)
@@ -110,10 +110,10 @@ def test_compression_example2():
     d = 304
     section = ls.SectionRectangle(myMat, b, d)
     L = 7
-    Ley = 3.5
+    Ly = 3.5
     port = o86.GypusmFlatCSA19(['12.7mm'])
 
-    column = o86.getBeamColumnGlulamCsa19(L, section, 'm', port, Ley = Ley)
+    column = o86.getBeamColumnGlulamCsa19(L, section, 'm', port, Ly = Ly)
         
     # o86.FireConditions.
     FRR = [60,60,60,60]

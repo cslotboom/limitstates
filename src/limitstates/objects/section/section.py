@@ -434,6 +434,17 @@ class SectionSteel(SectionMonolithic):
         self.mat = mat
         
         self.typeEnum = self._classifySectionType()
+        
+        if self.typeEnum == SteelSectionTypes.hss:
+            self._patchHssThickness()
+        
+    def _patchHssThickness(self):
+        """
+        some section libraries call thickness tdes.
+        add t for convetsion
+        """
+        if not hasattr(self, 't'):
+            self.t = self.tdes
     
     @property
     def name(self):

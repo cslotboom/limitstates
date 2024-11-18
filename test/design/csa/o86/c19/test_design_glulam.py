@@ -117,9 +117,9 @@ def test_compression_Design_Example_Cc():
     mat = mats[-3]
     mySection = ls.SectionRectangle(mat, 175, 228)
     
-    Lex = 7
-    Ley = 3.5
-    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    Lx = 7
+    Ly = 3.5
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lx = Lx, Ly = Ly)
     
     Cx, Cy = o86.checkColumnCc(myElement)
     CxSol = 30.7
@@ -141,9 +141,9 @@ def test_compression_Design_Example_Pr():
     mat = mats[-3]
     mySection = ls.SectionRectangle(mat, 175, 228)
     
-    Lex = 7
-    Ley = 3.5
-    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lex = Lex, Ley = Ley)
+    Lx = 7
+    Ly = 3.5
+    myElement = o86.getBeamColumnGlulamCsa19(L, mySection, 'm', Lx = Lx, Ly = Ly)
     
     Pr = o86.checkPrGlulamColumn(myElement, 1) / 1000
         

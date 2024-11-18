@@ -32,7 +32,22 @@ class DesignDiagram:
     def getIntersectionCoords(self):
         return self.xInflections
     
+        
+    def getForceAtx(self, x:float|list):
+        
+        return np.interp(x, self.xy[:,0], self.xy[:,1])
     
+        
+    def getMaxForceInRange(self, x1, x2):
+        x = self.xy[:,0]
+        y = self.xy[:,1]
+        ind1 = np.where(x1 <= x)[0][0]
+        ind2 = np.where(x2 <= x)[0][0]
+        return max(abs(y[ind1:ind2]))
+    
+    
+            
+        
     
     
     def _initUnits(self, lUnit:str='m'):

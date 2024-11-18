@@ -264,10 +264,7 @@ def getSteelSections(mat:MaterialAbstract,
     # !!! Consider making this a funciton with more logic.
     tmpNameList = dbName.replace('.csv', '').strip(steelShapeType).split('_')
     dbName = ''.join(tmpNameList[0:2])
-    
-    
-
-    
+        
     sections = [None]*len(filteredDict.keys())
     for ii, key in enumerate(filteredDict.keys()):
         tmpD = filteredDict[key]
