@@ -1,5 +1,5 @@
 """
-Tests the design of glulam elements according to csa o86
+Tests the classificaiton of sections
 """
 
 # import limitstates as ls
@@ -85,14 +85,3 @@ if __name__ == "__main__":
     test_classify_Flange_W_W460x464()
     test_classify_W_flexure_major()
     test_classify_W_flexure_major_compression()
-    # test_kLa()
-    # test_kLb()
-    # test_kLc2()
-    # test_bending_table_1()
-    
-    # test_compression_Design_Example_Cc()
-    # test_compression_Design_Example_Pr()
-    # test_compression_Table()
-    
-    # test_Interaction_ecc()
-    # test_Interaction_ecc_table()

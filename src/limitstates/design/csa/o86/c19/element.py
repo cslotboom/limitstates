@@ -24,7 +24,15 @@ class DesignPropsGlulam19:
     """
     Design propreties specifically for a glulam beamcolumn element.
     Beams will either be single span or multi-span. For multi-span beams,
-    Lex and Ley need to be set.
+    Lx and Ly need to be set.
+    
+    Note Lx is the design length of an element. Lex is the effective design
+    length, which is Lx * kx
+    
+    There are different design factors set for bending and compression design.
+    This is because sometimes the top bracing for bending does not brace
+    the full member in compression.
+    
 
     Parameters
     ----------
@@ -40,19 +48,19 @@ class DesignPropsGlulam19:
     isCurved : bool
         A flag that specifies if the beam is curved. Curved members are 
         not currently supported.
-    Lex : float|list[float]
+    Lx : float|list[float]
         The beam column's unsupported length in the section's x direction, which
         is typically the strong direction.
         If the beam is mult-segment, this is a list of the beam length, multiplied
         by the factor ke from table 
-    Ley : float|list[float]
+    Ly : float|list[float]
         The beam column's unsupported length in the section's y direction, which
         is typically the weak direction.
     keBending : float
         A factor that converts the actual span length into the effective span
         length. See table 7.4 for guidance. 
         If the beam is multispan, it must have the same number of entries 
-        as Lex and Ley. 
+        as Lx and Ly. 
     keCompression : float
         A factor that converts the actual span length into the effective span
         length for compression. See table A.4 for guidance. 
@@ -62,14 +70,28 @@ class DesignPropsGlulam19:
     sectionFire:SectionRectangle = None
     lateralSupport:bool|list[bool] = True
     isCurved:bool = False
-    Lex:float|list[float] = None
-    Ley:float|list[float] = None
+    Lx:float|list[float] = None
+    Ly:float|list[float] = None
     
     kexB:float|list[float] = None
     kexC:float = None
     keyC:float = None
     
     burnDimensions:list[float] = None
+
+    
+    def setkexB(self, kexB):
+        self.kexB  = kexB
+        self.Lexb = self.Lx * self.kexB 
+        
+    def setkexC(self, kexC):
+        self.kexC  = kexC
+        self.LexC = self.Lx * self.kexC 
+        
+    def setkeyC(self, keyC):
+        self.keyC  = keyC
+        self.LeyC = self.Ly * self.keyC
+        
 
 @dataclass
 class EleDisplayPropsGlulam19(EleDisplayProps):
@@ -123,7 +145,7 @@ class BeamColumnGlulamCsa19(BeamColumn):
     
     Multi-span members with compression loads are not supported.
     
-    For multi-span beams, Lex and Ley need to be set.
+    For multi-span beams, Lx and Ly need to be set.
 
 
     Parameters
@@ -168,11 +190,11 @@ class BeamColumnGlulamCsa19(BeamColumn):
 
         self._initProps(designProps, userProps, eleDisplayProps)
         
-    def setLex(self, Lex):
-        self.designProps.Lex = Lex
+    def setLx(self, Lx):
+        self.designProps.Lx = Lx
         
-    def setLey(self, Ley):
-        self.designProps.Ley = Ley       
+    def setLy(self, Ly):
+        self.designProps.Ly = Ly       
     
     def setSectionFire(self, sectionFire, burnDims = None):
         self.designProps.sectionFire = sectionFire
@@ -184,8 +206,8 @@ class BeamColumnGlulamCsa19(BeamColumn):
 
 def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m', 
                              firePortection:GypusmRectangleCSA19 = None,
-                             Lex:float = None, 
-                             Ley:float = None,
+                             Lx:float = None, 
+                             Ly:float = None,
                              kexB:float = 1,
                              kexC:float = 1,
                              keyC:float = 1) -> BeamColumnGlulamCsa19:
@@ -219,17 +241,17 @@ def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m',
     if firePortection:
         designProps.firePortection = firePortection
         
-    if Lex:
-        designProps.Lex = Lex
+    if Lx:
+        designProps.Lx = Lx
     else:
-        designProps.Lex = L
+        designProps.Lx = L
     designProps.kexB = kexB
     designProps.kexC = kexC
 
-    if Ley:
-        designProps.Ley = Ley
+    if Ly:
+        designProps.Ly = Ly
     else:
-        designProps.Ley = L
+        designProps.Ly = L
     designProps.keyC = keyC
     
     return BeamColumnGlulamCsa19(member, section, designProps)
@@ -241,8 +263,8 @@ class DesignPropsClt19:
     """
     firePortection:GypusmFlatCSA19 = None
     fireSection:SectionCLT = None
-    Lex:bool = False
-    Ley:bool = False
+    Lx:bool = False
+    Ly:bool = False
         
 
 @dataclass

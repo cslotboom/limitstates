@@ -166,6 +166,46 @@ def test_plot_CLT():
     
 
 
+def test_plot_hss_cisc():
+    myMat = ls.MaterialElastic(200*1000)
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'hss')
+    section = sections[0]
+    fig, ax     = ls.plotSection(section)
+
+
+    children = ax.get_children()
+    
+    lines = children[1]
+    lineVerts =   lines.get_path()
+    yMax = max(lineVerts._vertices[:,1])
+    yMin = min(lineVerts._vertices[:,1])
+    
+    xMax = max(lineVerts._vertices[:,0])
+    xMin = min(lineVerts._vertices[:,0])
+    # assert len(lineVerts) == 21 
+
+    assert section.d/2 == pytest.approx(yMax)
+    assert -section.d/2 == pytest.approx(yMin)   
+    
+    assert section.b/2 == pytest.approx(xMax)
+    assert -section.b/2 == pytest.approx(xMin)
+    
+    lines = children[2]
+    lineVerts =   lines.get_path()
+    yMax = max(lineVerts._vertices[:,1])
+    yMin = min(lineVerts._vertices[:,1])
+    
+    xMax = max(lineVerts._vertices[:,0])
+    xMin = min(lineVerts._vertices[:,0])   
+
+    assert section.d/2 - section.t == pytest.approx(yMax)
+    assert -section.d/2+ section.t == pytest.approx(yMin)   
+    
+    assert section.b/2 - section.t == pytest.approx(xMax)
+    assert -section.b/2 + section.t == pytest.approx(xMin)    
+
+
 
 if __name__ == "__main__":
     
@@ -178,6 +218,7 @@ if __name__ == "__main__":
     test_plot_I_beam_round_canvasConfig()
     test_plot_I_beam_round_objConfig()
     test_plot_CLT()
-    
+    test_plot_hss_cisc()
+
 else:
     plt.close('all')

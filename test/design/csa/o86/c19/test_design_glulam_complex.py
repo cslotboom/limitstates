@@ -82,7 +82,6 @@ def test_SegmentClassification():
 
 def test_kLRegions():
     
-    
     x, kzbg, kL = o86.getMultispanRegions([4.2, 3.8], [0.8, 0.9], [5,3], [0.9, 1])
     
     xSol    = (4.2, 5, 8)
@@ -103,13 +102,3 @@ if __name__ == "__main__":
     test_checkBMDkzbg()
     test_SegmentClassification()
     test_kLRegions()
-    # test_kLb()
-    # test_kLc2()
-    # test_bending_table_1()
-    
-    # test_compression_Design_Example_Cc()
-    # test_compression_Design_Example_Pr()
-    # test_compression_Table()
-    
-    # test_Interaction_ecc()
-    # test_Interaction_ecc_table()

@@ -32,6 +32,13 @@ class Support:
     name:str = None
     fixity:list[int] = None
     reaction:dict = None
+    # is2D:bool = True
+
+    def is2D(self):
+        return len(self.fixity) == 3
+    
+    def isFree(self):
+        return self.fixity == (0,0,0)
     
 class SupportTypes2D(Enum):
     """

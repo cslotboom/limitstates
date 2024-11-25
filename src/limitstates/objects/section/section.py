@@ -409,7 +409,7 @@ class SectionSteel(SectionMonolithic):
     etc.
     
     All steel sections will have a "type attribute, which will be either "w"
-    for W sections, 'hss' for hss sections, or 'hss4' for round hss sections.
+    for W sections, 'hss' for hss sections, or 'hssr' for round hss sections.
     
     Steel sections are defined by importing from a database. See section 
     databases for all availible databases.
@@ -434,6 +434,32 @@ class SectionSteel(SectionMonolithic):
         self.mat = mat
         
         self.typeEnum = self._classifySectionType()
+        
+        if self.typeEnum == SteelSectionTypes.hss:
+            self._patchHssThickness()
+            self._patchHSSWidth()
+            self._patchHSSradius()
+        
+    def _patchHssThickness(self):
+        """
+        some section libraries call thickness tdes.
+        add t for convetsion
+        """
+        if not hasattr(self, 't'):
+            self.t = self.tdes
+    
+    def _patchHSSWidth(self):
+        if not hasattr(self, 'bf'):
+            self.bf = self.b    
+    
+    
+    def _patchHSSradius(self):
+        if not hasattr(self, 'ro'):
+            self.ro = self.t*2
+        if not hasattr(self, 'ri'):
+            self.ri = self.t
+ 
+    
     
     @property
     def name(self):

@@ -21,10 +21,11 @@ class MaterialSteelCsa24(MaterialElastic):
     Fy:float 
     rho:float 
 
-    def __init__(self, Fy = 350, E=200000, G = 77000, rho = 8000, 
+    def __init__(self, Fy = 350, E = 200000, Fu = 450, G = 77000, rho = 8000, 
                  sUnit:str='MPa', rhoUnit='kg/m3'):
         self._initUnits(sUnit, rhoUnit)
         self.Fy = Fy
+        self.Fu = Fu
         self.E = E
         self.G = G
         self.rho = rho

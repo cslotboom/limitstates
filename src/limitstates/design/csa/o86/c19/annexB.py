@@ -256,7 +256,9 @@ def getBurntRectangularDims(burnAmount, width:float,
     dfire = max(depth - sum(burnAmount[0::2]),0)
     return wfire, dfire
 
-def getCLTBurnDims(netBurnTime:ndarray[float], sectionCLT:SectionCLT, Bn:float = 0.8):
+def getCLTBurnDims(netBurnTime: ndarray[float], 
+                   sectionCLT: SectionCLT, 
+                   Bn:float = 0.8) -> LayerGroupClt:
     """
     Gets the burn dimensions for a CLTSection. 
     The CLT section MUST have units of mm.
@@ -283,14 +285,18 @@ def getCLTBurnDims(netBurnTime:ndarray[float], sectionCLT:SectionCLT, Bn:float =
 
     Returns
     -------
-    fireWidth: float
+    burnLayers: float
         The width of the fire section.
     fireWidth: float
         The depth of the fire section.
     """
     
+    burnAmount = getBurnDimensions(netBurnTime, Bn)
+    burnLayers = _getRemainingCLTLayers(sectionCLT, float(burnAmount))
 
-    return getBurnDimensions(netBurnTime, Bn)
+    # burnSection = SectionCLT(burnLayers, section.w, section.wWeak, 
+    #                          section.lUnit, section.NlayerTotal)
+    return burnLayers
 
 
 
@@ -439,7 +445,7 @@ def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float],
     convertBack, oldUnits = _convertUnits(section)
 
     # make the new section and convert it to 
-    burnAmount = getCLTBurnDims(netBurnTime, section, Bn)
+    burnAmount = getBurnDimensions(netBurnTime, Bn)
     burnLayers = _getRemainingCLTLayers(section, float(burnAmount))
 
     burnSection = SectionCLT(burnLayers, section.w, section.wWeak, 

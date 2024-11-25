@@ -130,3 +130,4 @@ def getByName(objectList:list, filterVal:str):
         if filterVal in objectList[ii].name.lower():
             return objectList[ii]
     
+    raise Exception(f'No object with name {filterVal} found')
