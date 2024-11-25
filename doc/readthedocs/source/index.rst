@@ -35,6 +35,7 @@ A simple script is shown below:
    rst/units
    rst/objects
    rst/design
+   rst/analysis
    rst/technical documentation
    rst/examples
 

@@ -1,11 +1,11 @@
 """
 Contains the code designc clauses
 """
-from numpy import pi, diff, sign, cumsum
+from numpy import pi, diff, cumsum
 from enum import IntEnum
 
 from .element import BeamColumnGlulamCsa19,  _getSection, _getphi, _getphiCr, _isGlulam
-from limitstates import DesignDiagram, Member, Support
+from limitstates import DesignDiagram
 
 
 def checkCb(Leb, d, b):
@@ -31,8 +31,11 @@ def checkCb(Leb, d, b):
     """
     return (Leb*d/b**2)**0.5   
 
+
+# T
 def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
     """
+    Checks Cb, assuming the beam is single span
     Calculates slenderness ratio according to c.l. 7.5.6.4.3
 
     Parameters
@@ -50,7 +53,7 @@ def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
 
     """
     if useX:
-        Leb = element.designProps.Lex * element.designProps.kexB
+        Lexb = element.designProps.Lx * element.designProps.kexB
         b = element.section.b
         d = element.section.d
     else:
@@ -59,7 +62,7 @@ def checkBeamCb(element:BeamColumnGlulamCsa19, useX:bool = True):
         # b = element.section.d
         # d = element.section.b
     
-    return checkCb(Leb, d, b)
+    return checkCb(Lexb, d, b)
 
 def checkKL(Cb:float, E:float, Fb:float, kse:float=1, kt:float=1, kx:float=1):
     """
@@ -361,11 +364,6 @@ def getMemberkL(segmentLengths: list[float],
     
     return kLOut
 
-class SegmentSupportTypes(IntEnum):
-    CONTINOUS = 1
-    SUPPORTS = 2
-    MANUAL = 3
-
 
 def getMultispanRegions(Lkzbg, kzbg, Lseg, kL):
     xKzbg = cumsum(Lkzbg)
@@ -390,6 +388,11 @@ def getMultispanRegions(Lkzbg, kzbg, Lseg, kL):
             mm += 1        
     return xbreakpoints, kzbgOut, kLOut
         
+
+class SegmentSupportTypes(IntEnum):
+    CONTINOUS = 1
+    SUPPORTS = 2
+    MANUAL = 3
 
 
 def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19, 
@@ -430,9 +433,9 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
     lateralSupportType : SegmentSupportTypes | int, optional
         The type of lateral support condition for bending. The default is 2.
         
-        - 1 will return a beam lateral supported on all segments
-        - 2 will return a beam with no lateral support
-        - 3 will use the user define support conditions. The Lex, kexB, and 
+        - 1 will return a beam with continous lateral supported on all segments
+        - 2 will return a beam with no continous lateral support, i.e. lateral support only provided at nodes.
+        - 3 will use the user define support conditions. The Lx, kexB, and 
         lateralSupport must be set for each beam segment
         
     knet : float, optional
@@ -473,9 +476,7 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
     # Get the regions for xkbg
     coordsmm = bmd.getIntersectionCoords() * mlfactor
     Lkzbg, kzbg = checkBMDkzbg(coordsmm, b, d)
-    
-    
-    
+        
     section = _getSection(element, useFire)    
     bkL = section.b * slFactor # kL is based on the fire section!
     dkL = section.d * slFactor # kL is based on the fire section!
@@ -493,13 +494,12 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
         kL = getMemberkL(Lseg, kexBSeg, isContinouslyBraced,
                          bkL, dkL, E, Fb, kse, kt, kx)
     if lateralSupportType == 3:
-        Lseg    = element.designProps.Lex  * mlfactor
+        Lseg    = element.designProps.Lx  * mlfactor
         kexBSeg = element.designProps.kexB
         isContinouslyBraced = element.designProps.lateralSupport
         
         kL = getMemberkL(Lseg, kexBSeg, isContinouslyBraced,
                          bkL, dkL, E, Fb, kse, kt, kx)
-    
     
     xOut, kzbgout, kLout = getMultispanRegions(Lkzbg, kzbg, Lseg, kL)
     xOut = [L / mlfactor for L in xOut]
@@ -706,7 +706,7 @@ def checkColumnCc(element:BeamColumnGlulamCsa19, useFire:bool = False):
     """
     Returns the slenderness factors for a column in each direction, assuming
     it is a rectangular column.
-    Requires Lex and Ley to be set, and requires the beamcolumn only has one
+    Requires Lx and Ly to be set, and requires the beamcolumn only has one
     span.
 
     Parameters
@@ -731,8 +731,8 @@ def checkColumnCc(element:BeamColumnGlulamCsa19, useFire:bool = False):
     # convert to the same unit.
     lfactor = element.member.lConvert(element.section.lUnit)
     props = element.designProps
-    Lexc = props.Lex * props.kexC * lfactor
-    Leyc = props.Ley * props.keyC * lfactor
+    Lexc = props.Lx * props.kexC * lfactor
+    Leyc = props.Ly * props.keyC * lfactor
     Cx = _checkSlenderness(Lexc, section.d)
     Cy = _checkSlenderness(Leyc, section.b)
     
@@ -959,8 +959,8 @@ def checkPEColumn(element:BeamColumnGlulamCsa19, knet:float = 1,
     isGlulam = _isGlulam(element)
     E05 = _getE05(E, useFire, isGlulam)
     
-    Lexc = element.designProps.Lex * element.designProps.kexC 
-    Leyc = element.designProps.Ley * element.designProps.keyC 
+    Lexc = element.designProps.Lx * element.designProps.kexC 
+    Leyc = element.designProps.Ly * element.designProps.keyC 
     PEx = checkPE(E05, section.Ix*slfactor, Lexc, kSE, kT)
     PEy = checkPE(E05, section.Iy*slfactor, Leyc, kSE, kT)
     

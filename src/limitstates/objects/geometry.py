@@ -70,6 +70,12 @@ class Node:
         """
         self.support = newType
 
+    def getDimension(self):
+        """
+        Returns the dimension of a node, i.e. 2D or 3D
+        """
+        return len(self.p1)
+
 def _checkUnitsMatch(obj1, obj2):
     if obj1.units == obj2.units:
         return True
@@ -180,6 +186,7 @@ def getLineFromLength(L:float, units = 'm') -> Line:
     return line    
 
 
+# TODO: have a long hard thought about if this needs to be a dataclass
 @dataclass()
 class Member:
     """
@@ -203,7 +210,8 @@ class Member:
     label : str
         A label for the Member.
     loadData : str
-        A dictionary containing loading informationa about the Member.
+        A dictionary containing loading information about the Member.
+        CURRENTLY UNUSED AND MAY BE REPLACED
     analysisData : str
         A dictionary containing output information about analysis of the 
         Member, e.g. the bending moment diagram, the shear force diagram, etc.
@@ -214,14 +222,21 @@ class Member:
     label:str = None
     loadData:dict = None
     analysisData:dict = None
-    lConverter:ConverterLength = None
-    L:float = None
-    isMultiSpan = None
     
     def __post_init__(self):
         self._initUnits(self.lUnit)
         self.L = sum([curve.L for curve in self.curves])
         
+        Nspan = len(self.curves)
+        self.Nspan = Nspan
+
+        if Nspan != 1:
+            self.isMultiSpan = True
+        else:
+            self.isMultiSpan = False
+                
+        self._classifySpans()      
+                
     def _initUnits(self, lUnit:str='m'):
         """
         Inititiates the unit of the section.
@@ -235,7 +250,68 @@ class Member:
         for length units
         """
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
+    
+    def _classifySpans(self):
+        isCantilever:list[bool] = [False]*self.Nspan        
+        
+        nStart = self.curves[0].n1
+        nEnd   = self.curves[-1].n2
+        if (nStart.getDimension() ==2) and (nStart.support.isFree()):
+            isCantilever[0] = True
+        if (nEnd.getDimension() ==2) and (nEnd.support.isFree()):
+            isCantilever[-1] = True
+        self.isCantilever = isCantilever
+            
+    def __repr__(self):
 
+        return f'<limitstates {self.Nspan} span member>'
+    
+    def setNodeSupprt(self, ind:int, support: Support):
+        """
+        Updates the support conditon for a single node.
+        The spans are clasiffied after results are set.
+
+        Parameters
+        ----------
+        ind : int
+            The node index to update.
+        support : Support
+            The new support type for that node.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.nodes[ind].support = support
+        self._classifySpans()
+     
+    def setNodeSupprts(self, inds:list[int], supports: list[Support]):
+        """
+        Updates the support conditon for a multiple nodes.
+        This is more efficeint than calling "setNodeSupprt" multiple times,
+        as the the spans are classfied only once at the end.
+
+        Parameters
+        ----------
+        ind : list[int]
+            The node index to update.
+        support : list[Support]
+            The new support type for that node.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        for support, ind in zip(supports, inds):
+            self.nodes[ind].support = support
+        self._classifySpans()   
+    
+    
+    
 def initSimplySupportedMember(L:float, lUnit:str) -> Member:
     """
     A function that can intialize a simply supported member of length L between

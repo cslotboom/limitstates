@@ -1,3 +1,7 @@
+"""
+Tests if lines and nodes are initiated proprely.
+"""
+
 from limitstates import Node, getLengthNodes, getLineFromNodes, getLineFromLength, Support
 import pytest
 

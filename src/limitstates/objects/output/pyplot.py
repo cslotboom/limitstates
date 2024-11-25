@@ -19,6 +19,8 @@ from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOrigi
 # from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 import limitstates.objects.output.model as md
 
+import matplotlib.patches as mpatches
+import matplotlib.path as mpath
 
 
 class SectionPlotter:
@@ -76,25 +78,7 @@ class SectionPlotter:
         else:
             c = objectConfig.c
         return c
-    
-    
-    def plot(self, ax, xy, objectConfig, *args, **kwargs):
-        """
-        plot a set of xy points on the canvas.
-        """
-        
-        c = self._getFillColour(objectConfig, kwargs)
 
-        ax.fill(xy[:,0], xy[:,1], *args, c = c, **kwargs)
-        
-        
-        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
-            ax.plot(xy[:,0], xy[:,1], 
-                    linewidth = objectConfig.lineWidth, 
-                    c=objectConfig.cLine)
-        
-        return ax
-    
     def _getPlotLabel(infoDict):
         """
         Converts the in
@@ -126,10 +110,73 @@ class SectionPlotter:
     
     def plotSectionInfo():
         pass
+    
+    
+    def plot(self, ax, xy, objectConfig, *args, **kwargs):
+        """
+        plot a set of xy points on the canvas.
+        """
+        
+        c = self._getFillColour(objectConfig, kwargs)        
+        objectPatch = Polygon(xy, *args, color = c, **kwargs)
+        ax.add_patch(objectPatch)
+        
+        # Add the border line around the object
+        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
+            ax.plot(xy[:,0], xy[:,1], 
+                    linewidth = objectConfig.lineWidth, 
+                    c=objectConfig.cLine)
+        
+        return ax
+    
+class SectionPlotterWithHole(SectionPlotter):
+    
+    def _getPatchWithHole(self, xyOutside, xyInside):
+        """
+        See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
+        """
+    
+        Nverts = len(xyOutside)
+        lineCode = mpath.Path.LINETO
+        codes = np.ones(Nverts, dtype=mpath.Path.code_type) * lineCode
+        codes[0] = mpath.Path.MOVETO
+    
+        vertices = np.concatenate((xyOutside[::],
+                                   xyInside[::-1]))
+        
+        drawingInstructions = np.concatenate((codes, codes))
+        # Create the Path object
+        path = mpath.Path(vertices, drawingInstructions)
+        
+        return path
+    
+    def plot(self, ax, xy, objectConfig, *args, **kwargs):
+        """
+        plot a set of xy points on the canvas.
+        It's assumed that the inside and outside verticies are passed in with
+        one array, xy. This array will '
+        """
+        
+        # We assume that the two arrays have the same size
+        xyOut, xyIn = np.split(xy, 2)
+        
+        c = self._getFillColour(objectConfig, kwargs)        
+        path  = self._getPatchWithHole(xyOut, xyIn)
+                
+        patch = mpatches.PathPatch(path, *args, color = c, **kwargs)
 
-
-
-
+        ax.add_patch(patch)
+        
+        # Add the border line around the object
+        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
+            ax.plot(xyOut[:,0], xyOut[:,1], 
+                    linewidth = objectConfig.lineWidth, 
+                    c=objectConfig.cLine)
+            ax.plot(xyIn[:,0], xyIn[:,1], 
+                    linewidth = objectConfig.lineWidth, 
+                    c=objectConfig.cLine)
+        
+        return ax
 
 def _getPlotOrigin(option, b, d,  xy0):
     if option == PlotOriginPosition.centered:
@@ -193,9 +240,27 @@ def _plotGeomFactory(section: SectionAbstract,
         
     return geom
 
-def _plotFactorySteel(section:SectionSteel, *args):
+
+
+def _plotterFactory(section: SectionAbstract, 
+                    geom: md.GeomModel,
+                    canvasConfig: PlotConfigCanvas) -> SectionPlotter:
+    """
+    A function that returns the appropriate geometry object given a section.
     
-    if SteelSectionTypes.w == section.typeEnum:
+    A thought - why haven't we made this an object attribute?
+
+    """
+
+    if isinstance(section, SectionSteel) and (section.typeEnum == SteelSectionTypes.hss):
+        return SectionPlotterWithHole(geom, canvasConfig)
+    else:
+        return SectionPlotter(geom, canvasConfig)
+        
+
+def _plotFactorySteel(section:SectionSteel, *args):
+    enum = section.typeEnum
+    if SteelSectionTypes.w == enum:
         # If there is information about the rounded section, plot that
         if hasattr(section, 'r1') and hasattr(section, 'r2'):
             geom = md.GeomModelIbeamRounded(section.d, 
@@ -212,6 +277,14 @@ def _plotFactorySteel(section:SectionSteel, *args):
                                     section.bf, 
                                     section.tf,  
                                     *args)
+            
+    elif SteelSectionTypes.hss == enum:
+        ro = section.ro
+        ri = section.ri
+        
+        geom = md.GeomModelHss(section.d, section.bf, section.t, ro, ri, *args)
+        
+    
     return geom
 
 
@@ -294,7 +367,7 @@ def plotSection(section:SectionAbstract,
         xy0 = [0,0]
         
     geom    = _plotGeomFactory(section, objectConfig.originLocation, xy0)
-    plotter = SectionPlotter(geom, canvasConfig)
+    plotter = _plotterFactory(section, geom, canvasConfig)
     
     fig, ax = plotter.initPlot()
     xyVerts = np.column_stack(geom.getVerticies())
@@ -369,9 +442,7 @@ def _isGlulamSection(dispProps):
 def _plotFactory(dispProps):
     """
     Figures out what type of plot function to use.
-    """
-    
-    
+    """    
     if _isCLTSection(dispProps):
         return _plotCLT(dispProps)
     if _isGlulamSection(dispProps):
@@ -389,8 +460,8 @@ def _plotBasic(dispProps):
     cPlotConfig = dispProps.configCanvas
     cObjConfig  = dispProps.configObject
     
-    geom = _plotGeomFactory(dispProps.section, cObjConfig.originLocation, [0,0])
-    plotter = SectionPlotter(geom, cPlotConfig)
+    geom    = _plotGeomFactory(dispProps.section, cObjConfig.originLocation, [0,0])
+    plotter = _plotterFactory(dispProps.section, geom, cPlotConfig)
     
     fig, ax = plotter.initPlot()
     
@@ -535,9 +606,7 @@ def plotElementSection(element:BeamColumn,
     # Use the display section if it is set.
     if not dispProps.section:
         dispProps.section = element.section
-        
-    # if not 
-    
+            
     return _plotFactory(dispProps)
 
         
