@@ -181,36 +181,6 @@ def test_Panel_WoodHandbook_Tables_Design():
     assert MrxSol == pytest.approx(Mrx, 0.01) 
     assert MrySol == pytest.approx(Mry, 0.01) 
     
-# def test_Panel_CLTWoodHandbook():
-    
-#     """
-#     E1 CLT, with k factor applied.
-#     """
-    
-#     # layers = 
-#     sections = _init()
-#     section = sections[16]
-#     firePortection = o86.GypusmFlatCSA19('15.9mm')
-#     designProps = o86.DesignPropsClt19(firePortection)
-#     # beamColumn = ls.getBeamColumn(6, section)
-#     member = ls.initSimplySupportedMember(6, 'm')
-
-#     beamColumn = o86.BeamColumnCltCsa19(member, section)
-
-#     FRR = 60
-    
-#     cltLayers = o86.getCLTBurnDims(np.array([FRR]), section)
-    
-    
-    # o86.setBurntSection(beamColumn, FRR)       
-    # MrSol = 87.8*1e3
-    # Mr = o86.checkMrCltBeam(beamColumn)
-    
-    # MrWSol = 12*1e3*0.9
-    # MrW = o86.checkMrCltBeam(beamColumn,useStrongAxis=False)
-
-    # assert MrSol == pytest.approx(Mr, 0.005)
-    # assert MrWSol == pytest.approx(MrW, 0.04) # There is likely rounding erros in the presented solution.
 
 def test_Panel_Vr():
     

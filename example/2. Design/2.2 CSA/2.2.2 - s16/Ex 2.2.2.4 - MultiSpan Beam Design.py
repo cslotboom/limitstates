@@ -17,7 +17,7 @@ Four lateral support cases are considered:
 
 First the base limitstates library is imported, then s16 steel design library. 
 The library planesections is imported to run the beam analysis, and numpy is 
-used to do some numerical analysisl
+used to do some numerical analysis
 
 """
 import limitstates.design.csa.s16.c24 as s16

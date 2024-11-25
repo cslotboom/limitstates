@@ -30,7 +30,9 @@ class FireConditions(IntEnum):
         - 1 = beamColumn: exposed on 4 sides
         - 2 = beamWithPanel: exposed on all sides except it's top
         - 3 = panel: exposed only on it's bottom.
+        
     """
+    
     beamColumn = 1
     beamWithPanel = 2
     panel = 3
@@ -61,8 +63,6 @@ def getFireDemands(FRR:float, condition:FireConditions|int) :
     FRR : list
         The output FRR. For a rectangular section fire portection is input 
         in: [top, right, bottom, left]    
-
-    
     """
 
     if condition == FireConditions.beamColumn:
@@ -105,6 +105,7 @@ def getGypsumFirePortection(condition:FireConditions,
         - 1 = beamColumn: exposed on 4 sides
         - 2 = beamWithPanel: exposed on all sides except it's top
         - 3 = panel: exposed only on it's bottom.
+        
     If the desired condition isn't in the above conditions, a portection object
     will manually have to be created with GypusmRectangleCSA19 or
     GypusmFlatCSA19.
@@ -133,6 +134,7 @@ def AssignFirePortection(element:BeamColumn, condition:FireConditions, portectio
         - 1 = beamColumn: exposed on 4 sides
         - 2 = beamWithPanel: exposed on all sides except it's top
         - 3 = panel: exposed only on it's bottom.
+        
     If the desired condition isn't in the above conditions, a portection object
     will manually have to be created with GypusmRectangleCSA19 or
     GypusmFlatCSA19.
@@ -153,6 +155,7 @@ def AssignFirePortection(element:BeamColumn, condition:FireConditions, portectio
     None.
 
     """
+    
     port = _findPortectionType(condition, portection)
     element.designProps.firePortection = port
     
@@ -388,6 +391,7 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     burnAmount: list[float]
         An array of what is burned on each face.
     """
+    
     portectionTime = portection.getPortectionTime()
     netBurnTime = getNetBurnTime(FRR, portectionTime)
     
@@ -438,6 +442,7 @@ def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float],
     SectionRectangle
         The burn section with dimensions equal to the output section.
     """
+    
     portectionTime = portection.getPortectionTime()
     netBurnTime = getNetBurnTime(FRR, portectionTime)
     
@@ -582,16 +587,16 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCsa19,
 
 
 # TODO! add panel once it's complete
-def setBurntSection(element:BeamColumnGlulamCsa19, 
-                    FRR:float|list[float]|ndarray[float], 
-                    Bn:float = 0.7):
+# def setBurntSection(element:BeamColumnGlulamCsa19, 
+#                     FRR:float|list[float]|ndarray[float], 
+#                     Bn:float = 0.7):
     
-    if isinstance(element, BeamColumnGlulamCsa19):
-        setFireSectionGlulamCSA(element, FRR, Bn)
-    elif isinstance(element, BeamColumn):
-        setFireSectionGlulamCSA(element, FRR, Bn)
-    elif isinstance(element, BeamColumnCltCsa19):
-        setFireSectionCltCSA(element, FRR, Bn)
+#     if isinstance(element, BeamColumnGlulamCsa19):
+#         setFireSectionGlulamCSA(element, FRR, Bn)
+#     elif isinstance(element, BeamColumn):
+#         setFireSectionGlulamCSA(element, FRR, Bn)
+#     elif isinstance(element, BeamColumnCltCsa19):
+#         setFireSectionCltCSA(element, FRR, Bn)
     
 
 

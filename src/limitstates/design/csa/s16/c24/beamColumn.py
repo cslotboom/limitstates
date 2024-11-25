@@ -194,6 +194,27 @@ def classifySection(section:SectionSteel, useX=True, Cf = 0):
     
 
 def classifyFlangeWSection(section:SectionSteel, useX = True):
+    """
+    Used to classify the flange of a W section.
+    
+    Class 4 sections are not supported.
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of.
+    useX : bool, optional
+        A flag that specifies if the x axis (strong axis) should be used. 
+        The default is True.
+
+    Returns
+    -------
+    section class : int
+        The flange section class
+
+    """
+    
+    
     # section.mat.sConvert()
     Fy  = section.mat.Fy * section.mat.sConvert('MPa')
     t   = section.tf
@@ -206,9 +227,26 @@ def classifyFlangeWSection(section:SectionSteel, useX = True):
     
 def classifyWebWSection(section:SectionSteel, useX = True, Cf:float= 0):
     """
-    Classifys a W section web
+    Used to classify a W section's web. See #11.3.2.c.
     
-    see #11.3.2.c.
+    Class 4 sections are not supported.
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of.
+    useX : bool, optional
+        A flag that specifies if the x axis (strong axis) should be used. 
+        The default is True.
+    Cf : float, optional
+        The force acting on the section in N. The default is 0.
+
+    Returns
+    -------
+    section class : int
+        The web section class.
+
+    
     """
     
     Fy  = section.mat.Fy * section.mat.sConvert('MPa')
@@ -239,7 +277,7 @@ def classifyWebHssSection(section:SectionSteel, useX = True, Cf:float= 0):
     Parameters
     ----------
     section : SectionSteel
-        DESCRIPTION.
+        The section to classify.
     useX : TYPE, optional
         A toggle that activates the X direction. The default is True.
     Cf : float, optional
@@ -490,15 +528,11 @@ def checkBeamMrSupported(beam:BeamColumnSteelCsa24, useX:bool=True, Cf:float = 0
     Cf : float, optional
         The factored compression force of the section in N. The default is 0.
 
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    float
+        The capacity of the beam in N*m.
 
     """
 
@@ -547,8 +581,8 @@ def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1,
 
     Returns
     -------
-    Moment
-        The output moment in Nm.
+    float
+        The capacity of the beam in N*m.
 
     """
     # sectionClass = _getSectionClassIfNotSet(beam.sectionsection, True, Cf)
@@ -599,11 +633,10 @@ def checkBeamMrUnsupported(beam:BeamColumnSteelCsa24, omega:float=1,
 
     Returns
     -------
-    Moment
-        The output moment in Nm.
+    float
+        The capacity of the beam in N*m.
 
     """
-    # sectionClass = _getSectionClassIfNotSet(beam.sectionsection, True, Cf)
     
     if beam.section.typeEnum == SteelSectionTypes.w:
         return checkBeamMrUnsupportedW(beam, omega, Lu, Cf)
@@ -627,7 +660,8 @@ def _getSectionClassIfNotSet(section:SectionSteel,
 
 def checkSectionMu(section:SectionSteel, Lu:float, omega:float):
     """
-    Calculates Mu as per c.l. 13.6.1.a, assuming length is input in mm.
+    Calculates Mu, the laterally unsupported buckling moment, 
+    as per c.l. 13.6.1.a, assuming length is input in mm.
     
     Returns capacity in N*m
 
@@ -691,9 +725,6 @@ def checkMu(E:float, Iy:float, G:float, J:float, Cw:float, Lu:float,
     return (omega*pi / Lu) * (E*Iy*G*J + Iy*Cw*(pi*E/Lu)**2)**0.5
 
 
-def getBeamMr(beam:BeamColumnSteelCsa24, ):
-    pass
-
 def checkOmega(Mmax, Ma, Mb, Mc):
     
     return min(4 * Mmax / (Mmax**2 + 4*Ma**2 + 7*Mb**2 + 4*Mc**2)**0.5, 2.5)
@@ -746,6 +777,38 @@ def _getOmegas(bmd, Nspan, Lsegs):
         x1 = x2
         
     return omegas
+
+def getOmega1FromDesignDiagram(bmd:DesignDiagram):
+    """
+    Returns the value of Omega1 from a bending moment diagram per c.l. 13.8.6.
+    Assumes that the input bending moment diagram is for a single span.
+    
+    Linear interoplation is used to determing the y values used in the omega 
+    equation.
+
+    Parameters
+    ----------
+    bmd : DesignDiagram
+        The bending moment diagram to check for Omega.
+
+    Returns
+    -------
+    float
+        The output value of omega.
+
+    """
+    x = bmd.xy[:,0]
+    x1 = min(x)
+    x2 = max(x)
+    dx  = x2 - x1
+    x2 = x1 + dx
+    xa = 0.25*dx + x1
+    xb = 0.5*dx + x1
+    xc = 0.75*dx + x1
+    
+    ya, yb, yc = bmd.getForceAtx([xa, xb, xc])
+    ymax = bmd.getMaxForceInRange(x1, x2)
+    return checkOmega(ymax, ya, yb, yc)
 
 
 def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24, 
@@ -961,7 +1024,10 @@ def checkFsBeam(beam:BeamColumnSteelCsa24):
             Fs = getFsWUnstiffened(h, tw, Fy)
         else:
             raise Exception('Only unstiffned webs are currently supported.')        
-        
+    
+    else:
+        raise Exception('Member not yet supported for shear.')       
+    
     return phi* Fs * As
 
 
@@ -975,6 +1041,18 @@ def checkFsBeam(beam:BeamColumnSteelCsa24):
 def checkCompressionLimits(section:SectionSteel):
     """
     Checks the column agains table 1 compression limits.
+
+
+    Parameters
+    ----------
+    section : SectionSteel
+        DESCRIPTION.
+
+    Returns
+    -------
+    bool
+        A pass/Fail depending on if the memeber passes or not.
+
     """
 
     _checkType(section)
@@ -985,9 +1063,10 @@ def checkCompressionLimits(section:SectionSteel):
     if isW:
         return checkCompresionLimitsW(section)
 
-    else:
+    elif section.typeEnum == SteelSectionTypes.hss:
         return checkCompresionLimitsHss(section)
-
+    else:
+        raise Exception('Section not supported')
 
 def _getCompressionLim(section:SectionSteel):
     sconvert = section.mat.sConvert('MPa')
@@ -1060,8 +1139,6 @@ def checkCompresionLimitsW(section:SectionSteel) -> bool:
         return True
     else:
         raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
-
-
 
 
 def getCompressionThicknessRatioHss(section:SectionSteel):
@@ -1349,7 +1426,6 @@ def checkColumnFe(beam:BeamColumnSteelCsa24):
     return min(Fex, Fey)
 
 
-
 def checkColumnCr(column:BeamColumnSteelCsa24, n:float = 1.34, 
                   lam:float = None):
     """
@@ -1398,21 +1474,10 @@ def checkColumnCr(column:BeamColumnSteelCsa24, n:float = 1.34,
 
 
 # =============================================================================
-# Combined Bending / shear
+# Combined Bending / compression
 # =============================================================================
 # !!! there is a lot of re=work occuring in these functions. 
 # !!! Consider making a class.
-
-
-
-
-class CombinedBendingChecker:
-    
-    def __init__(self, beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n, 
-                 omega1, isBracedFrame = False):
-        
-        self.beamColumn
-
 
 class Omega1LoadConditions(IntEnum):
     """
@@ -1426,9 +1491,26 @@ class Omega1LoadConditions(IntEnum):
     distLoads = 2
     concentratedLoads = 3
 
-def getOmega1(loadCase:Omega1LoadConditions, Mmax = None, Mmin = None):
+def getOmega1(loadCase:Omega1LoadConditions, Mmax = 1, Mmin = -1):
     """
-    The amplifaction factor when no transverse loads act between supports.
+    Calculates the amplifction factor when no transvers loads acts between
+    supports.
+
+    Parameters
+    ----------
+    loadCase : Omega1LoadConditions
+        The load condition.
+    Mmax : TYPE, optional
+        TYhe maximum load. The default is 1.
+    Mmin : TYPE, optional
+        THe minimum load, negative if single curvature, positive if double 
+        curvature. The default is 1.
+
+    Returns
+    -------
+    float
+        The output value of the factor.
+
     """
     
     if loadCase == Omega1LoadConditions.noLoads:
@@ -1468,13 +1550,36 @@ def getU1(omega:float, Cf:float, Ce:float):
 def checkCombinedCaseA(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float, 
                        Mfy:float, n:float, omega1:float):
     """
-    Cross Section strength
+    Checks the cross sectional member strength, where: 
+        
+    - Clause 13.8.2 a
+    - beta = 0.6
+    - lamda = 0
+    - Mr is calculated as normal
+    - U1x/U2x are specified in 13.8.5 >= 1
     
-    Clause 13.8.2 a
-    beta = 0.6
-    lamda = 0
-    Mr is calculated as normal
-    U1x/U2x are specified in 13.8.5 >= 1
+    Parameters
+    ----------
+    beamColumn : BeamColumnSteelCsa24
+        The beamcolumn to check.
+    Cf : float
+        The applied compressive load (N).
+    Mfx : float
+        The applied moment in the strong axis direction (Nm).
+    Mfy : float, optional
+        The applied moment in the strong weak direction (Nm). The default is 0.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+    omegax1 : float, optional
+        Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
+        which represents a constant moment in single curvature..
+
+    Returns
+    -------
+    u : float
+        The the output utilziation
+    
     """
     Cr, Mrx, Mry = _getCaseAResistance(beamColumn, Cf, n, 0)
     
@@ -1491,15 +1596,38 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     """
     Overall member strength
     Unbraced moment Moment is amplified due to p-delta in the axis of bending 
-    only
-    
-    Clause 13.8.2 b
-    k = 1 for compression, based on axis of bending only.
-    If there is only uniaxial bending, then we only look at Cr in that 
-    direction.
-    Mr is calculated as if the column is braced
-    U1x/U2x are taken as 1, unless the system is in a braced frame
-    If the system is a braced frame, it is calcualted with 13.8.5
+    only. Assumes the following:
+    - Clause 13.8.2 b
+    - k = 1 for compression, based on axis of bending only.
+    - If there is uniaxial bending, use calulate Cr in that direction.
+    - Mr is calculated as if the column is braced
+    - U1x/U2x are taken as 1, unless the system is in a braced frame
+    - If the system is a braced frame, it is calcualted with 13.8.5
+        
+    Parameters
+    ----------
+    beamColumn : BeamColumnSteelCsa24
+        The beamcolumn to check.
+    Cf : float
+        The applied compressive load (N).
+    Mfx : float
+        The applied moment in the strong axis direction (Nm).
+    Mfy : float, optional
+        The applied moment in the strong weak direction (Nm). The default is 0.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+    omegax1 : float, optional
+        Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
+        which represents a constant moment in single curvature..
+    isBracedFrame : bool, optional
+        A flag that specifies if the beam is in a braced frame. 
+        The default is False.
+
+    Returns
+    -------
+    u : float
+        The the output utilziation
     
     
     """
@@ -1546,17 +1674,43 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
                        omega1:float, isBracedFrame = False):
     """
     Lateral Torsional Buckling
-    Typically govens sections with strong axis loaded.
+    Typically govens sections with strong axis loaded. Assumes the following:
     
-    Clause 13.8.2 with weak axis bending only.
-    Mrx is calculated as unbraced
-    Mry is calculated as braced
-    U1x/U1y = 1 for members in unbraced framses.
-    U1x is calcualted as in clause 13.8.5, but not  less than 1.0 if braced
-    U1y is calculated as in clause 13.8.5
+    - Clause 13.8.2 with weak axis bending only.
+    - Mrx is calculated as unbraced
+    - Mry is calculated as braced
+    - U1x/U1y = 1 for members in unbraced framses.
+    - U1x is calcualted as in clause 13.8.5, but not  less than 1.0 if braced
+    - U1y is calculated as in clause 13.8.5
+    - U1x/U2x are taken as 1, unless the system is in a braced frame
+    - If the system is a braced frame, it is calcualted with 13.8.5
+        
+    Parameters
+    ----------
+    beamColumn : BeamColumnSteelCsa24
+        The beamcolumn to check.
+    Cf : float
+        The applied compressive load (N).
+    Mfx : float
+        The applied moment in the strong axis direction (Nm).
+    Mfy : float, optional
+        The applied moment in the strong weak direction (Nm). The default is 0.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+    omegax1 : float, optional
+        Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
+        which represents a constant moment in single curvature..
+    isBracedFrame : bool, optional
+        A flag that specifies if the beam is in a braced frame. 
+        The default is False.
+
+    Returns
+    -------
+    u : float
+        The the output utilziation
     
-    U1x/U2x are taken as 1, unless the system is in a braced frame
-    If the system is a braced frame, it is calcualted with 13.8.5
+    
     """
     Cr = checkColumnCr(beamColumn, n)
     
@@ -1588,7 +1742,29 @@ def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy,
     """
     Biaxial Bending
     
-    Members are calulated with 
+    Members are checked for biaxial bending, without considering compression.
+    Compression is still passed to the function to determine section class.
+        
+    Parameters
+    ----------
+    beamColumn : BeamColumnSteelCsa24
+        The beamcolumn to check.
+    Cf : float
+        The applied compressive load (N).
+    Mfx : float
+        The applied moment in the strong axis direction (Nm).
+    Mfy : float, optional
+        The applied moment in the strong weak direction (Nm). The default is 0.
+    n : float, optional
+        The parameter for compressive resistance. The default is 1.34, but the
+        parameter can be increased for certain section types per c.l. 13.3.1.1.
+    omegax1 : float, optional
+        Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
+        which represents a constant moment in single curvature..
+    isBracedFrame : bool, optional
+        A flag that specifies if the beam is in a braced frame. 
+        The default is False.    
+    
     """
     
     Mrx = checkBeamMrUnsupported(beamColumn, True, Cf = Cf)
@@ -1596,7 +1772,6 @@ def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy,
        
     
     return getUtil(0, 1, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
-
 
 def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
                             Mfx:float, Mfy:float = 0, n:float = 1.34, 
@@ -1611,21 +1786,22 @@ def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float,
     Parameters
     ----------
     beamColumn : BeamColumnSteelCsa24
-        DESCRIPTION.
+        The beamcolumn to check.
     Cf : float
-        The applied compressive load.
+        The applied compressive load (N).
     Mfx : float
-        The applied moment in the strong axis direction (N).
+        The applied moment in the strong axis direction (Nm).
     Mfy : float, optional
-        The applied moment in the strong weak direction (N). The default is 0.
+        The applied moment in the strong weak direction (Nm). The default is 0.
     n : float, optional
         The parameter for compressive resistance. The default is 1.34, but the
         parameter can be increased for certain section types per c.l. 13.3.1.1.
     omegax1 : float, optional
         Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
         which represents a constant moment in single curvature..
-    isBracedFrame : TYPE, optional
-        DESCRIPTION. The default is False.
+    isBracedFrame : bool, optional
+        A flag that specifies if the beam is in a braced frame. 
+        The default is False.
 
     Returns
     -------
