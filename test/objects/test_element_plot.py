@@ -158,7 +158,54 @@ def test_plot_CLT():
     
     patches = children[3]
     assert len(patches.get_paths()) == 2 
-   
+
+
+
+def test_plot_hss_cisc():
+    myMat = ls.MaterialElastic(200*1000)
+
+    sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'hss')
+    section = sections[0]
+    member = ls.initSimplySupportedMember(6, 'm')
+    element = s16.BeamColumnSteelCsa24(member, section)
+
+    # fig, ax     = ls.plotSection(section)
+    fig, ax = ls.plotElementSection(element)
+
+
+    children = ax.get_children()
+    
+    lines = children[1]
+    lineVerts =   lines.get_path()
+    yMax = max(lineVerts._vertices[:,1])
+    yMin = min(lineVerts._vertices[:,1])
+    
+    xMax = max(lineVerts._vertices[:,0])
+    xMin = min(lineVerts._vertices[:,0])
+    # assert len(lineVerts) == 21 
+
+    assert section.d/2 == pytest.approx(yMax)
+    assert -section.d/2 == pytest.approx(yMin)   
+    
+    assert section.b/2 == pytest.approx(xMax)
+    assert -section.b/2 == pytest.approx(xMin)
+    
+    lines = children[2]
+    lineVerts =   lines.get_path()
+    yMax = max(lineVerts._vertices[:,1])
+    yMin = min(lineVerts._vertices[:,1])
+    
+    xMax = max(lineVerts._vertices[:,0])
+    xMin = min(lineVerts._vertices[:,0])   
+
+    assert section.d/2 - section.t == pytest.approx(yMax)
+    assert -section.d/2+ section.t == pytest.approx(yMin)   
+    
+    assert section.b/2 - section.t == pytest.approx(xMax)
+    assert -section.b/2 + section.t == pytest.approx(xMin)    
+
+
+
 if __name__ == "__main__":
     # pass
     test_plot_glulam_condition_1()
@@ -168,5 +215,6 @@ if __name__ == "__main__":
     test_plot_I_beam_raised()
     test_plot_I_beam_round()
     test_plot_CLT()
+    test_plot_hss_cisc()
 else:
     plt.close('all')

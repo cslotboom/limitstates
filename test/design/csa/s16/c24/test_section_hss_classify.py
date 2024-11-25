@@ -86,8 +86,6 @@ def test_classify_HSS_overall():
     sClass = s16.classifySection(section, Cf=Cf80)
     assert sClass == 3
 
-
-
 if __name__ == "__main__":    
     test_classify_Flange_HSS_305x305()
     test_classify_Flange_HSS_178x128_weak()

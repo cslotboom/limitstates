@@ -437,6 +437,8 @@ class SectionSteel(SectionMonolithic):
         
         if self.typeEnum == SteelSectionTypes.hss:
             self._patchHssThickness()
+            self._patchHSSWidth()
+            self._patchHSSradius()
         
     def _patchHssThickness(self):
         """
@@ -445,6 +447,19 @@ class SectionSteel(SectionMonolithic):
         """
         if not hasattr(self, 't'):
             self.t = self.tdes
+    
+    def _patchHSSWidth(self):
+        if not hasattr(self, 'bf'):
+            self.bf = self.b    
+    
+    
+    def _patchHSSradius(self):
+        if not hasattr(self, 'ro'):
+            self.ro = self.t*2
+        if not hasattr(self, 'ri'):
+            self.ri = self.t
+ 
+    
     
     @property
     def name(self):

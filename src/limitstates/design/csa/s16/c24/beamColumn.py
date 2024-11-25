@@ -646,7 +646,6 @@ def checkSectionMu(section:SectionSteel, Lu:float, omega:float):
         The buckling moment for the beam.
 
     """
-    
 
     lfactor = section.lConvert('mm')
     sfactor = section.mat.sConvert('MPa')
@@ -789,6 +788,7 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         The bending moment diagram for the load case to be checked.
     lateralSupportType : SegmentSupportTypes | int, optional
         The type of lateral support condition for bending. The default is 3:
+            
         - 1 will return a beam lateral restraint on all segments
         - 2 will return a beam with no lateral restraint except at supports
         - 3 will return a beam with no lateral restraint except at supports, 
@@ -803,7 +803,9 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
     xOut : list[float]
         The breakpoints for the beam, including the end of the beam. Moment 
         applies, i.e.
+        
         Mr = MrOut[0] from         0 to xOut[0]
+        
         Mr = MrOut[1] from   xOut[0] to xOut[1]
     omega : list[float]
         The omega factor for each span.
@@ -853,12 +855,6 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         
         omegas = _getOmegas(bmd,Nspan,Lsegs)
 
-    # xSeg  = cumsum(Lseg)
-    # xbreakpoints.sort()
-    
-    # xOut, kzbgout, kLout = getMultispanRegions(Lkzbg, kzbg, Lseg, kL)
-    # xOut = [L / mlfactor for L in xOut]
-    
     MrOut = [None]* Nspan
     for ii in range(Nspan):
         spanSupport = isContinouslyBraced[ii]
@@ -982,71 +978,152 @@ def checkCompressionLimits(section:SectionSteel):
     """
 
     _checkType(section)
-    sconvert = section.mat.sConvert('MPa')
 
     isW = section.typeEnum == SteelSectionTypes.w
-    Fy = section.mat.Fy*sconvert
-    lim  = 1/Fy**0.5
+
 
     if isW:
-        return _checkCompresionLimitsW(section, lim)
+        return checkCompresionLimitsW(section)
 
     else:
-        return _checkCompresionLimitsHss(section, lim)
+        return checkCompresionLimitsHss(section)
 
 
-def _checkCompresionLimitsW(section, lim):
+def _getCompressionLim(section:SectionSteel):
+    sconvert = section.mat.sConvert('MPa')
+    Fy = section.mat.Fy*sconvert
+    return  1/Fy**0.5
+
+
+
+def getCompressionThicknessRatioW(section:SectionSteel):
     """
     
-    See c.l. 11.3.2.b. for a definition of bel    
+    Check b/t rations for the flange and web of a W section in compression.
+    
+    See c.l. 11.3.2.b. for a definition of bel and h.
 
     Parameters
     ----------
-    section : TYPE
-        DESCRIPTION.
-    lim : TYPE
-        DESCRIPTION.
-
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
+    section : SectionSteel
+        The steel section to check the section class of in compression
 
     Returns
     -------
-    bool
-        DESCRIPTION.
+    flangeRatio : float
+        The ratio of bel divided by tflange.
+    webRatio : float
+        The ratio of h divided by tweb.
 
     """
+        
     # flange propreties
     tf   = section.tf
     bel = section.bf / 2
-    flangeLim = 250*lim
-    flangePasses = (bel / tf) < flangeLim
+    flangeRatio = (bel / tf)
     
     # Web propreties
     tw   = section.tw
     h   = section.d -  section.tf*2
+    webRatio = (h / tw)     
+
+    return flangeRatio, webRatio
+
+def checkCompresionLimitsW(section:SectionSteel) -> bool:
+    """
+    Determines if a section complies with Table 1 for it's thickness to 
+    depth ratios.
+        
+    See c.l. 11.3.2.b. for a definition of bel    
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of in compression
+        
+    Returns
+    -------
+    bool
+        True if the section passes, false if it fails.
+
+    """
+    lim = _getCompressionLim(section)
+    flangeLim = 250*lim
     webLim = 670*lim
-    webPasses = (h / tw) < webLim
+    
+    # flange/web propreties
+    flangeRatio, webRatio = getCompressionThicknessRatioW(section)
+    flangePasses = flangeRatio < flangeLim
+    webPasses = webRatio < webLim
 
     if flangePasses and webPasses:
         return True
     else:
         raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
 
-def _checkCompresionLimitsHss(section, lim):
+
+
+
+def getCompressionThicknessRatioHss(section:SectionSteel):
+    """
+    
+    Check b/t rations for the flange and web of a Hss section in compression.
+    
+    See c.l. 11.3.2.b. for a definition of bel and h.
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of in compression
+
+    Returns
+    -------
+    strongAxisRatio : float
+        The ratio of bel divided by tflange.
+    weakAxisRatio : float
+        The ratio of h divided by tweb.
+
+    """
+        
     # flange propreties
     tf   = section.t
-    flangeLim = 670*lim    
     belFange = _getBelHSSSection(section, True)
-    flangePasses = (belFange / tf) < flangeLim
+    
+    strongAxisRatio = (belFange / tf)
     
     # Web propreties
     tw   = section.t
-    webLim = 670*lim
     belWeb = _getBelHSSSection(section, False)
-    webPasses = (belWeb / tw) < webLim
+    weakAxisRatio = (belWeb / tw)     
+
+    return strongAxisRatio, weakAxisRatio
+
+def checkCompresionLimitsHss(section:SectionSteel):
+    """
+    Determines if a section complies with Table 1 for it's thickness to 
+    depth ratios.
+        
+    See c.l. 11.3.2.b. for a definition of bel    
+
+    Parameters
+    ----------
+    section : SectionSteel
+        The steel section to check the section class of in compression
+        
+    Returns
+    -------
+    bool
+        True if the section passes, false if it fails.
+
+    """
+    
+    lim = _getCompressionLim(section)
+    strongAxisLim = weakAxislim = 670*lim    
+    
+    # flange/WEB propreties
+    strongAxisRatio, weakAxisRatio = getCompressionThicknessRatioHss(section)
+    flangePasses = strongAxisRatio < strongAxisLim
+    webPasses = weakAxisRatio < weakAxislim
 
     if flangePasses and webPasses:
         return True
@@ -1090,17 +1167,6 @@ def checkFe(E:float, Leff:float, reff:float):
     
     """
     return pi**2 * E / (Leff/reff)**2
-
-    
-
-# def checkCe(E:float, I:float, Leff:float):
-#     """
-#     Effective buckling stress per c.l. 13.3.1.2
-#     Leff is the effective buckling length, i.e. k*L
-    
-#     """
-#     return pi**2 * E * I*(Leff)
-
 
 
 def getrBar(x0:float, y0:float, rx:float, ry:float):
@@ -1390,7 +1456,7 @@ def getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
     
     return Cf/Cr + betax*U1x*Mfx/Mrx + beta*U1y*Mfy/Mry
 
-def _getCaseAResistance(beamColumn:BeamColumnSteelCsa24, Cf, n, lam = 0):
+def _getCaseAResistance(beamColumn:BeamColumnSteelCsa24, Cf, n, lam = None):
     Cr = checkColumnCr(beamColumn, n, lam)
     Mrx = checkBeamMrSupported(beamColumn, True, Cf)
     Mry = checkBeamMrSupported(beamColumn, False, Cf)
@@ -1410,10 +1476,10 @@ def checkCombinedCaseA(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     Mr is calculated as normal
     U1x/U2x are specified in 13.8.5 >= 1
     """
-    Cr, Mrx, Mry = _getCaseAResistance(beamColumn, Cf, n)
+    Cr, Mrx, Mry = _getCaseAResistance(beamColumn, Cf, n, 0)
     
-    Cex = checkColumnCeDirection(beamColumn,True)
-    Cey = checkColumnCeDirection(beamColumn,False)
+    Cex = checkColumnCeDirection(beamColumn, True)
+    Cey = checkColumnCeDirection(beamColumn, False)
     U1x = max(getU1(omega1, Cf, Cex),1)
     U1y = max(getU1(omega1, Cf, Cey),1)
         
@@ -1441,7 +1507,9 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     # Temporarily set kx to one
     oldkx = beamColumn.designProps.kx
     oldky = beamColumn.designProps.ky
+    oldkz = beamColumn.designProps.kz
     beamColumn.designProps.setkx(1)
+    beamColumn.designProps.setkz(0.0001)
     
     # Use a small k factor in the y direction if there is only uniaxial bending
     # this forces the column to consider buckling in the strong axis only.
@@ -1449,7 +1517,6 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
         beamColumn.designProps.setky(0.0001)
     else:
         beamColumn.designProps.setky(1)
-
     
     Cr, Mrx, Mry = _getCaseAResistance(beamColumn, Cf, n, None)
 
@@ -1463,6 +1530,7 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
 
     beamColumn.designProps.setkx(oldkx)
     beamColumn.designProps.setky(oldky)        
+    beamColumn.designProps.setkz(oldkz)        
     
     # if lamy == None:
     sconvert = beamColumn.section.mat.sConvert('MPa')
@@ -1473,8 +1541,9 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
         
     return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
-def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, n, 
-                       omega1, isBracedFrame = False):
+def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, 
+                       Cf:float, Mfx:float, Mfy:float, n:float, 
+                       omega1:float, isBracedFrame = False):
     """
     Lateral Torsional Buckling
     Typically govens sections with strong axis loaded.
@@ -1526,7 +1595,7 @@ def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy,
     Mry = checkBeamMrSupported(beamColumn, False, Cf)              
        
     
-    return getUtil(Cf, 0, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
+    return getUtil(0, 1, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
 
 
 def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
@@ -1553,20 +1622,21 @@ def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float,
         The parameter for compressive resistance. The default is 1.34, but the
         parameter can be increased for certain section types per c.l. 13.3.1.1.
     omegax1 : float, optional
-        DESCRIPTION. The default is 1.0.
+        Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
+        which represents a constant moment in single curvature..
     isBracedFrame : TYPE, optional
         DESCRIPTION. The default is False.
 
     Returns
     -------
-    u1 : TYPE
-        DESCRIPTION.
-    u2 : TYPE
-        DESCRIPTION.
-    u3 : TYPE
-        DESCRIPTION.
-    u4 : TYPE
-        DESCRIPTION.
+    u1 : float
+        The utilization in case 1, cross section strength.
+    u2 : float
+        The utilization in case 2, overall member strength.
+    u3 : float
+        The utilization in case 3, Lateral Torsional Buckling.
+    u4 : float
+        The utilization in case 4, biaxial bending.
 
     """
     

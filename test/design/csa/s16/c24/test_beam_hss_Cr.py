@@ -14,11 +14,7 @@ steelSections = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
 def _initColumn(beamName, L):
     section = ls.getByName(steelSections, beamName)
     column = s16.getBeamColumnSteelCsa24(L, section, 'mm')
-    # member = ls.initSimplySupportedMember(L, 'mm')
-    # column = s16.BeamColumnSteelCsa24(member, section)
     return column
-
-
 
 def test_Cr_HSS():
     """
@@ -49,5 +45,4 @@ def test_Cr_HSS():
 
 if __name__ == "__main__":
     test_Cr_HSS()
-    # test_W_Major()
-    # test_W_Minor()
+

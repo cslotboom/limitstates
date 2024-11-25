@@ -324,5 +324,84 @@ class GeomModelIbeamRounded(GeomModel):
         x = tLeg_x + trfx + trwx + brwx + brfx + bLeg_x + blfx + blwx + tlwx + tlfx + [-w/2]
         y = tLeg_y + trfy + trwy + brwy + brfy + bLeg_y + blfy + blwy + tlwy + tlfy  + [ h/2]       
         
+        return list(np.array(x) + dx0), list(np.array(y) + dy0)
+
+
+@dataclass
+class GeomModelHss(GeomModel):
+    d:float
+    b:float
+    t:float
+    ro:float
+    ri:float
+
+    dx0:float = 0
+    dy0:float = 0
+    NradiusPoints:int = 6
+        
+    def _getcornerVerticies(self, x0, y0, r, dx0 = 1, dy0 = 1):
+        """
+        dx /  dy are direction terms which are either 1 or negative 1
+        
+        Note, this draws in a different orientation than the W section 
+        corner rounding - clockwise, v.s. counterclockwise.
+        
+        """
+        
+        x = np.sin(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dx0*r + x0
+        y = np.cos(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dy0*r + y0
+        
+        return list(x), list(y)
+    
+    
+    def _getVerticiesRoundedRectangle(self, h, w, r):
+        dx0  = self.dx0
+        dy0  = self.dy0
+        
+        tLeg_x = [-w/2 + r]
+        tLeg_y = [ h/2]
+        
+        # Top right flange
+        xCorner = w/2   - r 
+        yCorner = h/2 - r 
+        tr_x, tr_y = self._getcornerVerticies(xCorner, yCorner, r, 1, 1)
+
+        xCorner =  w/2  - r 
+        yCorner = -h/2 +r
+        br_x, br_y = self._getcornerVerticies(xCorner, yCorner, r, 1, -1)        
+        br_x = br_x[::-1]
+        br_y = br_y[::-1]
+        
+        
+        xCorner = -w/2 + r
+        yCorner = -h/2  +r
+        bl_x, bl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, -1)        
+        
+        xCorner = -w/2  + r 
+        yCorner =  h/2 - r
+        tl_x, tl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1)            
+        tl_x = tl_x[::-1]
+        tl_y = tl_y[::-1]
+    
+    
+        x = tLeg_x + tr_x + br_x + bl_x + tl_x 
+        y = tLeg_y + tr_y + br_y + bl_y + tl_y 
+        
         return list(np.array(x) + dx0), list(np.array(y) + dy0)    
+
+    
+    def getVerticies(self):
+        """ Gets the a list of (x, y) verticies in clockwise order"""
+        h   = self.d 
+        w   = self.b
+        t   = self.t 
+
+        ro:float = self.ro
+        ri:float = self.ri
+
+        xyOutter = self._getVerticiesRoundedRectangle(h, w, ro)  
+        xyInner  = self._getVerticiesRoundedRectangle(h - 2*t, w- 2*t, ri)  
+        xy = np.column_stack((xyOutter, xyInner))
+        
+        return xy[0,:], xy[1,:]
 

@@ -8,8 +8,8 @@ A plot of the beam analyzed is output as part of this example.
 The capacity of the section is determined by limitstates, and compared
 to forces from an analyzed beam using the planesections library.
 
-First the base limitstates library is imported, then s16 steel design library 
-for csa o86. The library planesections is imported to run the beam analysis.
+First the base limitstates library is imported, then s16 steel design library. 
+The library planesections is imported to run the beam analysis.
 
 """
 import limitstates as ls

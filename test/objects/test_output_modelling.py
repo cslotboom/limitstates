@@ -5,10 +5,13 @@ Tests if the verticies are corretly output for the model files.
 import numpy as np
 import pytest
 
-from limitstates.objects.output.model import GeomModelRectangle, GeomModelClt
+from limitstates.objects.output.model import GeomModelRectangle, GeomModelClt, GeomModelHss
 
 import limitstates as ls
 import limitstates.design.csa.o86.c19 as o86
+
+import matplotlib.pyplot as plt
+
 
 def PolyArea(x,y):
     """
@@ -39,9 +42,7 @@ def test_clt():
     A test to see if the geometry of the CLT function is initializing 
     correctly.
     """
-    b = 200
-    d = 400
-    
+
     section = o86.loadCltSections()[0]
     layers  = section.sLayers
     
@@ -50,16 +51,15 @@ def test_clt():
         
     verts = geom.getFillVerticies()
     assert len(verts[0]) == 11
-
-# member  = ls.initSimplySupportedMember(6, 'm')
-# beamColumn = o86.BeamColumnCltCsa19(member, section)
-
+    
+def test_Hss():
+    geom = GeomModelHss(305, 205, 10, 15, 10)
+    x, y = geom.getVerticies()
+    
+    assert len(x)  == 2*(6*4 +1) 
 
 if __name__ == "__main__":
     test_geom_rectangle()
     test_clt()
-    # test_plot_glulam_condition_2()
-    # test_plot_glulam_condition_2_raised()
-    # test_plot_I_beam()
-    # test_plot_I_beam_raised()
-    # test_plot_I_beam_round()
+    test_Hss()
+
