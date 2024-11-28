@@ -2,3 +2,4 @@ matplotlib
 numpy
 pandas
 planesections
+hysteresis
