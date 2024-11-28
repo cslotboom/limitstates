@@ -311,7 +311,7 @@ def _getBelHSSSection(section:SectionSteel, useX = True):
     if useX:
         return  section.b -  section.t*4
     else:
-        return  section.h -  section.t*4
+        return  section.d -  section.t*4
 
 def classifyFlangeHssSection(section:SectionSteel, useX = True):
     """
@@ -738,20 +738,17 @@ def checkOmega(Mmax, Ma, Mb, Mc):
 
 class SegmentSupportTypes(IntEnum):
     """
-    Options for multispan design checks.
-            
-    - If option 1 is selected, the beam is assumed to be continously laterally 
-    supported over the entire beam. Note, Mr is the same for each segment.
-    
-    - If option 2 is selected, the beam is assumed to be laterally unsupported 
-    between supports. In this case, it is assumed the load is applied to the 
-    compression flange, and torsional fixity is provided at each support. 
-    For W sections, the length is increased by 1.4 per c.l. 13.6.1.
-    
-    - If option 3 is selected, then the design propreties will be used to.
-    The user should manually set the attributed Lx, kx, and lateralSupport
-    in the designpropreties. Note, in this case Lx should be the actual length 
-    (Not a design length), and kx should be the effective lenght factor.
+    Options for multispan design checks:
+        - If option 1 is selected, the beam is assumed to be continously laterally 
+          supported over the entire beam. Note, Mr is the same for each segment.
+        - If option 2 is selected, the beam is assumed to be laterally unsupported 
+          between supports. In this case, it is assumed the load is applied to the 
+          compression flange, and torsional fixity is provided at each support. 
+          For W sections, the length is increased by 1.4 per c.l. 13.6.1.
+        - If option 3 is selected, then the design propreties will be used to.
+          The user should manually set the attributed Lx, kx, and lateralSupport
+          in the designpropreties. Note, in this case Lx should be the actual length 
+          (Not a design length), and kx should be the effective lenght factor.
 
     """
     continuous = 1
@@ -855,7 +852,7 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         - 1 will return a beam lateral restraint on all segments
         - 2 will return a beam with no lateral restraint except at supports
         - 3 will return a beam with no lateral restraint except at supports, 
-        and load applied at the top flange.
+          and load applied at the top flange.
         - 4 will use the user define support conditions. The Lx, kex, and 
         lateralSupport must be set for each beam segment
         
@@ -979,9 +976,10 @@ def getFsWUnstiffened(h:float, tw:float, Fy:float):
         
     return Fs
 
-def checkFsBeam(beam:BeamColumnSteelCsa24):
+def checkFsBeam(beam:BeamColumnSteelCsa24, Cf:float = 0):
     """
-    uses c.l. 13.4.1.1 To calculate the Fs for a W section.
+    Uses c.l. 13.4.1.1 To calculate the Fs for a W section or HSS.
+    Only strong axis bending is supported
     
     Inputs are in mm and MPa.
     
@@ -989,13 +987,10 @@ def checkFsBeam(beam:BeamColumnSteelCsa24):
 
     Parameters
     ----------
-    h : float
-        The clear depth of the web between flanges of the flange.
-    tw : float
-        The thickness of the web of the flange.
-    Fy : float
-        The yield stress for the material used.
-
+    beam : BeamColumnSteelCsa24
+        The beam to check the shear of.
+    Cf : float
+        The applied compressive load (N).
     Returns
     -------
     Fs : float
@@ -1003,36 +998,55 @@ def checkFsBeam(beam:BeamColumnSteelCsa24):
 
     """
     phi = 0.9
+
     section = beam.section
     lfactor = section.lConvert('mm')
-    
-    sfactor = section.mat.sConvert('MPa')
-    Fy = section.mat.Fy*sfactor
-    
+
     if section.typeEnum == SteelSectionTypes.w:
+        As, Fs = _getFsW(section, lfactor, beam.designProps.webStiffened)
+    elif section.typeEnum == SteelSectionTypes.hss:
         
-        # Some section databases do not explicitly set this term
-        if hasattr(section, 'ho'):
-            h = section.ho * lfactor
-        else:
-            h = section.d - section.tf *2
-            h *= lfactor
+        sectionClass = classifySection(section, True, Cf)
+        t = section.tw * lfactor            
+        sfactor = section.mat.sConvert('MPa')
+        Fy = section.mat.Fy*sfactor         
         
-        tw = section.tw * lfactor            
-        As = section.d  * lfactor * tw
-        if beam.designProps.webStiffened != True:
-            Fs = getFsWUnstiffened(h, tw, Fy)
+        if 3 <= sectionClass:
+            # We need the width in the strong axis
+            h = _getBelHSSSection(section, False)* lfactor
+            As = 2 * h  * t
+            Fs = getFsWUnstiffened(h, t, Fy)
         else:
-            raise Exception('Only unstiffned webs are currently supported.')        
-    
+            # NOTE: in weak axis loading these need to be swapped.
+            As = section.A * section.d / (section.b + section.d) 
+            Fs = 0.66*Fy         
     else:
         raise Exception('Member not yet supported for shear.')       
-    
     return phi* Fs * As
 
 
 
 
+def _getFsW(section, lfactor, isWebStiffened = False):
+
+    sfactor = section.mat.sConvert('MPa')
+    Fy = section.mat.Fy*sfactor    
+    
+    # Some section databases do not explicitly set this term
+    if hasattr(section, 'ho'):
+        h = section.ho * lfactor
+    else:
+        h = section.d - section.tf *2
+        h *= lfactor
+    
+    tw = section.tw * lfactor            
+    As = section.d  * lfactor * tw
+    if isWebStiffened != True:
+        Fs = getFsWUnstiffened(h, tw, Fy)
+    else:
+        raise Exception('Only unstiffned webs are currently supported.')    
+
+    return As, Fs
 
 # =============================================================================
 # Compression

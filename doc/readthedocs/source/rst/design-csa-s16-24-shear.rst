@@ -1,5 +1,5 @@
-CSA S16 - Steel Design - Shear
-==============================
+CSA S16-24 - Steel Design - Shear
+=================================
 
 
 The following equations are used to determin shear of multispan beams.

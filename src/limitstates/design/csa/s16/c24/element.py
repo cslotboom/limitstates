@@ -77,36 +77,38 @@ class DesignPropsSteel24:
         #     self.Lez = self.Lz * self.kz
                 
 class BeamColumnSteelCsa24(BeamColumn):
+    """
+    Design propreties for a glulam beam element.
+
+    Parameters
+    ----------
+    member : Member
+        The the structural member used to represent the beam's position,
+        orientation and support conditions.
+    section : SectionRectangle
+        The section for the beamcolumn.
+    designProps : DesignPropsGlulam19, optional
+        The inital design propreties. The default is None, which creates 
+        a empty DesignPropsGlulam19 object.
+    userProps : dataclass, optional
+        The user design propeties. The default is None, which creates an
+        empty dataclass.
+    eleDisplayProps : dataclass
+        Propreties used to display the section.
+
+    Returns
+    -------
+    None.
+
+    """
+    
     designProps:DesignPropsSteel24
     
     def __init__(self, member:Member, section:SectionSteel, 
                  designProps:DesignPropsSteel24 = None, 
                  userProps:dataclass = None,
                  eleDisplayProps:dataclass = None):
-        """
-        Design propreties for a glulam beam element.
 
-        Parameters
-        ----------
-        member : Member
-            The the structural member used to represent the beam's position,
-            orientation and support conditions.
-        section : SectionRectangle
-            The section for the beamcolumn.
-        designProps : DesignPropsGlulam19, optional
-            The inital design propreties. The default is None, which creates 
-            a empty DesignPropsGlulam19 object.
-        userProps : dataclass, optional
-            The user design propeties. The default is None, which creates an
-            empty dataclass.
-        eleDisplayProps : dataclass
-            Propreties used to display the section.
-
-        Returns
-        -------
-        None.
-
-        """
         
         self._initMain(member, section)
 

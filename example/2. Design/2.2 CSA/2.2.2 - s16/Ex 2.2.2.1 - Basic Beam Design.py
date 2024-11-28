@@ -96,7 +96,7 @@ bmd = ls.DesignDiagram(np.column_stack(xyBMD))
 omega = s16.getOmega1FromDesignDiagram(bmd)
 
 MrShearCenter = s16.checkBeamMrUnsupportedW(beam, omega) / 1000
-print (MrSup, MrUnSup, MrShearCenter)
+print(MrSup, MrUnSup, MrShearCenter)
 
 
 """
