@@ -10,10 +10,12 @@ All objects that have dimension store the units they use, and have an imbedded "
 For example, a cross section will have an attribute "lUnit", and can return the conversion factor between it's current unit and another unit with the "lConvert" method. 
 
 
-`
-section.lUnit
-lfactor = section.lConvert('in')
-`
+.. code-block:: python
+
+
+	section.lUnit
+	lfactor = section.lConvert('in')
+
 
 #. :doc:`units-converter`
 
