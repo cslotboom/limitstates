@@ -1,5 +1,5 @@
-CSA S16 - Steel Design
-======================
+CSA S16-24
+==========
 
 #. :doc:`design-csa-s16-24-bending`
 
