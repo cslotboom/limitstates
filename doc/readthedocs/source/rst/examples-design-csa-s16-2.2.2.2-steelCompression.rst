@@ -1,6 +1,6 @@
 .. _examples-2.2.2.2:
 
-Steel Beam Design Example
+Steel Column Design Example
 =========================
 
 

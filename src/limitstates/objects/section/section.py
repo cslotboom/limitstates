@@ -446,8 +446,8 @@ class SectionSteel(SectionMonolithic):
         add t for convetsion
         """
         if not hasattr(self, 't'):
-            # self.t = self.tdes
-            self.t = self.tnom
+            self.t = self.tdes
+            # self.t = self.tnom
         if not hasattr(self, 'tw'):
             self.tw = self.t   
              

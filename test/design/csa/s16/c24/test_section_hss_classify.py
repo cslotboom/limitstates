@@ -1,5 +1,5 @@
 """
-Tests the design of glulam elements according to csa o86
+Tests the classifcation of HSS steel elements.
 """
 
 # import limitstates as ls
@@ -10,6 +10,8 @@ from limitstates.objects.read import getSteelSections
 
 mat = s16.MaterialSteelCsa24()
 
+
+steelCISC = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
 steelSections = getSteelSections(mat, 'us', 'aisc_16_si', 'hss')
 section = steelSections[0]
 
@@ -38,7 +40,7 @@ def test_classify_Flange_HSS_178x128_weak():
     Steel book compression tables
     """
     
-    section = ls.getByName(steelSections, 'HSS177.8X127X4.8')
+    section = ls.getByName(steelCISC, 'HSS178X127X4.8')
     sClass = s16.classifyFlangeHssSection(section, useX = False)
     
     assert sClass == 3
@@ -47,7 +49,7 @@ def test_classify_Flange_HSS_178x128_weak():
 
 def test_classify_HSS_overall():
     """
-    Table 5-1 steel book
+    Table 5-1 steel book from XX year for ASTM5000 steel HSS sections
     """
     
     section = ls.getByName(steelSections, 'HSS355.6X203.2X9.5')

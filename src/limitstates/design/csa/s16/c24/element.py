@@ -42,7 +42,7 @@ class DesignPropsSteel24:
         The length of the beam, or spans, in the strong weak direction.
     Lz : float|list, optional
         The length of the beam, or spans, in the strong torisonal direction.
-    lateralSupport : bool, optional
+    webStiffened : bool, optional
         A flag that specifies is the beam has a stiffened web.
     """
     lateralSupport:bool|list[float] = True
@@ -134,7 +134,8 @@ def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m',
                             kz:float = 1,
                             Lx:float = None,
                             Ly:float = None,
-                            Lz:float = None) -> BeamColumnSteelCsa24:
+                            Lz:float = None,
+                            lateralSupport:bool = True) -> BeamColumnSteelCsa24:
 
     """
     A function used to return a beamcolumn based on an input length.
@@ -176,6 +177,10 @@ def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m',
     Lz : float, optional
         The design length in the directon z. The default is None, which 
         defaults to using the total member length.
+    lateralSupport : bool, optional
+        A flag that specifies if the beam is laterally supported. 
+        By default is set to true.
+        
     Returns
     -------
     BeamColumn
@@ -183,7 +188,7 @@ def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m',
 
     """
     member = initSimplySupportedMember(L, lUnit)
-    designProps = DesignPropsSteel24()
+    designProps = DesignPropsSteel24(lateralSupport=lateralSupport)
     
     if not Lx:
         Lx = L
