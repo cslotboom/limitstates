@@ -278,7 +278,7 @@ def classifyWebHssSection(section:SectionSteel, useX = True, Cf:float= 0):
     ----------
     section : SectionSteel
         The section to classify.
-    useX : TYPE, optional
+    useX : bool, optional
         A toggle that activates the X direction. The default is True.
     Cf : float, optional
         The factored compression force of the section in N. The default is 0.
@@ -1075,12 +1075,15 @@ def checkCompressionLimits(section:SectionSteel):
 
 
     if isW:
-        return checkCompresionLimitsW(section)
-
+        checkPasses = checkCompresionLimitsW(section)
     elif section.typeEnum == SteelSectionTypes.hss:
-        return checkCompresionLimitsHss(section)
+        checkPasses = checkCompresionLimitsHss(section)
+    
+    if checkPasses:
+        return True
     else:
-        raise Exception('Section not supported')
+        raise Exception('Element is class 4 for compression. Check flange and web limits with Table 1.')
+
 
 def _getCompressionLim(section:SectionSteel):
     sconvert = section.mat.sConvert('MPa')
@@ -1152,7 +1155,7 @@ def checkCompresionLimitsW(section:SectionSteel) -> bool:
     if flangePasses and webPasses:
         return True
     else:
-        raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
+        return False
 
 
 def getCompressionThicknessRatioHss(section:SectionSteel):
@@ -1219,8 +1222,8 @@ def checkCompresionLimitsHss(section:SectionSteel):
     if flangePasses and webPasses:
         return True
     else:
-        raise Exception('Member is class 4 for compression. Check flange and web limits with Table 1.')
-
+        return False
+    
 def checkCr(A:float, Fy:float, lamda:float, n:float = 1.34):
     """
     Calculates compression resistance per 13.3.1.1
@@ -1499,7 +1502,7 @@ class Omega1LoadConditions(IntEnum):
     13.8.6
     1 = No loads
     2 = uniformly distributed loads, or regularly spaced point loads
-    3 = concentrated loads applied at midspan to the member.
+    3 = concentrated loads applied at to the member.
     """
     noLoads = 1
     distLoads = 2
@@ -1508,12 +1511,15 @@ class Omega1LoadConditions(IntEnum):
 def getOmega1(loadCase:Omega1LoadConditions, Mmax = 1, Mmin = -1):
     """
     Calculates the amplifction factor when no transvers loads acts between
-    supports.
+    supports. See c.l. 13.8.6 for details.
 
     Parameters
     ----------
     loadCase : Omega1LoadConditions
-        The load condition.
+        The load condition:
+            1 if there are no intermediate loads
+            2 if there are uniformy distributed loads
+            3 if there are concentrated loads applied at to the member.
     Mmax : TYPE, optional
         TYhe maximum load. The default is 1.
     Mmin : TYPE, optional
@@ -1548,7 +1554,7 @@ def _getBeta(lamy=0):
     """
     return min(0.6 + 0.4*lamy, 0.85)
 
-def getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
+def _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
     
     return Cf/Cr + betax*U1x*Mfx/Mrx + beta*U1y*Mfy/Mry
 
@@ -1602,7 +1608,7 @@ def checkCombinedCaseA(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     U1x = max(getU1(omega1, Cf, Cex),1)
     U1y = max(getU1(omega1, Cf, Cey),1)
         
-    return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=0.6)
+    return _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=0.6)
 
 def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float, 
                        Mfy:float, n:float, omega1:float,
@@ -1681,7 +1687,7 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     lamy = (Fy/Fey)**0.5
     beta = _getBeta(lamy)
         
-    return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
+    return _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
 def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, 
                        Cf:float, Mfx:float, Mfy:float, n:float, 
@@ -1749,7 +1755,7 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
     else:
         beta = 0.6
  
-    return getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
+    return _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
 def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy, 
                        isBracedFrame = False):
@@ -1785,7 +1791,7 @@ def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy,
     Mry = checkBeamMrSupported(beamColumn, False, Cf)              
        
     
-    return getUtil(0, 1, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
+    return _getUtil(0, 1, 1, Mfx, Mrx, 1, Mfy, Mry, beta=1, betax = 1)
 
 def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
                             Mfx:float, Mfy:float = 0, n:float = 1.34, 
