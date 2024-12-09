@@ -333,7 +333,7 @@ def plotSection(section:SectionAbstract,
     Parameters
     ----------
     section : SectionAbstract
-        The sectin to be plotted.
+        The section to be plotted.
     xy0 : float, optional
         The x/y point to use for the orign of the plot. The default is (0,0).
         Note that the object may be plotted at a different location
