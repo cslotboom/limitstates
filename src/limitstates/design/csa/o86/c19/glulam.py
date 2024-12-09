@@ -218,7 +218,7 @@ def _checkElementkL(element, knet, kse, kt, kx = 1):
     else:
         # raise Exception('Element is unsupported and 7.5.6.3.2 does not apply. limitstates can currently only design supported members.')
         sLunit = element.section.lUnit
-        L = element.member.L * element.member.lConvert(sLunit)
+        L = element.designProps.Lx * element.member.lConvert(sLunit)
         Cb = checkCb(L, element.section.d, element.section.b)
         
         E = element.section.mat.E

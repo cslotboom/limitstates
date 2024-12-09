@@ -56,15 +56,17 @@ class DesignPropsGlulam19:
     Ly : float|list[float]
         The beam column's unsupported length in the section's y direction, which
         is typically the weak direction.
-    keBending : float
+    kexB : float
         A factor that converts the actual span length into the effective span
         length. See table 7.4 for guidance. 
         If the beam is multispan, it must have the same number of entries 
         as Lx and Ly. 
-    keCompression : float
+    kexC : float
         A factor that converts the actual span length into the effective span
         length for compression. See table A.4 for guidance. 
-
+    keyC : float
+        A factor that converts the actual span length into the effective span
+        length for compression. See table A.4 for guidance. 
     """
     firePortection:GypusmRectangleCSA19 = None
     sectionFire:SectionRectangle = None

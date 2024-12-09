@@ -8,13 +8,23 @@ from .. display import EleDisplayProps
 __all__ = ["BeamColumn", "getBeamColumn"]
 
 
-@dataclass
-class UserProps:
+class UserProps(dict):
+    """
+    A object that stores additional information needed for users. 
+    The limitstates library will objects will not use this attribute. 
+    The default is None.
+    """
     def __repr__(self):
         "<limitStates User Propreties Dataclass>"
 
 @dataclass
 class DefaultDesignProps:
+    """
+    The design props store store any internal attributes limitstates 
+    need for design that are design code dependant. Examples include 
+    the fire portection used for glulam elements, or if a beam 
+    element is curved. The default is None.
+    """
     def __repr__(self):
         "<limitStates Design Propreties Dataclass>"
 
