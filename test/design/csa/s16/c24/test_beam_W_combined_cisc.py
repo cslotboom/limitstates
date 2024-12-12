@@ -36,7 +36,7 @@ def test_combined_blueBook():
     omega1x = 0.4
     isBracedFrame = True
     n = 1.34
-    u = s16.checkBeamColumnCombined(beam, Cf, Mfx, 0, n, omega1x, isBracedFrame)
+    u = s16.checkBeamColumnCombined(beam, Cf, Mfx, 0, n, omega1x, 1, isBracedFrame)
     util_solA = 0.85
     util_solB = 0.625
     util_solC = 0.94

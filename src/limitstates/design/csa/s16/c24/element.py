@@ -1,5 +1,5 @@
 """
-Xontains specific beamcolumn implementations for CSA glulam beams.
+Contains specific beamcolumn implementations for CSA glulam beams.
 These are largely set up to ease development and provide type hints.
 """
 
