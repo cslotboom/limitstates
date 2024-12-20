@@ -25,7 +25,7 @@ class UnitConverter(ABC):
         raise Exception(f'Unit {unit} is unspported, expected one of '\
                         f'{list(self.unitDict.keys())}')
     
-    def _checkInDict(self, unit):
+    def _checkInDict(self, unit) -> bool:
         if unit in self.unitDict:
             return True
         else:
@@ -56,7 +56,7 @@ class UnitConverter(ABC):
 
         return value * (self.getConversionFactor(inputUnit, outputUnit))
         
-    def getConversionFactor(self, inputUnit:str, outputUnit:str):
+    def getConversionFactor(self, inputUnit:str, outputUnit:str) -> float:
         """
         Finds the conversion factor between two units.
 
@@ -83,7 +83,8 @@ class UnitConverter(ABC):
         # In the rare case they do not work, find out what went wrong.
         except:
             self._checkInDict(inputUnit)
-            self._checkInDict(outputUnit)       
+            self._checkInDict(outputUnit)
+            raise Exception('Unit conversion error occured, check units.')       
         
     def getFactorUnit(self, unit:str):
         """

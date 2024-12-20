@@ -4,7 +4,8 @@ These are largely set up to ease development and provide type hints.
 """
 
 from dataclasses import dataclass
-from limitstates import (Member, SectionRectangle, initSimplySupportedMember, SectionSteel)
+from typing import Optional
+from limitstates import (Member, initSimplySupportedMember, SectionSteel)
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
 from limitstates import BeamColumn, EleDisplayProps
@@ -49,9 +50,9 @@ class DesignPropsSteel24:
     kx:float|list[float] = 1
     ky:float|list[float] = 1
     kz:float|list[float] = 1
-    Lx:float|list[float] = None    
-    Ly:float|list[float] = None    
-    Lz:float|list[float] = None    
+    Lx:Optional[float|list[float]] = None    
+    Ly:Optional[float|list[float]] = None    
+    Lz:Optional[float|list[float]] = None    
 
     webStiffened:float = False
     
@@ -87,9 +88,9 @@ class BeamColumnSteelCsa24(BeamColumn):
         orientation and support conditions.
     section : SectionRectangle
         The section for the beamcolumn.
-    designProps : DesignPropsGlulam19, optional
+    designProps : DesignPropsSteel24, optional
         The inital design propreties. The default is None, which creates 
-        a empty DesignPropsGlulam19 object.
+        a empty DesignPropsSteel24 object.
     userProps : dataclass, optional
         The user design propeties. The default is None, which creates an
         empty dataclass.
@@ -105,9 +106,9 @@ class BeamColumnSteelCsa24(BeamColumn):
     designProps:DesignPropsSteel24
     
     def __init__(self, member:Member, section:SectionSteel, 
-                 designProps:DesignPropsSteel24 = None, 
-                 userProps:dataclass = None,
-                 eleDisplayProps:dataclass = None):
+                 designProps:Optional[DesignPropsSteel24] = None, 
+                 userProps:Optional[dict] = None,
+                 eleDisplayProps:Optional[EleDisplayProps] = None):
 
         
         self._initMain(member, section)
@@ -128,13 +129,13 @@ class BeamColumnSteelCsa24(BeamColumn):
     def setLey(self, Ly):
         self.designProps.Ly = Ly       
         
-def getBeamColumnSteelCsa24(L:float, section:SectionRectangle, lUnit:str='m', 
+def getBeamColumnSteelCsa24(L:float, section:SectionSteel, lUnit:str='m', 
                             kx:float = 1, 
                             ky:float = 1,
                             kz:float = 1,
-                            Lx:float = None,
-                            Ly:float = None,
-                            Lz:float = None,
+                            Lx:float|None = None,
+                            Ly:float|None = None,
+                            Lz:float|None = None,
                             lateralSupport:bool = True) -> BeamColumnSteelCsa24:
 
     """

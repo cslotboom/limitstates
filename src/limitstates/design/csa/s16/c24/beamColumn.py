@@ -1561,10 +1561,12 @@ def getOmega1CaseA(Mmax, Mmin):
     return max(0.6 - 0.4*kappa, 0.4)
 
 
-def _getBeta(lamy=0):
+def _getBeta(sectionType, lamy=0):
     """
     c.l. 13.8.2
     """
+    if sectionType == SteelSectionTypes.hss:
+        return 0.5    
     return min(0.6 + 0.4*lamy, 0.85)
 
 def _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
@@ -1712,7 +1714,7 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     Fy = beamColumn.section.mat.Fy*sconvert
     Fey = checkColumnFeDirection(beamColumn, useX = False)
     lamy = (Fy/Fey)**0.5
-    beta = _getBeta(lamy)
+    beta = _getBeta(beamColumn.section.typeEnum, lamy)
         
     return _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
@@ -1782,7 +1784,8 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
         Fy = beamColumn.section.mat.Fy*sconvert
         Fey = checkColumnFeDirection(beamColumn, useX = False)
         lamy = (Fy/Fey)**0.5
-        beta = _getBeta(lamy)
+        beta =  _getBeta(beamColumn.section.typeEnum, lamy)
+
     else:
         beta = 0.6
  

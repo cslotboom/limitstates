@@ -28,7 +28,7 @@ sectionsW460 = ls.filterByName(steelWSections, 'W460')
 # sectionsFiltered = ls.filterByAttrRange(sectionsFiltered, 'W', lowerLim = 106)
 
 steelHssSections   = ls.getSteelSections(mat, 'csa', 'cisc_12', 'hss')
-sectionsFiltered = ls.filterByName(steelHssSections, '254x254')
+sectionsFiltered = ls.filterByName(steelHssSections, '254')
 # sectionsFiltered += ls.filterByName(steelWSections, '203x203')
 sectionsFiltered = ls.filterByAttrRange(sectionsFiltered, 't', lowerLim = 7)
 
@@ -88,11 +88,9 @@ inputDict = {'highCompression':  [0.5,  0.5,  1, 1],
              'highCompression_lowOmega':  [0.5,  0.5,  1, 0.4],
              'MediumCompression_lowOmega':[0.35, 0.65, 1, 0.4],
              'lowCompression_lowOmega':   [0.2,  0.8,  1, 0.4],
-             'highCompression_TorsionBracing':   [0.5, 0.5, 0.5, 1],
-             'mediumCompression_TorsionBracing': [0.35, 0.5, 0.5, 1],
-             'lowCompression_TorsionBracing':    [0.2, 0.8, 0.5, 1]}
-
-
+             'highCompression_TorsionBracing':   [0.5, 0.5, 0.2, 1],
+             'mediumCompression_TorsionBracing': [0.35, 0.5, 0.2, 1],
+             'lowCompression_TorsionBracing':    [0.2, 0.8, 0.2, 1]}
 
 labels = ['0.5Cr, 0.5Mr, k = 1, ω = 1', '0.35Cr, 0.65Mr, k = 1, ω = 1', '0.2Cr, 0.8Mr, k = 1, ω = 1',
           '0.5Cr, 0.5Mr, k = 1, ω = 0.4', '0.35Cr, 0.65Mr, k = 1, ω = 0.4', '0.2Cr, 0.8Mr, k = 1, ω = 0.4',
@@ -103,16 +101,13 @@ labels = ['0.5Cr, 0.5Mr, k = 1, ω = 1', '0.35Cr, 0.65Mr, k = 1, ω = 1', '0.2Cr
           '0.5Cr, 0.5Mr, k = 0.5, ω = 1', '0.35Cr, 0.65Mr, k = 0.5, ω = 1', '0.2Cr, 0.8Mr, k = 0.5, ω = 1']
 
 
-
-
-lengths = [4, 6, 8, 10, 12, 14, 16]
 lengths = [3, 5, 7, 9, 11, 13, 15]
 
 # 4 = no case governs
 
-# section = sectionsW460[13]
-# section = sectionsFiltered[0]
-for section in steelHssSections:
+
+wSections = [sectionsW460[1], sectionsW460[12]]
+for section in wSections:
     governingCases = []
     governingUts = []
     ii=0
@@ -125,7 +120,7 @@ for section in steelHssSections:
         slendernesses = []
         for L in lengths:
     
-            beamColumn  = s16.getBeamColumnSteelCsa24(L, section, kx = kx)
+            beamColumn  = s16.getBeamColumnSteelCsa24(L, section, kx = kx, ky = kx)
             # print(section.rx)
             slenderness = s16.checkElementSlenderness(beamColumn, False)
         
@@ -134,40 +129,12 @@ for section in steelHssSections:
             Crslender = s16.checkColumnCeDirection(beamColumn, True)
             Cf = Cr*cratio
             
-            # if 1 <= (Cf / Crslender):
-            #     trialGoverningCases.append(4)
-            #     trialGoverningUts.append(None)
-            #     slendernesses.append(slenderness)
-            #     continue
-            
-            
             Mp = s16.checkBeamMrSupported(beamColumn, omegax1, Cf=Cf)
-            MpSup = s16.checkBeamMrUnsupported(beamColumn, omegax1, Cf=Cf)
             Mfx = Mp*Mratio
-            # if 1 <= (Mfx / MpSup):
-            #     trialGoverningCases.append(5)
-            #     trialGoverningUts.append(None)
-            #     slendernesses.append(slenderness)
-            #     continue
-            
-            # u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, 
-            #                                 omegax1=omega1x)            
             
             u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, 
                                             omegax1=omegax1, isBracedFrame = True)          
-            # try:
-            #     Mp = s16.checkBeamMrSupported(beamColumn, omega1x, Cf=Cf)
-            # except:
-            #     Mp = 0
-            # Mfx = Mp*0.5
-            # print(Mfx)
-                
-            # try:
-            #     u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, 
-            #                                     omegax1=omega1x, isBracedFrame = True)
-            #     u = list(u)
-            # except:
-            #     u = [0,0,0,0]
+
             u = u[:3]
             print(u)
             
@@ -188,9 +155,7 @@ for section in steelHssSections:
     
         governingCases.append(trialGoverningCases)
         governingUts.append(trialGoverningUts)
-    
-    
-    
+
     
     titles = list(inputDict.keys())
     slendernesses = list(slendernesses)
@@ -198,30 +163,37 @@ for section in steelHssSections:
     
     governingUts = np.round(governingUts, 1)
     
-    print(governingCases)
+    # print(governingCases)
     governingCases = np.array(governingCases)
     
     
-    fig, ax = plt.subplots()
-    im = ax.imshow(governingCases)
+    fig, ax = plt.subplots(ncols = 2)
+    im = ax[0].imshow(governingCases)
     
     # Show all ticks and label them with the respective list entries
-    ax.set_xticks(np.arange(len(slendernesses)), labels=slendernesses)
-    ax.set_yticks(np.arange(len(labels)), labels=labels)
+    ax[0].set_xticks(np.arange(len(slendernesses)), labels=slendernesses)
+    ax[0].set_yticks(np.arange(len(labels)), labels=labels)
     
     # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+    plt.setp(ax[0].get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
     
     # Loop over data dimensions and create text annotations.
     for i in range(len(labels)):
         for j in range(len(slendernesses)):
             if governingUts[i, j] < 10:
-                text = ax.text(j, i, governingCases[i, j],
+                text = ax[0].text(j, i, governingCases[i, j],
                                ha="center", va="center", color="w")
     
-    ax.set_title("Governing Check")
-    fig.tight_layout()
+    ax[0].set_title("Governing Check")
+    
+    _, ax2 = ls.plotElementSection(beamColumn, ax[1])
+    # _, ax2 = ls.plotElementSection(beamColumn)
+    # fig.axes.append(ax2)
+    fig.add_axes(ax2)
+    # ax[1] = ax2
+    
+    # fig.tight_layout()
     plt.show()
     
 
@@ -288,87 +260,6 @@ for section in steelHssSections:
 # ax.set_ylim([0,5])
 # plt.show()
 
-
-
-
-# =============================================================================
-# 
-# =============================================================================
-
-# # cLevels = [0.3, 0.5, 0.7]
-# # lengths = [3, 6, 9]
-# # omega = [0.4]
-# # Fy  = 345
-# # Cf  = 4400*kN
-# # Mfx_top = 500*kN
-# # Mfx_bottom = 400*kN
-# # Mfx = Mfx_top
-
-# uOut = []
-# IOut = []
-# dOut = []
-# # sections = 
-
-# # ls.filterByAttrRange(objectList, attr)
-# # Cf = 2000*kN
-# # Mfx = 300*kN
-# # Mfy = 300*kN
-# for section in steelWSections:
-# # for section in steelWSections[11:15]:
-# # for section in steelWSections[150:200]:
-# # for section in steelWSections[25:100]:
-    
-    
-    
-#     omega1x = 1
-#     beamColumn  = s16.getBeamColumnSteelCsa24(L, section)
-
-#     Cr  = s16.checkColumnCr(beamColumn,  lam = 0)
-#     Cf = Cr*0.5
-#     try:
-#         Mp = s16.checkBeamMrUnsupported(beamColumn, omega1x, Cf=Cf)
-#         # Mp = s16.checkBeamMrSupported(beamColumn, omega1x, Cf=Cf)
-#     except:
-#         Mp = 0
-#     # Mp = s16.checkBeamMrSupported(beamColumn, omega1x, Cf)
-#     Mfx = Mp*0.2
-    
-
-#     loadingCondition = s16.Omega1LoadConditions.noLoads
-#     try:
-#         u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, 
-#                                         omegax1=omega1x, isBracedFrame = True)
-#         u = list(u)
-#     except:
-#         u = [0,0,0,0]
-    
-#     L
-#     rx = section.rx *1e-3
-#     uOut.append(u)
-#     IOut.append(L/rx)
-#     dOut.append(section.d)
-#     section.name
-#     # except:
-#     #     pass
-
-
-# uOut = np.array(uOut)
-
-# IOut = np.array(IOut)
-# inds = np.where(uOut[:,0] != 0)
-# Iout = IOut[inds]
-# dOut = np.array(dOut)[inds]
-# uOut = uOut[inds,:][0]
-
-# fix, ax =  plt.subplots()
-
-# # ax.plot(uOut[:,0])
-# # ax.plot(uOut[:,1])
-# # ax.plot(Iout, uOut[:,2])
-# # ax.plot(IOut, uOut[:,3] ,'.')
-# ax.plot(uOut[:,:2])
-# # ax.plot(dOut, uOut[:,2])
-# plt.show()
 
 
 
