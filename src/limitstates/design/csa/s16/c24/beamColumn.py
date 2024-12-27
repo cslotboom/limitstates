@@ -41,53 +41,66 @@ def _SectionUnsupporedError(secton, SUPPORTEDTYPES):
 # 
 # =============================================================================
 
-# def checkSlendernessRatio(r:float, L:float, K:float=1.0) -> (bool, float):
-#     """
-#     Checks the slenderness ratio of a section.
 
-#     Parameters
-#     ----------
-#     rx : float
-#         DESCRIPTION.
-#     Lx : float
-#         DESCRIPTION.
-#     Kx : float, optional
-#         DESCRIPTION. The default is 1.0.
 
-#     Returns
-#     -------
-#     passedX : TYPE
-#         DESCRIPTION.
-#     slendernessX : TYPE
-#         DESCRIPTION.
+def checkElementSlenderness(element:BeamColumnSteelCsa24, useX = True):
+    """
+    Checks the slenderness ratio of a steel element.
 
-#     """
+    Parameters
+    ----------
+    rx : float
+        The radius of gyration for the section.
+    Lx : float
+        The design length of teh section.
+    Kx : float, optional
+        The buckling effective length factor. The default is 1.0.
 
-#     return K*L/r
+    Returns
+    -------
+    slenderness : float
+        The output slenderness of the section.
 
-# def checkElementSlenderness():
-#     """
-#     Checks the slenderness ratio of a section.
+    """
+    
+    lconvert    = element.member.lConvert('mm')
+    lsconvert   = element.section.lConvert('mm')
+    
+    if useX:
+        L = element.designProps.Lx * lconvert
+        k = element.designProps.kx
+        r = element.section.rx * lsconvert
+    else:
+        L = element.designProps.Ly  * lconvert
+        k = element.designProps.ky
+        r = element.section.ry* lsconvert
 
-#     Parameters
-#     ----------
-#     rx : float
-#         DESCRIPTION.
-#     Lx : float
-#         DESCRIPTION.
-#     Kx : float, optional
-#         DESCRIPTION. The default is 1.0.
+    return checkSlendernessRatio(r, L, k)
 
-#     Returns
-#     -------
-#     passedX : TYPE
-#         DESCRIPTION.
-#     slendernessX : TYPE
-#         DESCRIPTION.
 
-#     """
 
-#     return K*L/r
+def checkSlendernessRatio(r:float, L:float, K:float=1.0) -> (bool, float):
+    """
+    Checks the slenderness ratio of a steel element.
+
+    Parameters
+    ----------
+    rx : float
+        The radius of gyration for the section.
+    Lx : float
+        The design length of teh section.
+    Kx : float, optional
+        The buckling effective length factor. The default is 1.0.
+
+    Returns
+    -------
+    slenderness : float
+        The output slenderness of the section.
+
+    """
+
+    return K*L/r
+
 
 # =============================================================================
 # Tension
@@ -604,7 +617,7 @@ def checkBeamMrUnsupportedW(beam:BeamColumnSteelCsa24, omega:float=1,
         return Mu 
 
     
-def checkBeamMrUnsupported(beam:BeamColumnSteelCsa24, omega:float=1, 
+def checkBeamMrUnsupported(beam:BeamColumnSteelCsa24, omega2:float=1, 
                             Lu:float = None, Cf = 0):
     """
     Calculates Mr for an unsupported W section according to c.l.13.6.1.a.
@@ -639,7 +652,7 @@ def checkBeamMrUnsupported(beam:BeamColumnSteelCsa24, omega:float=1,
     """
     
     if beam.section.typeEnum == SteelSectionTypes.w:
-        return checkBeamMrUnsupportedW(beam, omega, Lu, Cf)
+        return checkBeamMrUnsupportedW(beam, omega2, Lu, Cf)
 
     elif beam.section.typeEnum == SteelSectionTypes.hss:
         return checkBeamMrSupported(beam,  Cf = Cf)
@@ -901,9 +914,9 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         isContinouslyBraced = [False] * Nspan
         
         Lfactor = 1.4
-        Lsegs    = [line.L for line in member.curves]
-        Ldesign    = [L*Lfactor*mlfactor for L in Lsegs]
-        omegas   = [1]*Nspan
+        Lsegs   = [line.L for line in member.curves]
+        Ldesign = [L*Lfactor*mlfactor for L in Lsegs]
+        omegas  = [1]*Nspan
         
     if lateralSupportType == 4:
         
@@ -1548,10 +1561,12 @@ def getOmega1CaseA(Mmax, Mmin):
     return max(0.6 - 0.4*kappa, 0.4)
 
 
-def _getBeta(lamy=0):
+def _getBeta(sectionType, lamy=0):
     """
     c.l. 13.8.2
     """
+    if sectionType == SteelSectionTypes.hss:
+        return 0.5    
     return min(0.6 + 0.4*lamy, 0.85)
 
 def _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta, betax = 0.85):
@@ -1565,7 +1580,13 @@ def _getCaseAResistance(beamColumn:BeamColumnSteelCsa24, Cf, n, lam = None):
     return Cr, Mrx, Mry
 
 def getU1(omega:float, Cf:float, Ce:float):
-    return omega / (1-Cf/Ce)
+    
+    ratio = Cf/Ce
+    
+    if  1 <= ratio:
+        return omega * 1000
+    
+    return omega / (1-ratio)
 
 def checkCombinedCaseA(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float, 
                        Mfy:float, n:float, omega1:float):
@@ -1668,9 +1689,17 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     
     Cr, Mrx, Mry = _getCaseAResistance(beamColumn, Cf, n, None)
 
+
+    
+    # # If the applied load is greater than the buckling load
+    # if min(Cex, Cey) < Cf:
+    #     return 1000
+    
     if isBracedFrame:
+        
         Cex = checkColumnCeDirection(beamColumn,True)
         Cey = checkColumnCeDirection(beamColumn,False)
+        
         U1x = getU1(omega1, Cf, Cex)
         U1y = getU1(omega1, Cf, Cey)
     else:   
@@ -1685,13 +1714,13 @@ def checkCombinedCaseB(beamColumn:BeamColumnSteelCsa24, Cf:float, Mfx:float,
     Fy = beamColumn.section.mat.Fy*sconvert
     Fey = checkColumnFeDirection(beamColumn, useX = False)
     lamy = (Fy/Fey)**0.5
-    beta = _getBeta(lamy)
+    beta = _getBeta(beamColumn.section.typeEnum, lamy)
         
     return _getUtil(Cf, Cr, U1x, Mfx, Mrx, U1y, Mfy, Mry, beta=beta)
 
 def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24, 
                        Cf:float, Mfx:float, Mfy:float, n:float, 
-                       omega1:float, isBracedFrame = False):
+                       omega1:float, omega2:float, isBracedFrame = False):
     """
     Lateral Torsional Buckling
     Typically govens sections with strong axis loaded. Assumes the following:
@@ -1720,7 +1749,11 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
         parameter can be increased for certain section types per c.l. 13.3.1.1.
     omegax1 : float, optional
         Omega 1 calculated as per 13.8.6. It has a default value of is 1.0,
-        which represents a constant moment in single curvature..
+        which represents a constant moment in single curvature.
+    omegax2 : float, optional
+        Omega 1 calculated as per 13.8.1. It has a default value of is 1.0,
+        which represents a constant moment in single curvature.
+
     isBracedFrame : bool, optional
         A flag that specifies if the beam is in a braced frame. 
         The default is False.
@@ -1734,7 +1767,7 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
     """
     Cr = checkColumnCr(beamColumn, n)
     
-    Mrx = checkBeamMrUnsupported(beamColumn, True, Cf = Cf)
+    Mrx = checkBeamMrUnsupported(beamColumn, omega2, Cf = Cf)
     Mry = checkBeamMrSupported(beamColumn, False, Cf)       
  
     if isBracedFrame:
@@ -1751,7 +1784,8 @@ def checkCombinedCaseC(beamColumn:BeamColumnSteelCsa24,
         Fy = beamColumn.section.mat.Fy*sconvert
         Fey = checkColumnFeDirection(beamColumn, useX = False)
         lamy = (Fy/Fey)**0.5
-        beta = _getBeta(lamy)
+        beta =  _getBeta(beamColumn.section.typeEnum, lamy)
+
     else:
         beta = 0.6
  
@@ -1795,7 +1829,8 @@ def checkCombinedCaseD(beamColumn:BeamColumnSteelCsa24, Cf, Mfx, Mfy,
 
 def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float, 
                             Mfx:float, Mfy:float = 0, n:float = 1.34, 
-                            omegax1:float = 1.0, isBracedFrame = False):
+                            omegax1:float = 1.0, omegax2:float=1.0, 
+                            isBracedFrame = False):
     """
     Checks the 4 cases required to assess a steel element in combined bending
     and shear: cross section strength (c.l. 13.8.2a);
@@ -1841,7 +1876,7 @@ def checkBeamColumnCombined(beamColumn:BeamColumnSteelCsa24, Cf:float,
     else:
         u1 = 0
     u2 = checkCombinedCaseB(beamColumn, Cf, Mfx, Mfy, n, omegax1, isBracedFrame)
-    u3 = checkCombinedCaseC(beamColumn, Cf, Mfx, Mfy, n, omegax1, isBracedFrame)
+    u3 = checkCombinedCaseC(beamColumn, Cf, Mfx, Mfy, n, omegax1, omegax2, isBracedFrame)
     u4 = checkCombinedCaseD(beamColumn, Cf, Mfx, Mfy, isBracedFrame)
     
     return u1, u2, u3, u4

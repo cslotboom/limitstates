@@ -455,7 +455,6 @@ class SectionSteel(SectionMonolithic):
         if not hasattr(self, 'bf'):
             self.bf = self.b    
     
-    
     def _patchHSSradius(self):
         if not hasattr(self, 'ro'):
             self.ro = self.t*2

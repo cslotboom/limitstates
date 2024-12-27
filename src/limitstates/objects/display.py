@@ -7,6 +7,7 @@ All classes are unit agnostic.
 
 
 """
+from typing import Optional
 from enum import IntEnum
 
 from dataclasses import dataclass, field
@@ -68,7 +69,7 @@ class PlotConfigObject:
         A flag that turns on or off the plots outline.
     cLine : str, optional
         The colour to use for the outline of the object.    
-    lineWidth : str, optional
+    lineWidth : float, optional
         The linewidth to use for the object, in units of the canvas.
     newOriginLocation : int|PlotOriginPosition
         A flag that changes the default location the plot is placed at.
@@ -85,10 +86,10 @@ class PlotConfigObject:
     c:str = MATCOLOURS['default']
     showOutline:bool = True
     cLine:str = MATCOLOURS['black']
-    lineWidth:bool = 1
+    lineWidth:float = 1
     originLocation: PlotOriginPosition|int = 1
-    cFillLines:str = None
-    cFillPatch:str = None
+    cFillLines:Optional[str] = None
+    cFillPatch:Optional[str] = None
 
 
 @dataclass
@@ -112,11 +113,11 @@ class EleDisplayProps:
         i.e. colour linestyle etc. 
     """
     
-    section:SectionAbstract = None
-    member:Member = None
+    section:Optional[SectionAbstract] = None
+    member:Optional[Member] = None
     
-    configObject: PlotConfigObject = None
-    configCanvas: PlotConfigCanvas = None
+    configObject: Optional[PlotConfigObject] = None
+    configCanvas: Optional[PlotConfigCanvas] = None
         
     def __repr__(self):
         "<limitStates output Propreties Dataclass>"
