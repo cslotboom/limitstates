@@ -1,5 +1,6 @@
 
 from dataclasses import dataclass
+from typing import Optional
 
 from .. geometry import Member, initSimplySupportedMember
 from .. section import SectionAbstract
@@ -224,8 +225,8 @@ class BeamColumn(Element1D):
     """
     
     def __init__(self, member:Member, section:SectionAbstract, 
-                 designProps:dataclass = None, userProps:dataclass = None,
-                 eleDisplayProps:dataclass = None):
+                 designProps:dataclass = None, userProps:dict = None,
+                 eleDisplayProps:EleDisplayProps = None):
         
         self._initMain(member, section)
         self._initProps(designProps, userProps, eleDisplayProps)
@@ -241,7 +242,7 @@ class BeamColumn(Element1D):
     
 
 def getBeamColumn(L:float, section:SectionAbstract, lUnit:str='m', 
-                  designProps:dict=None, **kwargs) -> BeamColumn:
+                  designProps:Optional[dict]=None, **kwargs) -> BeamColumn:
     """
     A function used to return a basic beamcolumn based on an input length.
     The beamcolumn returned by this fuction will be a simply supported beam

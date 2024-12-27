@@ -15,6 +15,9 @@ doc/marketing
 # testing
 *.xlsx
 
+# vscode
+*.code-workspace
+
 
 # C extensions
 *.so

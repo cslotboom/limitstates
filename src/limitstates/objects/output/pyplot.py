@@ -21,7 +21,7 @@ import limitstates.objects.output.model as md
 
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
-
+from matplotlib.axes import  Axes
 
 class SectionPlotter:
     
@@ -52,14 +52,19 @@ class SectionPlotter:
         maxFigsize = self.canvasConfig.maxFigsize
         return dx / dmax * maxFigsize, dy / dmax * maxFigsize
     
-    def initPlot(self):
+    def initPlot(self, ax:Axes = None):
         x, y = self.geom.getVerticies()
         xlims, ylims = self._getPlotLimits(x,y)
         
         xplot, yplot = self._getPlotSize(xlims, ylims)
 
         # Set the dimensions / aspect ratio of the plot
-        fig, ax = plt.subplots(figsize=(xplot, yplot), dpi = self.canvasConfig.dpi)
+        if ax is not None:
+            ax.set_aspect(1)
+            fig = ax.get_figure()
+
+        else:
+            fig, ax = plt.subplots(figsize=(xplot, yplot), dpi = self.canvasConfig.dpi)
         
         if self.canvasConfig.showAxis != True:
             ax.axis('off')
@@ -312,6 +317,7 @@ def plotSection(section:SectionAbstract,
                 xy0: list[float,float] = None, 
                 canvasConfig: PlotConfigCanvas = None,
                 objectConfig: PlotConfigObject = None,
+                ax:Axes = None,
                 summarizeGeometry: bool|list[str]=False,
                 *args, **kwargs):
     """
@@ -339,12 +345,22 @@ def plotSection(section:SectionAbstract,
         Note that the object may be plotted at a different location
     dispProps : PlotDisplayProps, optional
         The display propreties to use. The default is None.
+    canvasConfig : PlotConfigCanvas, optional
+        The canvas configuration object to be used. The when set to none a 
+        default object is used.
+    objectConfig : PlotConfigObject, optional
+        The object configuration object to be used. This can be set
+        When set to none, a default object will be chosen based on the on the
+        section type input.
+    ax : Axes, optional
+        An overwrite that allows plots to be created on a specific figure. 
+        The default is None, which creates a new plot.
     summarizeGeometry : bool|list[str], optional
         XXX does not work currently.
         A list of the input attributes to summarize. The default is False.
-    args  
+    *args : list
         Additional arguments for matplotolib's ax.fill function
-    kwargs  
+    **kwargs : dict
         Additional arguments for matplotolib's ax.fill function
         
 
@@ -369,7 +385,7 @@ def plotSection(section:SectionAbstract,
     geom    = _plotGeomFactory(section, objectConfig.originLocation, xy0)
     plotter = _plotterFactory(section, geom, canvasConfig)
     
-    fig, ax = plotter.initPlot()
+    fig, ax = plotter.initPlot(ax)
     xyVerts = np.column_stack(geom.getVerticies())
     
     plotter.plot(ax, xyVerts, objectConfig, *args, **kwargs)
@@ -439,19 +455,19 @@ def _isGlulamSection(dispProps):
 # If the logic gets too complex here, then we should create a plotting objects
 # that have a interface, "plot", and a factory for them.
 
-def _plotFactory(dispProps):
+def _plotFactory(dispProps, ax=None):
     """
     Figures out what type of plot function to use.
     """    
     if _isCLTSection(dispProps):
-        return _plotCLT(dispProps)
+        return _plotCLT(dispProps, ax)
     if _isGlulamSection(dispProps):
-        return _plotGlulam(dispProps)    
+        return _plotGlulam(dispProps, ax)    
     else:
-        return _plotBasic(dispProps)
+        return _plotBasic(dispProps, ax)
 
 
-def _plotBasic(dispProps):
+def _plotBasic(dispProps, ax = None):
     """
     Plots a basic section using the canvas plot configuration and canvas object
     configuration classes.
@@ -463,14 +479,14 @@ def _plotBasic(dispProps):
     geom    = _plotGeomFactory(dispProps.section, cObjConfig.originLocation, [0,0])
     plotter = _plotterFactory(dispProps.section, geom, cPlotConfig)
     
-    fig, ax = plotter.initPlot()
+    fig, ax = plotter.initPlot(ax)
     
     xy = np.column_stack(geom.getVerticies())
     plotter.plot(ax, xy, cObjConfig)
     return fig, ax
 
 
-def _plotGlulam(dispProps):
+def _plotGlulam(dispProps, ax = None):
     """
     Plots a glulam section, showing the fire section in the center if it is
     present.
@@ -495,7 +511,7 @@ def _plotGlulam(dispProps):
     # Get the geometry and initilziet the plot for the base section
     geom    = md.GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
     plotter = SectionPlotter(geom, cPlotConfig)
-    fig, ax = plotter.initPlot()
+    fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
@@ -518,7 +534,7 @@ def _plotGlulam(dispProps):
     
     return fig, ax
 
-def _plotCLT(dispProps):
+def _plotCLT(dispProps, ax = None):
     
     cPlotConfig = dispProps.configCanvas
     section     = dispProps.section
@@ -537,7 +553,7 @@ def _plotCLT(dispProps):
     geom    = md.GeomModelClt(section.sLayers, b, dx0 = dx0, dy0 = dy0)
 
     plotter = SectionPlotter(geom, cPlotConfig)
-    fig, ax = plotter.initPlot()
+    fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
@@ -569,6 +585,7 @@ def _getPlotLayers(sFire):
 
 
 def plotElementSection(element:BeamColumn, 
+                       ax = None, 
                        summarizeGeometry: bool|list[str]=False):
     """
     Creates a plot of the section the element is using. Only applies to 
@@ -584,6 +601,9 @@ def plotElementSection(element:BeamColumn,
     ----------
     element : BeamColumn
         The sectin to be plotted.
+    ax : Axes, optional
+        An overwrite that allows plots to be created on a specific figure. 
+        The default is None, which creates a new plot.
     summarizeGeometry : bool|list[str], optional
         XXX currently unused XXX
         If false, dispalys nothing.    
@@ -607,7 +627,7 @@ def plotElementSection(element:BeamColumn,
     if not dispProps.section:
         dispProps.section = element.section
             
-    return _plotFactory(dispProps)
+    return _plotFactory(dispProps, ax)
 
         
         
