@@ -414,15 +414,13 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
     Regions for kL are calculated depending on the option selected.
     
     - If option 1 is selected, the beam is assumed to be continously laterally 
-    supported over the entire beam.
-    
+      supported over the entire beam.
     - If option 2 is selected, the beam is assumed to be laterally unsupported 
-    between supports. In this case the factor ke is taken as 1.92 from 
-    table 7.4
-    
+      between supports. In this case the factor ke is taken as 1.92 from 
+      table 7.4
     - If option 3 is selected, then the design propreties will be used to.
-    The user should manually set the attributed Lex, kexB, and lateralSupport
-    in the designpropreties..
+      The user should manually set the attributed Lex, kexB, and lateralSupport
+      in the designpropreties.
 
     Parameters
     ----------

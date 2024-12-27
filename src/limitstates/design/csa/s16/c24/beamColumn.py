@@ -914,9 +914,9 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         isContinouslyBraced = [False] * Nspan
         
         Lfactor = 1.4
-        Lsegs    = [line.L for line in member.curves]
-        Ldesign    = [L*Lfactor*mlfactor for L in Lsegs]
-        omegas   = [1]*Nspan
+        Lsegs   = [line.L for line in member.curves]
+        Ldesign = [L*Lfactor*mlfactor for L in Lsegs]
+        omegas  = [1]*Nspan
         
     if lateralSupportType == 4:
         

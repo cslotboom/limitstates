@@ -317,8 +317,8 @@ def plotSection(section:SectionAbstract,
                 xy0: list[float,float] = None, 
                 canvasConfig: PlotConfigCanvas = None,
                 objectConfig: PlotConfigObject = None,
-                summarizeGeometry: bool|list[str]=False,
                 ax:Axes = None,
+                summarizeGeometry: bool|list[str]=False,
                 *args, **kwargs):
     """
     Creates a plot of the section centered at xy0.
@@ -352,12 +352,12 @@ def plotSection(section:SectionAbstract,
         The object configuration object to be used. This can be set
         When set to none, a default object will be chosen based on the on the
         section type input.
-    summarizeGeometry : bool|list[str], optional
-        XXX does not work currently.
-        A list of the input attributes to summarize. The default is False.
     ax : Axes, optional
         An overwrite that allows plots to be created on a specific figure. 
         The default is None, which creates a new plot.
+    summarizeGeometry : bool|list[str], optional
+        XXX does not work currently.
+        A list of the input attributes to summarize. The default is False.
     *args : list
         Additional arguments for matplotolib's ax.fill function
     **kwargs : dict
@@ -385,7 +385,7 @@ def plotSection(section:SectionAbstract,
     geom    = _plotGeomFactory(section, objectConfig.originLocation, xy0)
     plotter = _plotterFactory(section, geom, canvasConfig)
     
-    fig, ax = plotter.initPlot()
+    fig, ax = plotter.initPlot(ax)
     xyVerts = np.column_stack(geom.getVerticies())
     
     plotter.plot(ax, xyVerts, objectConfig, *args, **kwargs)

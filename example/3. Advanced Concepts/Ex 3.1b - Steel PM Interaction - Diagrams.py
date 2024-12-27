@@ -15,6 +15,8 @@ opposite signs.
 import limitstates as ls
 import limitstates.design.csa.s16.c24 as s16
 
+from parametricHelpers import getParametricPlot, runParametericAnalysis
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -60,12 +62,14 @@ for L in lengths[1:]:
 
     beamColumn  = s16.getBeamColumnSteelCsa24(L, section)
     slenderness = s16.checkElementSlenderness(beamColumn)
-    MpSup = s16.checkBeamMrUnsupported(beamColumn, omega2)
+    Cr  = s16.checkColumnCr(beamColumn,  lam = 0)
+    Cf = Cr*0.85
+
+    MpSup = s16.checkBeamMrUnsupported(beamColumn, omega2,Cf=Cf)
 
     Mout.append(MpSup / M0)
     slendernesses.append(slenderness)
-    Cr  = s16.checkColumnCr(beamColumn,  lam = 0)
-    Cf = Cr*0.35
+
 
     # u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, isBracedFrame = True)    
 
@@ -92,112 +96,35 @@ inputDict = {'highCompression':  [0.5,  0.5,  1, 1],
              'mediumCompression_TorsionBracing': [0.35, 0.5, 0.2, 1],
              'lowCompression_TorsionBracing':    [0.2, 0.8, 0.2, 1]}
 
-labels = ['0.5Cr, 0.5Mr, k = 1, ω = 1', '0.35Cr, 0.65Mr, k = 1, ω = 1', '0.2Cr, 0.8Mr, k = 1, ω = 1',
-          '0.5Cr, 0.5Mr, k = 1, ω = 0.4', '0.35Cr, 0.65Mr, k = 1, ω = 0.4', '0.2Cr, 0.8Mr, k = 1, ω = 0.4',
-          '0.5Cr, 0.5Mr, k = 0.5, ω = 1', '0.35Cr, 0.65Mr, k = 0.5, ω = 1', '0.2Cr, 0.8Mr, k = 0.5, ω = 1']
+# labels = ['0.5Cr, 0.5Mr, k = 1, ω = 1', '0.35Cr, 0.65Mr, k = 1, ω = 1', '0.2Cr, 0.8Mr, k = 1, ω = 1',
+#           '0.5Cr, 0.5Mr, k = 1, ω = 0.4', '0.35Cr, 0.65Mr, k = 1, ω = 0.4', '0.2Cr, 0.8Mr, k = 1, ω = 0.4',
+#           '0.5Cr, 0.5Mr, k = 0.5, ω = 1', '0.35Cr, 0.65Mr, k = 0.5, ω = 1', '0.2Cr, 0.8Mr, k = 0.5, ω = 1']
 
-labels = ['0.5Cr, 0.5Mr, k = 1, ω = 1', '0.35Cr, 0.65Mr, k = 1, ω = 1', '0.2Cr, 0.8Mr, k = 1, ω = 1',
-          '0.5Cr, 0.5Mr, k = 1, ω = 0.4', '0.35Cr, 0.65Mr, k = 1, ω = 0.4', '0.2Cr, 0.8Mr, k = 1, ω = 0.4',
-          '0.5Cr, 0.5Mr, k = 0.5, ω = 1', '0.35Cr, 0.65Mr, k = 0.5, ω = 1', '0.2Cr, 0.8Mr, k = 0.5, ω = 1']
 
+
+labels = ['High P', 'Balanced', 'High M',
+          'High P, ω2=0.4', 'Balanced, ω2=0.4', 'High M, ω2=0.4',
+          'High P, k=0.5', 'Balanced, k=0.5', 'High M, k=0.5']
 
 lengths = [3, 5, 7, 9, 11, 13, 15]
 
 # 4 = no case governs
 
 
+
 wSections = [sectionsW460[1], sectionsW460[12]]
 for section in wSections:
-    governingCases = []
-    governingUts = []
-    ii=0
-    for key in inputDict:
-            
-        cratio, Mratio, kx, omegax1 = inputDict[key]
-        
-        trialGoverningCases = []
-        trialGoverningUts = []
-        slendernesses = []
-        for L in lengths:
-    
-            beamColumn  = s16.getBeamColumnSteelCsa24(L, section, kx = kx, ky = kx)
-            # print(section.rx)
-            slenderness = s16.checkElementSlenderness(beamColumn, False)
-        
-            Cr  = s16.checkColumnCr(beamColumn,  lam = 0)
-            Crslender = s16.checkColumnCr(beamColumn)
-            Crslender = s16.checkColumnCeDirection(beamColumn, True)
-            Cf = Cr*cratio
-            
-            Mp = s16.checkBeamMrSupported(beamColumn, omegax1, Cf=Cf)
-            Mfx = Mp*Mratio
-            
-            u = s16.checkBeamColumnCombined(beamColumn, Cf, Mfx, 
-                                            omegax1=omegax1, isBracedFrame = True)          
-
-            u = u[:3]
-            print(u)
-            
-            ind = np.argmax(u)
-            ut = np.max(u)
-            utmin = np.min(u)
-            if utmin <0:
-                print(ii)
-            
-            inds = np.where(u == ut)[0]
-            
-            # trialGoverningCases.append(inds)
-            trialGoverningCases.append(ind)
-            trialGoverningUts.append(round(ut,2))
-            slendernesses.append(slenderness)
-        print()
-    
-    
-        governingCases.append(trialGoverningCases)
-        governingUts.append(trialGoverningUts)
+   
+    # titles = list(inputDict.keys())
 
     
-    titles = list(inputDict.keys())
+    govCases, govUts, slendernesses = runParametericAnalysis(section, lengths)
     slendernesses = list(slendernesses)
     slendernesses = [round(x,1) for x in slendernesses]
     
-    governingUts = np.round(governingUts, 1)
+    # col = s16.getBeamColumnSteelCsa24(1, section)
+    fig, ax = getParametricPlot(section, slendernesses, labels, govCases, govUts)
     
-    # print(governingCases)
-    governingCases = np.array(governingCases)
-    
-    
-    fig, ax = plt.subplots(ncols = 2)
-    im = ax[0].imshow(governingCases)
-    
-    # Show all ticks and label them with the respective list entries
-    ax[0].set_xticks(np.arange(len(slendernesses)), labels=slendernesses)
-    ax[0].set_yticks(np.arange(len(labels)), labels=labels)
-    
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax[0].get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
-    
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(labels)):
-        for j in range(len(slendernesses)):
-            if governingUts[i, j] < 10:
-                text = ax[0].text(j, i, governingCases[i, j],
-                               ha="center", va="center", color="w")
-    
-    ax[0].set_title("Governing Check")
-    
-    _, ax2 = ls.plotElementSection(beamColumn, ax[1])
-    # _, ax2 = ls.plotElementSection(beamColumn)
-    # fig.axes.append(ax2)
-    fig.add_axes(ax2)
-    # ax[1] = ax2
-    
-    # fig.tight_layout()
-    plt.show()
-    
-
-
 
 
 
