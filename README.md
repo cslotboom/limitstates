@@ -84,8 +84,8 @@ The specific items required for version 1 are below:
 ### Design
 
 #### CSA o86
-- [ ] Add Examples.
-- [ ] Add beam shear checks.
+- [x] Add Examples.
+- [x] Add beam shear checks.
 
 #### CSA S16
 - [ ] Develop multi-span beam checks.
