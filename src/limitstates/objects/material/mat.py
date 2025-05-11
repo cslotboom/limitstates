@@ -102,3 +102,5 @@ class MaterialElastic(MaterialAbstract):
             name = 'Elastic Material'
         
         self.name = name
+
+          

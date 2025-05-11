@@ -219,8 +219,8 @@ class LayerGroupClt:
         r2 = abs(ybar  - self.lBoundaries[-1]) 
         return max(r1, r2)
     
-    def getEI(self, parallelToStrong:bool = True, sUnits:str = 'Pa', 
-              lUnits:str = 'm'):
+    def getEI(self, parallelToStrong:bool = True, sUnit:str = 'Pa', 
+              lUnit:str = 'm'):
         """
         Gets EI for the layer group in the given global orientation.
         returns per unit, not net.
@@ -229,9 +229,9 @@ class LayerGroupClt:
         ----------
         globalOrientation : float
             The orientation of the global direction to get EI in.
-        lUnits : str, optional
+        lUnit : str, optional
             The length units for EI. The default is 'm'.
-        sUnits : str, optional
+        sUnit : str, optional
             The stress units for EI. The default is 'Pa'.
 
         Returns
@@ -248,23 +248,28 @@ class LayerGroupClt:
             EI += layer.t**3 * E / 12
             EI += layer.t * lMid[ii]**2  * E
         
-        sfactor = self.sConvert(sUnits)
-        lfactor = self.lConvert(lUnits)
+        sfactor = self.sConvert(sUnit)
+        lfactor = self.lConvert(lUnit)
         return EI * sfactor * lfactor**3
     
     def getGA(self, parallelToStrong:bool = True, NlayerTotal:int = None,
-              lUnits:str = 'm', sUnits:str = 'Pa'):
+              sUnit:str = 'Pa',lUnit:str = 'm'):
         """
         Gets GA for the layer group orientation.
 
         Parameters
         ----------
         parallelToStrong : bool
-            A flag that si set to true if we are looking in the strong axis.
-        lUnits : str, optional
-            The length units for EI. The default is 'm'.
-        sUnits : str, optional
+            A flag that is set to true if we are looking in the strong axis.
+        NlayerTotal : int
+            The total number of "active" layers in the section. 
+            If not set, defaults to the total number of layers, which is 
+            correct if looking at the strong axis.
+            In the weak axis, this may be a different number of layers.           
+        sUnit : str, optional
             The stress units for EI. The default is 'Pa'.
+        lUnit : str, optional
+            The length units for EI. The default is 'm'.
 
         Returns
         -------
@@ -291,26 +296,26 @@ class LayerGroupClt:
         # account for the final layer if it's present.
         if NlayerTotal == Nlayer:
             GN = layers[NlayerTotal-1].getLayerG(parallelToStrong)
-            tN = layers[NlayerTotal-1].t/2
+            tN = layers[NlayerTotal-1].t / 2
             denom += tN/GN
-            h += tN
+            h += tN 
         
         # middle terms.
-        for ii in range(1, Nlayer):
+        for ii in range(1, Nlayer-1):
             layer = layers[ii]
             G = layer.getLayerG(parallelToStrong)
-            denom += layer.t / G
+            denom += layer.t  / G
             h += layer.t
         
         GA = h**2 / denom
         
-        sfactor = self.sConvert(sUnits)
-        lfactor = self.lConvert(lUnits)
+        sfactor = self.sConvert(sUnit)
+        lfactor = self.lConvert(lUnit)
         return GA * sfactor * lfactor
 
     
     def getEA(self, parallelToStrong:bool = True, 
-              lUnits:str = 'm', sUnits:str = 'Pa') -> bool:
+              lUnit:str = 'm', sUnit:str = 'Pa') -> bool:
         """
         Gets EI for the layer group in the given global orientation.
 
@@ -318,9 +323,9 @@ class LayerGroupClt:
         ----------
         globalOrientation : float
             The orientation of the global direction to get EI in.
-        lUnits : str, optional
+        lUnit : str, optional
             The length units for EI. The default is 'm'.
-        sUnits : str, optional
+        sUnit : str, optional
             The stress units for EI. The default is 'Pa'.
 
         Returns
@@ -336,8 +341,8 @@ class LayerGroupClt:
             E = layer.getLayerE(parallelToStrong)
             EA += layer.t * E 
         
-        sfactor = self.sConvert(sUnits)
-        lfactor = self.lConvert(lUnits)
+        sfactor = self.sConvert(sUnit)
+        lfactor = self.lConvert(lUnit)
         return EA * sfactor * lfactor
     
     def getLayerOrientations(self, parallelToStrong:bool = True) -> list[bool]:
@@ -496,9 +501,12 @@ class SectionCLT(SectionLayered):
             # If the layers don't match, update them.
             if layers[0].lUnit != lUnit:
                 layers.updateUnits(lUnit)
-                
-        self.w = w / self.lConvert('mm')
-        self.wWeak = wWeak / self.lConvert('mm')
+        
+        # what does this do?
+        # self.w = w / self.lConvert('mm')
+        # self.wWeak = wWeak / self.lConvert('mm')
+        self.w = w 
+        self.wWeak = wWeak       
         
         if not NlayerTotal:
             NlayerTotal = len(layers)
@@ -549,10 +557,10 @@ class SectionCLT(SectionLayered):
         self.wLayers.updateUnits(lUnit)
     
     def getEAs(self, sUnit='Pa', lUnit='m'):
-        raise NotImplementedError('EA has not been defined yet')
+        raise NotImplementedError('Returning EA is still in development.')
     
     def getEAw(self, sUnit='Pa', lUnit='m'):
-        raise NotImplementedError('EA has not been defined yet')
+        raise NotImplementedError('Returning EA is still in development.')
     
     def getEIs(self, sUnit='Pa', lUnit='m'):
         """
@@ -617,7 +625,7 @@ class SectionCLT(SectionLayered):
         
         lconvertWidth = self.w*self.lConvert(lUnit)
         Nlayer = self.NlayerTotal
-        return self.sLayers.getGA(True, Nlayer, lUnit, sUnit)*lconvertWidth
+        return self.sLayers.getGA(True, Nlayer, sUnit, lUnit)*lconvertWidth
     
     def getGAw(self, sUnit='Pa', lUnit='m'):
         """
@@ -639,5 +647,5 @@ class SectionCLT(SectionLayered):
         """
         lconvertWidth = self.w*self.lConvert(lUnit)
         Nlayer = self.NlayerTotal
-        return self.sLayers.getGA(False, Nlayer, lUnit, sUnit)*lconvertWidth
+        return self.sLayers.getGA(False, Nlayer, sUnit, lUnit)*lconvertWidth
 

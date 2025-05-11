@@ -49,4 +49,4 @@ def loadCltSections(db:str = 'prg320_2019', **sectionkwargs) -> list[SectionCLT]
     # Set up the config and load the raw dictionary.
     config = DBConfig('csa', 'clt', db)
         
-    return _loadSectionsCLT(mats, config, lUnit = 'mm', **sectionkwargs)
+    return _loadSectionsCLT(mats, config, **sectionkwargs)
