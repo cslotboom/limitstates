@@ -81,22 +81,9 @@ def _setupLoader(objType):
     
     return _loadDBDict
 
-
 # @setupLoader
 _loadMaterialDBDict = _setupLoader('material')
 _loadSectionDBDict  = _setupLoader('section')
-
-
-# def _loadMaterialDBDict(config:DBConfig) -> pd.DataFrame:
-#     """
-#     Loads a file and returns the results as a dictionary
-#     """
-    
-#     base    = os.path.join(basedir, 'material', 'db')
-#     dbPath  = os.path.join(base, config.code, config.dbType)    
-#     fileID =  config.dbName + '.csv'
-#     dbPath  = os.path.join(dbPath, fileID)    
-#     return pd.read_csv(dbPath)
 
 def _loadMaterialDB(config:DBConfig,
                     MatClass:MaterialAbstract,
@@ -446,6 +433,51 @@ def _loadSectionsCLT(mats:list[[MaterialAbstract, MaterialAbstract]],
 
     return sections
     
+
+
+# def _loadMatsCLT(cltDBname:str = "prg320_2019") -> list[[MaterialAbstract, MaterialAbstract]]:
+#     """
+#     Loads a set of CLT material from a database. For each material grade, two
+#     seperate CLT materials are loaded, one for the strong axis, and one for 
+#     the weak axis.
+    
+#     Loads materials for each layer of CLT from a supplier database in 
+#     the form [strong, weak].
+    
+#     Materials propreties will be loaded in 'MPa' and 'kg/m3'
+
+#     Parameters
+#     ----------
+#     cltDBname : str, optional
+#         The name of the database to load. The default is 'prg320_2019.csv'.
+
+#     Returns
+#     -------
+#     mats : list[[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]
+#         A list of the desired CLT materials in the form 
+#         [strongAxisMat, weakAxisMat] sections.
+
+#     """
+    
+#     cltConfig = DBConfig('csa', 'clt', cltDBname)
+    
+    
+    
+#     # Load the material dictionary.
+#     rawDB     = _loadMaterialDBDict(cltConfig)
+#     rawMatDict = rawDB.to_dict(orient='index')
+#     sortedMatDict   = _sortCLTMatDict(rawMatDict)
+    
+#     mats = []
+#     for cltGrade in sortedMatDict.keys():
+#         tempMatDict = sortedMatDict[cltGrade]
+#         mats.append([MaterialCLTLayerCSA19(tempMatDict[0], 'MPa', 'kg/m3'), 
+#                      MaterialCLTLayerCSA19(tempMatDict[1], 'MPa', 'kg/m3')])
+#     return mats
+
+
+
+
 # =============================================================================
 # Steel Loading functions
 # =============================================================================

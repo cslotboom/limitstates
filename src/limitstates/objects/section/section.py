@@ -306,7 +306,7 @@ class SectionGeneric(SectionMonolithic):
         The area in the shear direction x. The default is None.
     Ay : float, optional
         The area in the shear direction y. The default is None.
-    lUnits : str, optional
+    lUnit : str, optional
         The units for length used in the section. The default is 'mm'.
         
     Returns
@@ -317,7 +317,7 @@ class SectionGeneric(SectionMonolithic):
     
     def __init__(self, mat:MaterialElastic, Ix:float = 1, A:float = 1, 
                  Iy:float = 1, J:float = 1, Avx:float = None, Avy:float = None, 
-                 lUnits:str='mm'):
+                 lUnit:str='mm'):
 
         
         self.mat:MaterialAbstract = mat
@@ -341,13 +341,13 @@ class SectionRectangle(SectionMonolithic):
         The section width.
     d : float
         The section depth.
-    lUnits : str, optional
+    lUnit : str, optional
         The length units. The default is 'mm'.
 
     """
     
-    def __init__(self, mat:MaterialElastic, b:float, d:float, lUnits:str='mm'):
-        self._initUnits(lUnits)
+    def __init__(self, mat:MaterialElastic, b:float, d:float, lUnit:str='mm'):
+        self._initUnits(lUnit)
         self.mat = mat
         
         self.d = d
@@ -420,17 +420,17 @@ class SectionSteel(SectionMonolithic):
         The steel material to use for the section.
     sectionDict : dict
         The input section dictionary, generally loaded from a database.
-    lUnits : str, optional
+    lUnit : str, optional
         The length units for the section dictionary. The default is 'mm'.
 
 
     """
     sectionClass = None
-    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits:str='mm'):
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnit:str='mm'):
 
         # add all items from the input section dictionary
         self.__dict__.update(sectionDict)
-        self._initUnits(lUnits)
+        self._initUnits(lUnit)
         self.mat = mat
         
         self.typeEnum = self._classifySectionType()
@@ -466,20 +466,20 @@ class SectionSteel(SectionMonolithic):
     @property
     def name(self):
         return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
-       
+                  
     def __repr__(self):
         return f'<limitstates {self.name} Section>'
     
-    def getCy(self, lUnits = 'm', sUnits='Pa'):
-        lfactor = self.lConvert(lUnits)
-        sfactor = self.mat.sConvert(sUnits)
+    def getCy(self, lUnit = 'm', sUnit='Pa'):
+        lfactor = self.lConvert(lUnit)
+        sfactor = self.mat.sConvert(sUnit)
         return self.A * lfactor**2 * self.mat.Fy * sfactor
     
     @property
     def Cy(self):
         return self.getCy( 'm', 'Pa')
     
-    def getZ(self, useX:bool = True, lUnits:str = 'mm'):
+    def getZ(self, useX:bool = True, lUnit:str = 'mm'):
         """
         Returns the section's plastic modulus in the units and direction input.
 
@@ -488,7 +488,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lUnits : string, optional
+        lUnit : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -497,13 +497,13 @@ class SectionSteel(SectionMonolithic):
             The section's plastic modulus in the direction input.
 
         """
-        lfactor = self.lConvert(lUnits)
+        lfactor = self.lConvert(lUnit)
         if useX:
             return self.Zx*lfactor**3
         else:
             return self.Zy*lfactor**3
     
-    def getS(self, useX = True, lUnits = 'mm'):
+    def getS(self, useX = True, lUnit = 'mm'):
         """
         Returns the section's elastic modulus in the units and direction input.
 
@@ -512,7 +512,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lUnits : string, optional
+        lUnit : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -522,13 +522,13 @@ class SectionSteel(SectionMonolithic):
 
         """
         
-        lfactor = self.lConvert(lUnits)
+        lfactor = self.lConvert(lUnit)
         if useX:
             return self.Sx*lfactor**3
         else:
             return self.Sy*lfactor**3    
     
-    def getI(self, useX = True, lUnits = 'mm'):
+    def getI(self, useX = True, lUnit = 'mm'):
         """
         Returns the section's moment of inertia in the units 
         and direction input.
@@ -538,7 +538,7 @@ class SectionSteel(SectionMonolithic):
         useX : bool, optional
             A flag that toggles if the x (strong) or y (weak) axis is used. 
             The default is True, which uses the strong axis.
-        lUnits : string, optional
+        lUnit : string, optional
             The length units to use for the section. The default is 'mm'.
 
         Returns
@@ -548,7 +548,7 @@ class SectionSteel(SectionMonolithic):
 
         """
         
-        lfactor = self.lConvert(lUnits)
+        lfactor = self.lConvert(lUnit)
         if useX:
             return self.Ix*lfactor**4
         else:
@@ -581,11 +581,11 @@ class SteelSectionTypes(Enum):
 # class SectionSteelHSS(SectionMonolithic):
 #     """A class that represents geometry for a steel HSS section."""
     
-#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits:str='mm'):
+#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnit:str='mm'):
 
 #         # add all items from the input section dictionary
 #         self.__dict__.update(sectionDict)
-#         self._initUnits(lUnits)
+#         self._initUnits(lUnit)
         
 #         self.mat = mat
     
@@ -619,7 +619,7 @@ class SectionDatabase(SectionMonolithic):
     sectionDict : dict
         A dictionary containing all of the information necessary to define
         the section.
-    lUnits : str, optional
+    lUnit : str, optional
         The units for length used in the section. The default is 'mm'.
 
     Returns
@@ -628,11 +628,11 @@ class SectionDatabase(SectionMonolithic):
 
     """
 
-    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnits='mm'):
+    def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnit='mm'):
         
         self.__dict__.update(sectionDict)
         self._initMat(mat)
-        self._initUnits(lUnits)
+        self._initUnits(lUnit)
 
 
 class SectionComposite(SectionAbstract):

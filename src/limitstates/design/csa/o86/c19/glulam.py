@@ -492,7 +492,8 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
         kL = getMemberkL(Lseg, kexBSeg, isContinouslyBraced,
                          bkL, dkL, E, Fb, kse, kt, kx)
     if lateralSupportType == 3:
-        Lseg    = element.designProps.Lx  * mlfactor
+        Lseg = [L * mlfactor for L in element.designProps.Lx]
+        # Lseg    = element.designProps.Lx  * mlfactor
         kexBSeg = element.designProps.kexB
         isContinouslyBraced = element.designProps.lateralSupport
         
