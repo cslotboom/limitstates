@@ -10,6 +10,7 @@ Examples for how to use limitstates are displayed in the following section
 #. :doc:`examples-objects`
 #. :doc:`examples-design`
 #. :doc:`examples-advanced`
+#. :doc:`examples-caseStudies`
 
 .. toctree::
    :maxdepth: 6
@@ -18,3 +19,4 @@ Examples for how to use limitstates are displayed in the following section
    examples-objects.rst
    examples-design.rst
    examples-advanced.rst
+   examples-caseStudies.rst

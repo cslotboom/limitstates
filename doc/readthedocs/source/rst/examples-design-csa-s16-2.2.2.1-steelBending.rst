@@ -56,6 +56,7 @@ Based on this analysis, it can be see:
     - If the beam is laterally supported, it's capacity is 472kNm and  passes easily. 
     - If the beam is laterally unsupported and loaded on it's top flange, it's cpacity is 181kNm and it fails by a large margin
     - If the beam is laterally unsupported and loaded at it's shear center, it's capacity is 315kNm and it barely passes.
+
 Lateral support conditions are important and significantly influence beam strength!
 
 The full example is below:
