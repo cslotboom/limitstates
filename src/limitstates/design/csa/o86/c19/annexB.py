@@ -27,9 +27,10 @@ class FireConditions(IntEnum):
     """
     A class that shows all possible options for fire conditions.
     These include:
-        - 1 = beamColumn: exposed on 4 sides
-        - 2 = beamWithPanel: exposed on all sides except it's top
-        - 3 = panel: exposed only on it's bottom.
+        
+    - 1 = beamColumn: exposed on 4 sides
+    - 2 = beamWithPanel: exposed on all sides except it's top
+    - 3 = panel: exposed only on it's bottom.
         
     """
     
@@ -42,9 +43,10 @@ def getFireDemands(FRR:float, condition:FireConditions|int) :
     """
     A helper function used to returns the fire demands for common fire 
     conditions. These include:
-        - 1 = beamColumn: exposed on 4 sides
-        - 2 = beamWithPanel: exposed on all sides except it's top
-        - 3 = panel: exposed only on it's bottom.
+        
+    - 1 = beamColumn: exposed on 4 sides
+    - 2 = beamWithPanel: exposed on all sides except it's top
+    - 3 = panel: exposed only on it's bottom.
     
     A list can manually be created for the the FRR if the above options do not
     match the input conditions above.
@@ -102,9 +104,10 @@ def getGypsumFirePortection(condition:FireConditions,
     """
     Returns the fire portection class for some typical conditions.
     These include:
-        - 1 = beamColumn: exposed on 4 sides
-        - 2 = beamWithPanel: exposed on all sides except it's top
-        - 3 = panel: exposed only on it's bottom.
+        
+    - 1 = beamColumn: exposed on 4 sides
+    - 2 = beamWithPanel: exposed on all sides except it's top
+    - 3 = panel: exposed only on it's bottom.
         
     If the desired condition isn't in the above conditions, a portection object
     will manually have to be created with GypusmRectangleCSA19 or
@@ -131,9 +134,10 @@ def AssignFirePortection(element:BeamColumn, condition:FireConditions, portectio
     """
     Assigns the fire portection to an element for some typical conditions.
     These include:
-        - 1 = beamColumn: exposed on 4 sides
-        - 2 = beamWithPanel: exposed on all sides except it's top
-        - 3 = panel: exposed only on it's bottom.
+        
+    - 1 = beamColumn: exposed on 4 sides
+    - 2 = beamWithPanel: exposed on all sides except it's top
+    - 3 = panel: exposed only on it's bottom.
         
     If the desired condition isn't in the above conditions, a portection object
     will manually have to be created with GypusmRectangleCSA19 or

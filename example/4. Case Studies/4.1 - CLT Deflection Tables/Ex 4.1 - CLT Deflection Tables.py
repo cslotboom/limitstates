@@ -4,9 +4,10 @@ in their cross layers. There are some reasources that exist for single span
 clt, however, CLT is often used in multi-span conditions.
 
 In this design example, a parametric study are run on a series of clt panels, 
-and the outputs are used to create span tables. Note that many helper functions
-are stored in the "parametricHelper" file, which has documentation for
-each function.
+and the outputs are used to create span tables. The parametric study evaluates
+shear by analyzing each panel as both a Euler beam, and timoshenko beam.
+Note that many helper functions are used from in the "parametricHelper" file, 
+which has documentation for each function.
 
 Also note that the actual pdf design reasource was created manually, using the
 .csv outputs from this study.
@@ -20,7 +21,11 @@ import parametricHelpers as ph
 # =============================================================================
 
 """
-An analysis is run on all CLT SPF sections in the PRG-320 database.
+The first portion of the analysis creates the deflection tables for PRG-320 SPF 
+sections. This is used to make the PRG deflection tables.
+Initially sections are loaded using section databases, then a set of spans and 
+span lengths are set up.
+ 
 """
 
 sections    = c19.loadCltSections()
