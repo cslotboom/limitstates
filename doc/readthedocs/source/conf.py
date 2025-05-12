@@ -23,7 +23,7 @@ copyright = '2024, CSlotboom'
 author = 'CSlotboom'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.2'
+release = '0.2.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -54,7 +54,6 @@ exclude_patterns = []
 #
 html_theme = 'sphinx_rtd_theme'
 #html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
 html_theme_options = {
     'sticky_navigation': False,
     'collapse_navigation': False,

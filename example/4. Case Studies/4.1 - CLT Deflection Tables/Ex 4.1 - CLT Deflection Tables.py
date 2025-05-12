@@ -56,7 +56,7 @@ is described in the ratio variable.
 """
 
 EI0 = 8e6
-ratios = [0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
+ratios = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.7]
 outPutsRatio = {}
 
 for r in ratios:
@@ -72,7 +72,5 @@ ph.saveToFile(outPutsRatio, Lspans, ind=3, baseName='modification')
 
 L = 5
 Nspans = [1,2,3]
-
 for Nspan in Nspans:
     fig, ax = ph.getBeamPlot(Nspan, L, V2Sections[1])
-

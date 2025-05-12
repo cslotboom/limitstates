@@ -28,5 +28,4 @@ python:
 
 
 sphinx:
-  # Path to your Sphinx configuration file.
   configuration: doc/readthedocs/source/conf.py
