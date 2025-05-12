@@ -17,15 +17,14 @@ Also note that the actual pdf design reasource was created manually, using the
 .csv outputs from this study.
 
 
-[Download the deflection PDF ](/_static/4.1_CLT_Deflection_tables.pdf)
-
 .. raw:: html
 
-	<iframe src="/_static/4.1_CLT_Deflection_tables.pdf" width="100%" height="800px">
+	<iframe src="en/latest/_static/4.1_CLT_Deflection_tables.pdf" width="100%" height="800px">
 		This browser does not support PDFs. Please download the PDF to view it: 
-		<a href="/_static/4.1_CLT_Deflection_tables.pdf">Download PDF</a>.
+		<a href="en/latest/_static/4.1_CLT_Deflection_tables.pdf">Download PDF</a>.
 	</iframe>
 	
+  
   
 The first portion of the analysis creates the deflection tables for PRG-320 SPF 
 sections. This is used to make the PRG deflection tables.
