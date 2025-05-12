@@ -19,9 +19,9 @@ Also note that the actual pdf design reasource was created manually, using the
 
 .. raw:: html
 
-	<iframe src="en/latest/_static/4.1_CLT_Deflection_tables.pdf" width="100%" height="800px">
+	<iframe src="/en/latest/_static/4.1_CLT_Deflection_tables.pdf" width="100%" height="800px">
 		This browser does not support PDFs. Please download the PDF to view it: 
-		<a href="en/latest/_static/4.1_CLT_Deflection_tables.pdf">Download PDF</a>.
+		<a href="/en/latest/_static/4.1_CLT_Deflection_tables.pdf">Download PDF</a>.
 	</iframe>
 	
   
