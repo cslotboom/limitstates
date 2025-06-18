@@ -145,6 +145,17 @@ class SectionAbstract(ABC):
 
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
     
+        
+    def _validateLunit(self, lUnit):
+        """
+        returns the sections default unit if no units are given.
+        """
+        if lUnit:
+            return lUnit
+        else:
+            return self.lUnit
+    
+    
 class SectionMonolithic(SectionAbstract):
     """
     The Monolithic section should not be used directly, it defines interfaces
@@ -281,7 +292,6 @@ class SectionMonolithic(SectionAbstract):
     def Iz(self):
         return self.Ix
                           
-    
 class SectionGeneric(SectionMonolithic):
     """
     The generic section is unique in that it has no base geometry.
@@ -399,9 +409,6 @@ class SectionRectangle(SectionMonolithic):
     def __repr__(self):
         return f"<limitstates {self.name} Section.>"
     
-
-
-
 class SectionSteel(SectionMonolithic):
     """
     A class that represents the geometry for a steel section from one of the
@@ -575,35 +582,9 @@ class SteelSectionTypes(Enum):
     hssr = 3
     other = 4
     
-
-
-    
-# class SectionSteelHSS(SectionMonolithic):
-#     """A class that represents geometry for a steel HSS section."""
-    
-#     def __init__(self, mat:MaterialElastic, sectionDict:dict, lUnit:str='mm'):
-
-#         # add all items from the input section dictionary
-#         self.__dict__.update(sectionDict)
-#         self._initUnits(lUnit)
-        
-#         self.mat = mat
-    
-    
-#     @property
-#     def name(self):
-#         return f'{self.EDI_Std_Nomenclature} {self.sectionDB}'
-       
-#     def __repr__(self):
-#         return f'<limitstates {self.name} Section>'
-    
-    
     
 class SectionSteelAngle(SectionMonolithic):
     """A class that represents a standard steel W section."""
-
-
-
 
 
 class SectionDatabase(SectionMonolithic):
@@ -634,29 +615,5 @@ class SectionDatabase(SectionMonolithic):
         self._initMat(mat)
         self._initUnits(lUnit)
 
-
-class SectionComposite(SectionAbstract):
-
-    
-    def __init__(self, layers:list[SectionAbstract]):
-        """
-        Composite sections 
-        """
-        pass
-    
-    def getEA(sUnit='sUnit', lUnit='Pa'):
-        pass    
-    
-    def getEIx(sUnit='sUnit', lUnit='Pa'):
-        pass
-    
-    def getEIy(sUnit='sUnit', lUnit='Pa'):
-        pass
-    
-    def getGAx(sUnit='sUnit', lUnit='Pa'):
-        pass
-    
-    def getGAy(sUnit='sUnit', lUnit='Pa'):
-        pass
 
 
