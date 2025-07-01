@@ -2,35 +2,16 @@
 Contains functions for managing sections specific to CSAo86-19
 """
 
-from limitstates.objects.read import DBConfig, RebarFactory
+from limitstates.objects.read import DBConfig
 from limitstates.objects.section.concrete import SectionConcrete
+from limitstates.objects.section.rebar import RebarFactory, Rebar
 from .material import MaterialRebarCSA24
 from limitstates import SectionRectangle, SectionCLT
 
 
-def getConcreteSectionCSA24(
-        
-        db:str = 'csa_o86_2019') -> list[SectionRectangle]:
-    """
-    Loads the glulam materials for a specific database. By default loads the
-    glulam sections for columns in CSAo86-19.
 
-    Parameters
-    ----------
-    mat : MaterialGlulamCSA19
-        The material to be applied to the section.
-
-    Returns
-    -------
-    list
-        A list of output sections.
-
-    """
-    config = DBConfig('csa', 'glulam', db)
-    return _loadSectionRectangular(mat, config, lUnit = 'mm')
-
-def loadRebar(matRebar:MaterialRebarCSA24,
-              db:str = 'rebar', **sectionkwargs) -> list[SectionCLT]:
+def loadRebarFactory(matRebar:MaterialRebarCSA24,
+              db:str = 'rebar', lUnit = 'mm') -> RebarFactory:
     """
     Loads all CLT sections in the given database.
 
@@ -48,9 +29,50 @@ def loadRebar(matRebar:MaterialRebarCSA24,
     
     # Set up the config and load the raw dictionary.
     config = DBConfig('csa', 'rebar', db)
-    rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
-    bar = rebarFactory.getRebar('30M')
-    # return _loadSectionRectangular(mat, config, lUnit = 'mm')
+    rebarFactory  = RebarFactory(matRebar, config, lUnit)
+    
+    return rebarFactory
 
 
-    # return _loadSectionsCLT(mats, config, **sectionkwargs)
+rebarFactory = loadRebarFactory(MaterialRebarCSA24(400))
+
+def getStandardRebar(barName:str, 
+                     matRebar:MaterialRebarCSA24 = None,
+                     xy:tuple = None,
+                     lUnit:str = 'mm') -> Rebar:
+    """
+    Gets a standard CSA rebar.
+
+    Parameters
+    ----------
+    barName : str
+        The rebar size. One of 10M, 15M, 20M, 25M, 30M, 35M, 45M, 55M.
+    matRebar : MaterialRebarCSA24, optional
+        The rebar material to use. By default a 400MPa is used. 
+        The default is None.
+    xy : tuple, optional
+        The xy position of the rebar. The default is None.
+    lUnit : tuple, optional
+        The length units position of the rebar. The default is None.
+
+    Returns
+    -------
+    rebar : TYPE
+        DESCRIPTION.
+
+    """
+
+    
+    if not xy:
+        xy = (0,0)
+            
+    rebar = rebarFactory.getRebar(barName, xy)
+    
+    if matRebar:
+        rebar.mat = matRebar
+    
+    if lUnit != 'mm':
+        rebar.convertUnits(lUnit)
+    
+    return rebar
+        

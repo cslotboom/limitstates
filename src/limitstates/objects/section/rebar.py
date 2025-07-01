@@ -181,6 +181,10 @@ class RebarCollection:
     
     def __init__(self, groups:list[RebarGroup]):
         self.groups = groups
+        self.Nbars = sum([len(group) for group in self.groups])
+        
+    def __len__(self):
+        return len(self.groups)
     
     @property
     def mat(self):
@@ -190,9 +194,13 @@ class RebarCollection:
     def coords(self):
         coordsTmp = []
         for group in self.groups:
-            coordsTmp.append(group.getAttr('coords'))
-        return np.concatenate(coordsTmp)
+            coordsTmp.append(group.getAttr('xy'))
+        return np.array(coordsTmp)
     
+    @property
+    def coordsFlat(self):
+        return np.concatenate(self.coords)
+        
     def listAttrs(self):
         """        Lists the rebar attributes.        """
         return self.group[0].listAttrs()
@@ -201,26 +209,43 @@ class RebarCollection:
         """  For each group, return a list of the input attribute. """        
         attrs = []        
         for group in self.groups:
-            attrs.getAttr(group.getAttr(attribute))
+            attrs.append(group.getAttr(attribute))
 
         return attrs  
     
-    def getCoords(self, lUnit = ''):
+    def getCoords(self, lUnit = '', flatten=False):
         """ Returns an array of the rebar coordinants. """
         coords = []        
         for group in self.groups:
             coords.append(group.getCoords(lUnit))
         
-        return np.array(coords)
+        if flatten:
+            return np.concatenate(coords)
+        else:
+            return np.array(coords)
+            
     
-    
-    def getyCoords(self):
+    def _getDirCoords(self, ind,  lUnit = '', flatten=False):
         """ Returns an array of the rebar coordinants. """
-        return self.getCoords()[:,1]
+        if flatten:
+            return self.getCoords(lUnit, flatten)[:,ind]
+        else:
+            return self.getCoords(lUnit, flatten)[:,:,ind]
+    
+    def getyCoords(self,  lUnit = '', flatten=False):
+        """ Returns an array of the rebar coordinants. """
+        return self._getDirCoords(1, lUnit, flatten)
         
-    def getxCoords(self):
+    def getxCoords(self, lUnit = '', flatten=False):
         """ Returns an array of the rebar coordinants. """
-        return self.getCoords()[:,0]
+        return self._getDirCoords(0, lUnit, flatten)
+
+
+
+        # if flatten:
+        #     return np.concatenate(coords)
+        # else:
+        #     return coords
     
     def getdeff(self, direction = 'y', lUnit = ''):
         """
@@ -263,10 +288,10 @@ class RebarCollection:
     def getNetArea(self, lUnit = ''):
         
         areaGroups = self.getAreas(lUnit)
-        areas = []
+        area = 0
         for aGroup in areaGroups:
-            areas +=aGroup
-        return np.sum(areas)
+            area += sum(aGroup)
+        return area
 
 class RebarFactory:
     
@@ -305,35 +330,35 @@ class RebarPlacer:
         
         self.factory = factory
         
-
-        self._setClearCover()
-        # self.lUnit = section.lUnit
+        # self.lUnit = lUnit
 
 
-    def getBarsInRow(self, Nbar:int, barType:str, 
-                     deff:float, width:float, direction:str='x'):
+    def getRebarLayer(self, Nbar:int, barType:str, 
+                     deff:float, width:float, offset:float = 0, 
+                     direction:str='x') -> RebarLayer:
         """
         Evenly distributes a set of bars within a row.
         """
         
         if direction == 'x':
-            positions = self._getBarPositon(Nbar, self.section.b)
+            positions = self._getBarPositon(Nbar, width, offset)
             xyOut = [(x, deff) for x in positions]
         else:
-            positions = self._getBarPositon(Nbar, self.section.d)
+            positions = self._getBarPositon(Nbar, width)
             xyOut = [(deff, y) for y in positions]
         
         bars = []
         for ii in range(Nbar):
-            bars.append( self.factory.getRebar(barType, xyOut[ii]))
+            bars.append(self.factory.getRebar(barType, xyOut[ii]))
             
-        return  RebarCollection(bars)
+        return  RebarLayer(bars)
             
-    def _getBarPositon(self, Nbar:int, width:float):
+    def _getBarPositon(self, Nbar:int, width:float, offset:float):
+        
         if Nbar == 1:
-            return [width/2]
+            return [(width - offset)/2]
         else:
-            return list(np.linspace(0,1, Nbar)*width)
+            return list(np.linspace(offset, width + offset, Nbar))
 
 
 

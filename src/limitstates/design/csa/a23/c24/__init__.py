@@ -1,5 +1,5 @@
 from .material import *
-# from .section import *
+from .beamColumn import *
 # from .element import *
 # from .annexB import *
 # from .fireportection import *

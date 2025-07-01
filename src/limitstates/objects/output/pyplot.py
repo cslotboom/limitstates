@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Polygon
 
-from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT
+from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT, SectionConcrete
 from .. element import BeamColumn
 from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPosition
 # from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
@@ -400,9 +400,6 @@ def plotSection(section:SectionAbstract,
 
     return fig, ax
 
-
-
-
 def _getFireSectionPositonGL(burnDims):
     """
     Figures out how much to offset the fire section by.
@@ -435,8 +432,6 @@ def _getFireSectionPositonCLT(burnDims):
     
     return dx, dy
     
-
-
 def _hasFireSection(dispProps):
     return (hasattr(dispProps, 'sectionFire') and dispProps.sectionFire)
 
@@ -445,6 +440,10 @@ def _isCLTSection(dispProps):
 
 def _isGlulamSection(dispProps):
     return hasattr(dispProps, 'sectionFire')
+
+
+def _isConcreteSection(dispProps):
+    return isinstance(dispProps.section, SectionConcrete)
 
 
 
@@ -461,8 +460,11 @@ def _plotFactory(dispProps, ax=None):
     """    
     if _isCLTSection(dispProps):
         return _plotCLT(dispProps, ax)
-    if _isGlulamSection(dispProps):
-        return _plotGlulam(dispProps, ax)    
+    elif _isGlulamSection(dispProps):
+        return _plotGlulam(dispProps, ax)
+    elif _isConcreteSection(dispProps):
+        return _plotConcrete(dispProps, ax)
+        
     else:
         return _plotBasic(dispProps, ax)
 
@@ -530,9 +532,61 @@ def _plotGlulam(dispProps, ax = None):
     
     # Plot the internal fill lines
     _plotfillLines(ax, geom, canvasObjConfig)
-
-    
     return fig, ax
+
+
+
+def _plotConcrete(dispProps, ax = None):
+    """
+    Plots a glulam section, showing the fire section in the center if it is
+    present.
+    
+    We also show some fill lines for the 
+    """
+    
+    cPlotConfig = dispProps.configCanvas
+    section     = dispProps.section
+
+    hasFireSection = _hasFireSection(dispProps)
+    
+    if hasFireSection:
+        canvasObjConfig     = dispProps.configObjectBurnt
+    else:            
+        canvasObjConfig     = dispProps.configObject
+    
+    # Find the offset for the base section
+    b, d = section.b, section.d
+    dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])
+
+    # Get the geometry and initilziet the plot for the base section
+    geom    = md.GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
+    plotter = SectionPlotter(geom, cPlotConfig)
+    fig, ax = plotter.initPlot(ax)
+    
+    # Plot the base object
+    plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
+    
+    # Plot the fire section.
+    if hasFireSection:
+        sFire  = dispProps.sectionFire
+        
+        
+        
+        dx, dy       = _getFireSectionPositonGL(dispProps.burnDimensions)
+        dh           = dispProps.displayLamHeight
+        geom         = md.GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
+        objectConfig = dispProps.configObject
+        plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+    
+    # Plot the internal fill lines
+    _plotfillLines(ax, geom, canvasObjConfig)
+    return fig, ax
+
+
+
+
+
+
 
 def _plotCLT(dispProps, ax = None):
     

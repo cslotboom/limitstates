@@ -68,7 +68,9 @@ def test_Rebar_group():
     
     # Coordinates        
     assert np.all(coords[1] == xy)
+    assert ycoords[0] == xy[1]
     assert ycoords[1] == xy[1]
+    assert ycoords[2] == xy[1]
     
     # deff
     assert 350 == bars1.getdeff()
@@ -79,13 +81,9 @@ def test_Rebar_group():
 
     # getAttr
     assert len(bars1.getAttr('dnet')) == 3
+  
 
- 
-def test_Rebar_Collection():
-    """
-    Checks the behaviour of a rebar group
-    """
-    
+def _getCollection():
     config = DBConfig('csa', 'rebar', 'rebar')
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     xy1 = (0, 350)
@@ -97,8 +95,19 @@ def test_Rebar_Collection():
     bars2   = ls.RebarGroup([rebar2]*3)
     
     barCollection = ls.RebarCollection([bars1, bars2])
+    
+    return barCollection
+ 
+def test_Rebar_Collection():
+    """
+    Checks the behaviour of a rebar group
+    """
+    
+    barCollection = _getCollection()
     coords  = barCollection.getCoords()
     assert len(coords) == 2
+    assert len(coords[0]) == 3
+    
     
     
     ycoords = barCollection.getyCoords()
@@ -106,22 +115,44 @@ def test_Rebar_Collection():
     assert ycoords[0][1] == 350
     assert ycoords[1][1] == 400
     
-    # Coordinates        
-    # assert np.all(coords[1] == xy)
-    # assert ycoords[1] == xy[1]
     
     # deff
     assert 375 == barCollection.getdeff()
     
     # Anet
-    assert 4200 == bars1.getNetArea()
-    assert 4200-6 == bars1.getNetArea('m')
+    assert 4200 == barCollection.getNetArea()
+    assert 4200e-6 == barCollection.getNetArea('m')
 
-    # # getAttr
-    # assert len(bars1.getAttr('dnet')) == 3
+    # getAttr
+    assert len(barCollection.getAttr('A')) == 2
 
+
+def test_Rebar_Collection_positions():
+    """
+    Checks the behaviour of a rebar group
+    """
+    
+    barCollection = _getCollection()
+
+    coords = barCollection.coords
+    coordsFlat = barCollection.coordsFlat
+    assert len(coords) == 2
+    assert len(coordsFlat) == 6
+    assert coords[0][0,1] == 350
+    assert coords[1][0,1] == 400
+    
+    xCoords = barCollection.getxCoords()
+    assert len(xCoords) == 2
+    assert len(xCoords[0]) == 3
+    assert xCoords[0][0] == 0
+    
+    xCoords = barCollection.getxCoords(flatten = True)
+    assert len(xCoords) == 6
+    assert xCoords[0] == 0
+    assert xCoords[5] == 0
+    
  
-def test_Rebar_layer_placement():
+def test_Rebar_layer_placement_1():
     """
     Tests is rebar can be placed within a layer.
     """
@@ -130,13 +161,27 @@ def test_Rebar_layer_placement():
 
     placer = ls.RebarPlacer(rebarFactory)
 
-    bars = placer.getBarsInRow(1, '20M', 350, 400)
+    d = 400
+    b = 350
+    bars = placer.getRebarLayer(1, '20M', d, b)
+    assert len(bars) == 1
+    xy = bars[0].xy
+    
+    
+    assert xy[0] == b / 2
+    assert xy[1] == d
 
+    bars = placer.getRebarLayer(2, '20M', d, b)
+    assert bars[0].xy[0] == 0
+    assert bars[0].xy[1] == d
+    assert bars[1].xy[0] == b
+    assert bars[1].xy[1] == d
 
 if __name__ == "__main__":
     test_db()
     test_Rebar_mutation()
     test_Rebar_group()
     test_Rebar_Collection()
-    test_Rebar_layer_placement()
+    test_Rebar_Collection_positions()
+    test_Rebar_layer_placement_1()
 

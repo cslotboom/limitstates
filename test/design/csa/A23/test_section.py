@@ -16,17 +16,19 @@ matRebar = c24.MaterialRebarCSA24(fy)
 
 b = 500
 d = 300
-
-
-concreteSection = ls.SectionRectangle(mat, b, d)
+section = ls.SectionRectangle(mat, b, d)
 config = DBConfig('csa', 'rebar', 'rebar')
+
 rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
+placer = ls.RebarPlacer(rebarFactory)
 
-xy = (0, 350)
-rebar1 = rebarFactory.getRebar('30M', xy)
 
-rebar1 = 
+layer1 = placer.getRebarLayer(5, '25M', 375, 300, 50)
+layer2 = placer.getRebarLayer(5, '25M', 425, 300, 50)
 
+Lbars = ls.RebarCollection([layer1, layer2])
+
+concreteSection = ls.SectionConcrete(section, Lbars)
 
 # steelSections = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
 

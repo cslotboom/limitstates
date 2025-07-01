@@ -5,22 +5,19 @@ These are largely set up to ease development and provide type hints.
 
 from dataclasses import dataclass
 
-from limitstates.objects import (Member, SectionRectangle, initSimplySupportedMember, 
-                          SectionCLT)
+from limitstates.objects import (Member, SectionConcrete, initSimplySupportedMember)
 from limitstates.objects.display import MATCOLOURS, PlotConfigCanvas,  PlotConfigObject
 from limitstates import BeamColumn, EleDisplayProps, PlotOriginPosition
 
 
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
-from .fireportection import GypusmRectangleCSA19, GypusmFlatCSA19
 
-__all__ = ["BeamColumnGlulamCsa19", "getBeamColumnGlulamCsa19", 
-           "BeamColumnCltCsa19", "DesignPropsClt19", "DesignPropsGlulam19",
-           "EleDisplayPropsGlulam19"]
+__all__ = ["DesignPropsConcrete24", "EleDisplayPropsConcrete24",
+           "BeamColumnConcreteCsa24"]
 
 @dataclass
-class DesignPropsGlulam19:
+class DesignPropsConcrete24:
     """
     Design propreties specifically for a glulam beamcolumn element.
     Beams will either be single span or multi-span. For multi-span beams,
@@ -68,8 +65,6 @@ class DesignPropsGlulam19:
         A factor that converts the actual span length into the effective span
         length for compression. See table A.4 for guidance. 
     """
-    firePortection:GypusmRectangleCSA19 = None
-    sectionFire:SectionRectangle = None
     lateralSupport:bool|list[bool] = True
     isCurved:bool = False
     Lx:float|list[float] = None
@@ -96,16 +91,12 @@ class DesignPropsGlulam19:
         
 
 @dataclass
-class EleDisplayPropsGlulam19(EleDisplayProps):
+class EleDisplayPropsConcrete24(EleDisplayProps):
     """
     """
 
-    sectionFire: SectionRectangle = None
     fillColorLines: str = MATCOLOURS['glulamBurnt']
     configObjectBurnt: PlotConfigObject = None
-    burnDimensions: list[float] = None
-    displayLamHeight: float = 38
-    
             
     def __post_init__(self):
         if self.configCanvas == None:
@@ -137,7 +128,7 @@ class EleDisplayPropsGlulam19(EleDisplayProps):
         self.configObjectBurnt.originLocation = newOriginLocation
         
         
-class BeamColumnGlulamCsa19(BeamColumn):
+class BeamColumnConcreteCsa24(BeamColumn):
     """
     Design propreties for a glulam beam element.
     
@@ -171,10 +162,10 @@ class BeamColumnGlulamCsa19(BeamColumn):
     None.
 
     """
-    designProps:DesignPropsGlulam19
+    designProps:DesignPropsConcrete24
     
-    def __init__(self, member:Member, section:SectionRectangle,
-                 designProps:DesignPropsGlulam19 = None, 
+    def __init__(self, member:Member, section:SectionConcrete,
+                 designProps:DesignPropsConcrete24 = None, 
                  userProps:dataclass = None,
                  eleDisplayProps:dataclass = None):
 
@@ -182,11 +173,11 @@ class BeamColumnGlulamCsa19(BeamColumn):
         self._initMain(member, section)
         # Initialize the design propreties if none are given.        
         if designProps is None:
-            designProps = DesignPropsGlulam19()
+            designProps = DesignPropsConcrete24()
 
         # Initialize the design propreties if none are given.        
         if eleDisplayProps is None:
-            eleDisplayProps = EleDisplayPropsGlulam19(self.section, 
+            eleDisplayProps = EleDisplayPropsConcrete24(self.section, 
                                                    self.member,
                                                    sectionFire = designProps.sectionFire)
 
@@ -206,196 +197,10 @@ class BeamColumnGlulamCsa19(BeamColumn):
             self.designProps.burnDimensions = burnDims
             self.eleDisplayProps.burnDimensions = burnDims
 
-def getBeamColumnGlulamCsa19(L:float, section:SectionRectangle, lUnit:str='m', 
-                             firePortection:GypusmRectangleCSA19 = None,
-                             Lx:float = None, 
-                             Ly:float = None,
-                             kexB:float = 1,
-                             kexC:float = 1,
-                             keyC:float = 1) -> BeamColumnGlulamCsa19:
-    """
-    A function used to return a beamcolumn based on an input length.
-    The beam uses a simply supported elemet. If a different type
-    of element is required, it should be manually defined with 
-    "BeamColumnGlulamCsa19" instead.
-    
-    Default values are assigned to design propreties.
-
-    Parameters
-    ----------
-    L : float
-        The input length for the beamcolumn.
-    section : SectionAbstract
-        The section the beamcolumn ises.
-    lUnit : str
-        The units for the input length of the member.
-
-    Returns
-    -------
-    BeamColumn
-        The output beamcolumn object.
-
-    """
-    member = initSimplySupportedMember(L, lUnit)
-    designProps = DesignPropsGlulam19()
-
-    
-    if firePortection:
-        designProps.firePortection = firePortection
-        
-    if Lx:
-        designProps.Lx = Lx
-    else:
-        designProps.Lx = L
-    designProps.kexB = kexB
-    designProps.kexC = kexC
-
-    if Ly:
-        designProps.Ly = Ly
-    else:
-        designProps.Ly = L
-    designProps.keyC = keyC
-    
-    return BeamColumnGlulamCsa19(member, section, designProps)
-
-@dataclass
-class DesignPropsClt19:
-    """
-    Design propreties specifically for a glulam beamcolumn element
-    """
-    firePortection:GypusmFlatCSA19 = None
-    fireSection:SectionCLT = None
-    Lx:bool = False
-    Ly:bool = False
-        
-
-@dataclass
-class EleDisplayPropsClt19(EleDisplayProps):
-    """
-    """
-
-    sectionFire: SectionRectangle = None
-    fillColorLines: str = MATCOLOURS['black']
-
-    configObjectBurnt: PlotConfigObject = None
-    burnDimensions: list[float] = None
-    
-            
-    def __post_init__(self):
-        if self.configCanvas == None:
-            self.configCanvas = PlotConfigCanvas()
- 
-        if self.configObject == None:
-            config = PlotConfigObject(MATCOLOURS['clt'],
-                                      originLocation= 3,
-                                      cFillLines = MATCOLOURS['black'],
-                                      cFillPatch = MATCOLOURS['cltWeak'])
-            self.configObject = config   
-        if self.configObjectBurnt == None:
-            config = PlotConfigObject(MATCOLOURS['glulamBurnt'],
-                                      originLocation= 3,
-                                      cFillLines = MATCOLOURS['black'],
-                                      cFillPatch = MATCOLOURS['cltWeak'])            
-            
-            self.configObjectBurnt = config
 
 
-class BeamColumnCltCsa19(BeamColumn):
-    designProps:DesignPropsClt19
-    section:SectionCLT
-    
-    def __init__(self, member:Member, section:SectionCLT, 
-                 sectionOrientation:float = 0,
-                 designProps:DesignPropsClt19 = None, 
-                 userProps:dataclass = None,
-                 eleDisplayProps:dataclass = None):
-        """
-        This design element treats the CLT panel as a beamcolumn.
-        
-        It is appropriate for modeling clt that acts in a one-way system,
-        examples include line supported panels, or walls acting as columns.
-        
-        
-        Parameters
-        ----------
-        member : Member
-            The the structural member used to represent the beam's position,
-            orientation and support conditions.
-        section : SectionRectangle
-            The section used.
-        lUnit : str, optional
-            the units used. The default is 'm'.
-        designProps : DesignPropsGlulam19, optional
-            The inital design propreties. The default is None, which creates 
-            a empty DesignPropsGlulam19 object.
-        userProps : dataclass, optional
-            The user design propeties. The default is None, which creates an
-            empty dataclass.
 
-        Returns
-        -------
-        None.
 
-        """
-        
-        self._initMain(member, section)
-        
-        if designProps is None:
-            designProps = DesignPropsGlulam19()
 
-        # Initialize the design propreties if none are given.        
-        if eleDisplayProps is None:
-            eleDisplayProps = EleDisplayPropsClt19(self.section, self.member)            
-                    
-        self._initProps(designProps, userProps, eleDisplayProps)
-      
-          
-    def setSectionFire(self, sectionFire, burnDims = None):
-        self.designProps.sectionFire = sectionFire
-        self.eleDisplayProps.sectionFire = sectionFire
-        
-        if burnDims is not None:
-            self.designProps.burnDimensions = burnDims
-            self.eleDisplayProps.burnDimensions = burnDims
-        
-def _getSection(element, useFire:bool):
-    """
-    Gets the correct section to be used.
-    """
-    if useFire:
-        return element.designProps.sectionFire
-    else:
-        return element.section
-
-        
-def _getphi(useFire:bool):
-    """
-    Gets the correct section to be used.
-    """
-    if useFire:
-        return 1
-    else:
-        return 0.9
-
-        
-def _getphiCr(useFire:bool):
-    """
-    Gets the correct section to be used.
-    """
-    if useFire:
-        return 1
-    else:
-        return 0.8
-
-        
-def _isGlulam(element:BeamColumn):
-    """
-    Checks if an element is timber or glulam.
-    There may be better ways of checking if a element is of a certain type,
-    for example we could add it to the design propreties.
-    """
-    if isinstance(element, BeamColumnGlulamCsa19):
-        return True
-    else:
-        return False
-        
+class SectionNASolverCsa24:
+    pass
