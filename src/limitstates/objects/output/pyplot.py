@@ -15,7 +15,7 @@ from matplotlib.patches import Circle, Polygon
 
 from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT, SectionConcrete
 from .. element import BeamColumn
-from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPosition
+from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPositionEnum
 # from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 import limitstates.objects.output.model as md
 
@@ -184,11 +184,11 @@ class SectionPlotterWithHole(SectionPlotter):
         return ax
 
 def _getPlotOrigin(option, b, d,  xy0):
-    if option == PlotOriginPosition.centered:
+    if option == PlotOriginPositionEnum.centered:
         return (0 + xy0[0],   0 + xy0[1])
-    elif option == PlotOriginPosition.bottomCenter:
+    elif option == PlotOriginPositionEnum.bottomCenter:
         return (0 + xy0[0], d/2 + xy0[1])
-    elif option == PlotOriginPosition.bottomLeft:
+    elif option == PlotOriginPositionEnum.bottomLeft:
         return (b/2 + xy0[0], d/2 + xy0[1])
     
     else:
@@ -203,7 +203,7 @@ Then checking against that enumeration.
 This allow for slightly faster section checking behaviour
 """
 
-def _defaultConfigFactory(section):
+def _defaultConfigFactory(section) -> PlotConfigObject:
     
     
     if isinstance(section, SectionRectangle): # typical section
@@ -214,12 +214,17 @@ def _defaultConfigFactory(section):
         defaultProps = PlotConfigObject(c = MATCOLOURS['clt'], originLocation= 3)
         defaultProps.cFillLines = MATCOLOURS['black']
         defaultProps.cFillPatch = MATCOLOURS['cltWeak']
+    elif isinstance(section, SectionConcrete): # CLT section
+        defaultProps = PlotConfigObject(c = MATCOLOURS['concrete'], originLocation= 3)
+        defaultProps.cFillLines = MATCOLOURS['black']
+        defaultProps.cFillPatch = MATCOLOURS['steel']
+        defaultProps.patchType  = 2
     else:
         raise Exception(f'Section of type {section} is not supported.')
     return defaultProps
 
 def _plotGeomFactory(section: SectionAbstract, 
-                     originLocation: int|PlotOriginPosition,
+                     originLocation: int|PlotOriginPositionEnum,
                      xy0) -> md.GeomModel:
     """
     A function that returns the appropriate geometry object given a section.
@@ -240,6 +245,13 @@ def _plotGeomFactory(section: SectionAbstract,
         b, layers = section.w, section.sLayers
         xy        = _getPlotOrigin(originLocation, b, layers.d, xy0)
         geom      = md.GeomModelClt(layers, b, *xy)
+    
+    elif isinstance(section, SectionConcrete):
+        b, d  = section.concrete.b, section.concrete.d        
+        xy    = _getPlotOrigin(originLocation, b, d, xy0)
+        xyRebar = section.rebar.coordsFlat
+        radii  = [d/2 for d in section.rebar.getAttr('d',True)]
+        geom  = md.GeomModelConcrete(b, d,xyRebar, radii, *xy)    
     else:
         raise Exception(f'Section of type {section} is not supported.')
         
@@ -293,24 +305,41 @@ def _plotFactorySteel(section:SectionSteel, *args):
     return geom
 
 
-def _setupSummaryDict(listIn, ):
-    pass
+# def _setupSummaryDict(listIn, ):
+#     pass
 
 
-def _plotfillLines(ax, geom, objectConfig):
+def _plotfillLines(ax, geom, objectConfig:PlotConfigObject):
     linex, liney = geom.getFillVerticies()
     lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
     lines = LineCollection(lverts, colors = objectConfig.cFillLines,
                            linewidth = 0.5)
     ax.add_collection(lines)
 
-
-def _plotfillPatches(ax, geom, objectConfig):
-    linex, liney = geom.getFillAreas()
-    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+def _plotfillPatches(ax, geom, objectConfig:PlotConfigObject):
     
-    p = PatchCollection([Polygon(vert) for vert in lverts], color = objectConfig.cFillPatch)
+    if   objectConfig.patchType == 1:
+        linex, liney = geom.getFillAreaVerticies()
+        lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+        p = PatchCollection([Polygon(vert) for vert in lverts], 
+                            color = objectConfig.cFillPatch)
+    
+    elif objectConfig.patchType == 2:
+        radii  = geom.getFillRadii()
+        x,y = geom.getFillAreaVerticies()
+        lverts = np.column_stack((x,y))
+        p = PatchCollection([Circle(vert, r) for vert, r in zip(lverts, radii)], 
+                            color = objectConfig.cFillPatch)        
+        
     ax.add_collection(p)
+
+
+# def _plotfillPatchesCircles(ax, geom, objectConfig):
+#     linex, liney = geom.getFillAreas()
+#     lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    
+#     p = PatchCollection([Polygon(vert) for vert in lverts], color = objectConfig.cFillPatch)
+#     ax.add_collection(p)
 
 
 def plotSection(section:SectionAbstract, 
@@ -374,7 +403,6 @@ def plotSection(section:SectionAbstract,
     """
     if not canvasConfig:
         canvasConfig = PlotConfigCanvas()
-            
     if not objectConfig:
         objectConfig = _defaultConfigFactory(section)        
     
@@ -392,8 +420,7 @@ def plotSection(section:SectionAbstract,
 
     if hasattr(geom, 'getFillVerticies'):
         _plotfillLines(ax, geom, objectConfig)
-
-    if hasattr(geom, 'getFillAreas'):
+    if hasattr(geom, 'getFillAreaVerticies'):
         _plotfillPatches(ax, geom, objectConfig)
 
     ax.plot()
@@ -462,12 +489,11 @@ def _plotFactory(dispProps, ax=None):
         return _plotCLT(dispProps, ax)
     elif _isGlulamSection(dispProps):
         return _plotGlulam(dispProps, ax)
-    elif _isConcreteSection(dispProps):
-        return _plotConcrete(dispProps, ax)
+    # elif _isConcreteSection(dispProps):
+    #     return _plotConcrete(dispProps, ax)
         
     else:
         return _plotBasic(dispProps, ax)
-
 
 def _plotBasic(dispProps, ax = None):
     """
@@ -486,7 +512,6 @@ def _plotBasic(dispProps, ax = None):
     xy = np.column_stack(geom.getVerticies())
     plotter.plot(ax, xy, cObjConfig)
     return fig, ax
-
 
 def _plotGlulam(dispProps, ax = None):
     """
@@ -534,59 +559,34 @@ def _plotGlulam(dispProps, ax = None):
     _plotfillLines(ax, geom, canvasObjConfig)
     return fig, ax
 
-
-
-def _plotConcrete(dispProps, ax = None):
+def _plotConcreteRectangle(dispProps, ax = None):
     """
-    Plots a glulam section, showing the fire section in the center if it is
-    present.
+    Plots a concrete section, including the rebar.
     
     We also show some fill lines for the 
     """
     
     cPlotConfig = dispProps.configCanvas
-    section     = dispProps.section
-
-    hasFireSection = _hasFireSection(dispProps)
-    
-    if hasFireSection:
-        canvasObjConfig     = dispProps.configObjectBurnt
-    else:            
-        canvasObjConfig     = dispProps.configObject
+    section     = dispProps.section.concrete
+    canvasObjConfig     = dispProps.configObject
     
     # Find the offset for the base section
     b, d = section.b, section.d
     dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])
 
     # Get the geometry and initilziet the plot for the base section
-    geom    = md.GeomModelGlulam(b, d, dx0 = dx0, dy0 = dy0)
+    geom    = md.GeomModelRectangle(b, d, dx0 = dx0, dy0 = dy0)
     plotter = SectionPlotter(geom, cPlotConfig)
     fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
     
-    # Plot the fire section.
-    if hasFireSection:
-        sFire  = dispProps.sectionFire
-        
-        
-        
-        dx, dy       = _getFireSectionPositonGL(dispProps.burnDimensions)
-        dh           = dispProps.displayLamHeight
-        geom         = md.GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
-        objectConfig = dispProps.configObject
-        plotter.plot(ax, np.column_stack(geom.getVerticies()), objectConfig)
+
     
     # Plot the internal fill lines
     _plotfillLines(ax, geom, canvasObjConfig)
     return fig, ax
-
-
-
-
-
-
 
 def _plotCLT(dispProps, ax = None):
     

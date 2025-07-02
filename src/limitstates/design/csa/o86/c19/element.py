@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from limitstates.objects import (Member, SectionRectangle, initSimplySupportedMember, 
                           SectionCLT)
 from limitstates.objects.display import MATCOLOURS, PlotConfigCanvas,  PlotConfigObject
-from limitstates import BeamColumn, EleDisplayProps, PlotOriginPosition
+from limitstates import BeamColumn, EleDisplayProps, PlotOriginPositionEnum
 
 
 
@@ -119,13 +119,13 @@ class EleDisplayPropsGlulam19(EleDisplayProps):
             self.configObjectBurnt = PlotConfigObject(MATCOLOURS['glulamBurnt'],
                                                  cFillLines = MATCOLOURS['black'])
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPosition):
+    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
         """
         Updates the plot 
 
         Parameters
         ----------
-        newOriginLocation : int|PlotOriginPosition
+        newOriginLocation : int|PlotOriginPositionEnum
             DESCRIPTION.
 
         Returns

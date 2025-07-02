@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from limitstates.objects import (Member, SectionConcrete, initSimplySupportedMember)
 from limitstates.objects.display import MATCOLOURS, PlotConfigCanvas,  PlotConfigObject
-from limitstates import BeamColumn, EleDisplayProps, PlotOriginPosition
+from limitstates import BeamColumn, EleDisplayProps, PlotOriginPositionEnum
 
 
 
@@ -110,7 +110,7 @@ class EleDisplayPropsConcrete24(EleDisplayProps):
             self.configObjectBurnt = PlotConfigObject(MATCOLOURS['glulamBurnt'],
                                                  cFillLines = MATCOLOURS['black'])
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPosition):
+    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
         """
         Updates the plot 
 

@@ -19,8 +19,6 @@ class GeomModel(ABC):
     def getVerticies(self):
         pass
     
-    
-
 @dataclass
 class GeomModelRectangle(GeomModel):
     b:float
@@ -39,7 +37,51 @@ class GeomModelRectangle(GeomModel):
         y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
         return list(x), list(y)
 
-   
+
+@dataclass
+class GeomModelConcrete(GeomModel):
+    b:float
+    h:float
+    xyRebar:np.ndarray
+    radii:list[float]
+    dx0:float = 0
+    dy0:float = 0
+    
+            
+    def getVerticies(self) -> (list[float], list[float]):
+        
+        h = self.h
+        b = self.b
+        dx0 = self.dx0
+        dy0 = self.dy0
+        
+        bmin = -b/2  + dx0
+        bmax = b/2 + dx0
+                
+        hmin = -h/2  + dy0
+        hmax = h/2 + dy0
+        
+        x = [bmin, bmin , bmax, bmax, bmin]
+        y = [hmin, hmax , hmax, hmin, hmin]        
+        
+        # x = np.array([-b/2, -b/2 , b/2, b/2, -b/2]) + dx0
+        # y = np.array([-h/2 , h/2 , h/2,   -h/2,    -h/2])   + dy0
+        return list(x), list(y)
+
+    def getFillAreaVerticies(self) -> (list[float], list[float]):
+        """
+        Note, rebar is measured from the top of the section!
+        """
+        
+        dx0 = self.dx0
+        dy0 = self.dy0
+        
+        x = self.xyRebar[:,0] + dx0 - self.b/2 
+        y = self.h - self.xyRebar[:,1] + dy0  -self.h/2
+        return list(x), list(y)
+      
+    def getFillRadii(self) -> list[float]:
+        return self.radii
 
 
 @dataclass
@@ -90,9 +132,6 @@ class GeomModelGlulam(GeomModel):
             ylines.append([y, y])
 
         return xlines, ylines
-
-
-
 
 @dataclass
 class GeomModelClt(GeomModel):
@@ -171,7 +210,7 @@ class GeomModelClt(GeomModel):
     
     
     
-    def getFillAreas(self):
+    def getFillAreaVerticies(self):
         h = self.cltLayers.d
         b = self.w
         dx0 = self.dx0
@@ -200,9 +239,6 @@ class GeomModelClt(GeomModel):
 
         return xlayers, ylayers
     
-    
-
-
 @dataclass
 class GeomModelIbeam(GeomModel):
     d:float
@@ -325,7 +361,6 @@ class GeomModelIbeamRounded(GeomModel):
         y = tLeg_y + trfy + trwy + brwy + brfy + bLeg_y + blfy + blwy + tlwy + tlfy  + [ h/2]       
         
         return list(np.array(x) + dx0), list(np.array(y) + dy0)
-
 
 @dataclass
 class GeomModelHss(GeomModel):

@@ -151,6 +151,14 @@ def test_Rebar_Collection_positions():
     assert xCoords[0] == 0
     assert xCoords[5] == 0
     
+    radii = barCollection.getAttr('d')
+    assert len(radii) == 2
+    radii = barCollection.getAttr('d', True)
+    assert len(radii) == 6
+
+    # assert xCoords[0] == 0
+    # assert xCoords[5] == 0
+        
  
 def test_Rebar_layer_placement_1():
     """

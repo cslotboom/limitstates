@@ -96,7 +96,7 @@ class SectionNASolver:
         # self.concMat = section.concrete.mat
                 
         self.trials = []
-        self.Residual = []
+        self.residual = []
         
         self.tol = tol
         self.maxIter = maxIter
@@ -127,13 +127,13 @@ class SectionNASolver:
         NAtrial = self.d / 2
         r = self.checkEqulibrium(NAtrial)
         self.trials.append(NAtrial)
-        self.Residual.append(r)        
+        self.residual.append(r)        
         nn = 0
         while self.tol < abs(r - 1) and nn < self.maxIter:
             r = self.checkEqulibrium(NAtrial)
             NAtrial = NAtrial*r**root
             self.trials.append(NAtrial)
-            self.Residual.append(r)
+            self.residual.append(r)
             nn += 1
 
         # diff = np.diff(self.trials)

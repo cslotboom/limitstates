@@ -20,11 +20,12 @@ MATCOLOURS = {  'default':'#B3CFE5',
                 'glulam':'#e3c697',     
                 'glulamBurnt':'#7a6d65',
                 'steel':'#72c2fc',
+                'concrete':'#eeeeee',
                 'lineInternal':'#d9d9d9',
                 'black':'#000000'}
 
 
-class PlotOriginPosition(IntEnum):
+class PlotOriginPositionEnum(IntEnum):
     """
     An enumeration that changes the default location a plot is placed at.
     
@@ -35,6 +36,14 @@ class PlotOriginPosition(IntEnum):
     centered     = 1 
     bottomCenter = 2
     bottomLeft   = 3
+
+class PatchTypeEnum(IntEnum):
+    """
+    An enumeration that controls the patch types used.
+    
+    """
+    polygon = 1 
+    circle  = 2
 
 @dataclass
 class PlotConfigCanvas:
@@ -71,7 +80,7 @@ class PlotConfigObject:
         The colour to use for the outline of the object.    
     lineWidth : float, optional
         The linewidth to use for the object, in units of the canvas.
-    newOriginLocation : int|PlotOriginPosition
+    newOriginLocation : int|PlotOriginPositionEnum
         A flag that changes the default location the plot is placed at.
         
         1 is plotted at the centroid.
@@ -81,15 +90,19 @@ class PlotConfigObject:
         The colour to use for any internal fill lines.
     cFillPatch : str, optional
         The colour to use for any internal fill patches.
+    patchType : str, optional
+        The patch type to be used.
 
     """
     c:str = MATCOLOURS['default']
     showOutline:bool = True
     cLine:str = MATCOLOURS['black']
     lineWidth:float = 1
-    originLocation: PlotOriginPosition|int = 1
+    originLocation: PlotOriginPositionEnum|int = 1
     cFillLines:Optional[str] = None
     cFillPatch:Optional[str] = None
+    
+    patchType:PatchTypeEnum|int = 1
 
 
 @dataclass
@@ -120,7 +133,7 @@ class EleDisplayProps:
     configCanvas: Optional[PlotConfigCanvas] = None
         
     def __repr__(self):
-        "<limitStates output Propreties Dataclass>"
+        "<limitStates output propreties Dataclass>"
         
     def __post_init__(self):
         if self.configCanvas == None:
@@ -129,13 +142,13 @@ class EleDisplayProps:
         if self.configObject == None:
             self.configObject = PlotConfigObject('#B3CFE5')
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPosition):
+    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
         """
         Sets the type of origin location to use for the object.
 
         Parameters
         ----------
-        newOriginLocation : int|PlotOriginPosition
+        newOriginLocation : int|PlotOriginPositionEnum
             A flag that changes the default location the plot is placed at.
             
             1 is plotted at the centroid.

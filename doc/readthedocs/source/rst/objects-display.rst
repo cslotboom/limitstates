@@ -9,7 +9,7 @@ Display Configuration
 ---------------------
   
 .. automodule:: limitstates.objects.display
-	:members: PlotOriginPosition, PlotConfigCanvas, PlotConfigObject, EleDisplayProps
+	:members: PlotOriginPositionEnum, PlotConfigCanvas, PlotConfigObject, EleDisplayProps
 
 
 

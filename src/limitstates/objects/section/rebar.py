@@ -205,11 +205,15 @@ class RebarCollection:
         """        Lists the rebar attributes.        """
         return self.group[0].listAttrs()
         
-    def getAttr(self, attribute:str):
+    def getAttr(self, attribute:str, flatten=False):
         """  For each group, return a list of the input attribute. """        
-        attrs = []        
-        for group in self.groups:
-            attrs.append(group.getAttr(attribute))
+        attrs = []
+        if flatten:
+            for group in self.groups:
+                attrs += list(group.getAttr(attribute))            
+        else:
+            for group in self.groups:
+                attrs.append(group.getAttr(attribute))
 
         return attrs  
     
