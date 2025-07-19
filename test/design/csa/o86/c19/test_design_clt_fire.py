@@ -58,7 +58,7 @@ def test_Panel_WoodHandbook_dims():
     
     # layers = 
     sections = _init()
-    section = sections[16]
+    section = sections[21]
     member = ls.initSimplySupportedMember(6, 'm')
 
     beamColumn = o86.BeamColumnCltCsa19(member, section)
@@ -82,7 +82,7 @@ def test_Panel_WoodHandbook_Dims_2():
     
     # layers = 
     sections = _init()
-    section = sections[16]
+    section = sections[21]
     firePortection = o86.GypusmFlatCSA19('15.9mm')
     designProps = o86.DesignPropsClt19(firePortection)
 
@@ -137,7 +137,7 @@ def test_Panel_WoodHandbook_Design():
     """
     
     sections = _init()
-    section = sections[16]
+    section = sections[21]
     firePortection = o86.GypusmFlatCSA19('15.9mm')
     designProps = o86.DesignPropsClt19(firePortection)
 

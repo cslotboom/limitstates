@@ -298,10 +298,15 @@ class LayerGroupClt:
             GN = layers[NlayerTotal-1].getLayerG(parallelToStrong)
             tN = layers[NlayerTotal-1].t / 2
             denom += tN/GN
-            h += tN 
+            h += tN
+            
+            # We need to skip the last layer only if it's present
+            end = Nlayer-1
+        else:
+            end = Nlayer
         
         # middle terms.
-        for ii in range(1, Nlayer-1):
+        for ii in range(1, end):
             layer = layers[ii]
             G = layer.getLayerG(parallelToStrong)
             denom += layer.t  / G

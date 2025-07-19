@@ -96,7 +96,7 @@ def test_Panel_DB():
     assert 'E1' in sections[0].name
 
     member = ls.initSimplySupportedMember(6, 'm')
-    beamColumn = o86.BeamColumnCltCsa19(member, sections[11])
+    beamColumn = o86.BeamColumnCltCsa19(member, sections[14])
     
     MrSol = 146*1e3*0.9
     Mr = o86.checkMrCltBeam(beamColumn)
