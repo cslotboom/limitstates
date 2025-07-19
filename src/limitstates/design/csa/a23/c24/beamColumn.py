@@ -44,9 +44,7 @@ def getEndStrain(d:float, NAtrial:float, eConc:float):
 
     
     return eConc * (d / NAtrial - 1)
-    
-
-    
+     
 def getSteelStrains(d:float, y:float|np.ndarray, NA:float, eConc:float):
     """
     Returns the strain at a set if input positions y, given the neutral axis
@@ -61,7 +59,6 @@ def getSteelStrains(d:float, y:float|np.ndarray, NA:float, eConc:float):
     eEnd = getEndStrain(d, NA, eConc)
     
     return y * (eEnd + eConc) / d - eConc
-    
     
 def getSectionSr(section:SectionConcrete, NAlocation:float, 
                  yMoment:bool = True,
@@ -93,8 +90,8 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
 
     Returns
     -------
-    T : TYPE
-        DESCRIPTION.
+    T : list[float]
+        The force in each longditudinal rebar.
 
     """
     
@@ -112,7 +109,7 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
 
     # Reverse the coordinates if the moment is negative
     if not positiveMoment:
-        coords = coords[::-1]
+        coords = h - coords
     
     eConc = section.concrete.mat.ey
     strains = getSteelStrains(h, coords, NAlocation, eConc)  
@@ -152,9 +149,12 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
         A flag that specifies if moment is about the y axis, i.e. the strong
         axis. The default is True, setting up strong axis bending.
     positiveMoment : TYPE, optional
-        A flog that specifies if moment is positive or negative. Positive
+        A flag that specifies if moment is positive or negative. Positive
         moment is defined as moment that creates tension at the "bottom"
         of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
         
         The default is True.
 
@@ -165,8 +165,8 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
 
     Returns
     -------
-    T : TYPE
-        DESCRIPTION.
+    C : float
+        The output compression force in the section..
 
     """
     
@@ -175,7 +175,7 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
     
     b = section.getWidth(yMoment, positiveMoment, lunit)
 
-    sconvert =section.concrete.mat.sConvert(sunit)
+    sconvert = section.concrete.mat.sConvert(sunit)
     fc = section.concrete.mat.fc * sconvert
     alpha = section.concrete.mat.alpha
     beta = section.concrete.mat.beta
@@ -185,32 +185,127 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
 
 
 
-
-
-
-
-
-
-
-
-
-
-def checkTr():
+def getSectionMr(section:SectionConcrete, NAlocation:float, 
+                 yMoment:bool = True,
+                 positiveMoment = True):
+    Sr = getSectionSr(section, NAlocation, yMoment, positiveMoment)
+    Cr = getSectionCr(section, NAlocation, yMoment, positiveMoment)
     
-    pass
+    if yMoment:
+        coords = section.rebar.getyCoords('mm', flatten=True)
+    else:
+        coords = section.rebar.getxCoords('mm', flatten=True)
+    rebarCoords = coords - NAlocation
 
-def checkSteelStrain(epsCmax:float, d:float, c:float):
+    Mr =  (sum(Sr * rebarCoords) + Cr * (NAlocation/2)) / 1000
+    return Mr
+
+
+
+def getBalancedNA(deff:float, eyConc:float = 0.0035,
+                           eySteel:float = 0.002):
     
-    return epsCmax*(d/c - 1)
+    return eyConc / (eyConc + eySteel) * deff 
 
 
-
-def checkSectionYield(fy, fc, As, d, b, alpha, beta, epsCmax, epsyLim = 0.02):
+def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
+                        eySteel = 0.002, yMoment:bool = True, 
+                        positiveMoment = True):
+    """
+    Estimates the balanced NA position for a section. If no deff is provided,
+    then the depth will be estimated as 80% of the section height.
     
-    Tr = checkYieldTr(fy, As)
-    a = getCompressionDepth(Tr, alpha, fc, b)
-    c = a / beta
-    checkSteelStrain(epsCmax, d, c)
+    This check is typically used before steel has been palced in the section.
+    It is assumed that the steel has not yet been placed in the section
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        DESCRIPTION.
+    deff : float, optional
+        DESCRIPTION. The default is None.
+    yMoment : bool, optional
+        DESCRIPTION. The default is True.
+    positiveMoment : TYPE, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    
+    lunit = 'mm'
+    
+    if not deff :
+        print('No depth provided. Depth is estimated as 80% of h')
+        deff = section.getDepth(yMoment, positiveMoment, lunit)
+        # deff  =
+    
+    eyConc = section.concrete.mat.ey
+    
+    return getBalancedNA(deff, eyConc, eySteel)
+
+
+def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
+                        eySteel:float = 0.002, fySteel:float = 400,
+                        yMoment:bool = True, 
+                        positiveMoment = True):
+    """
+    Estimates the balanced NA position for a section. If no deff is provided,
+    then the depth will be estimated as 80% of the section height.
+    
+    It is assumed that the steel has not yet yielded
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        DESCRIPTION.
+    deff : float, optional
+        DESCRIPTION. The default is None.
+    yMoment : bool, optional
+        DESCRIPTION. The default is True.
+    positiveMoment : TYPE, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    
+    lunit = 'mm'
+    
+    if not deff :
+        print('No depth provided. Depth is estimated as 80% of h')
+        deff = section.getDepth(yMoment, positiveMoment, lunit)
+        # deff  =
+    
+    eyConc = section.concrete.mat.ey
+    c = getBalancedNA(deff, eyConc, eySteel)
+    Cr = getSectionCr(section, c, yMoment, positiveMoment)
+ 
+    return Cr / (phiS * fySteel)
+
+
+
+
+
+
+# def checkSteelStrain(epsCmax:float, d:float, c:float):
+    
+#     return epsCmax*(d/c - 1)
+
+
+
+# def checkSectionYield(fy, fc, As, d, b, alpha, beta, epsCmax, epsyLim = 0.02):
+    
+#     Tr = checkYieldTr(fy, As)
+#     a = getCompressionDepth(Tr, alpha, fc, b)
+#     c = a / beta
+#     checkSteelStrain(epsCmax, d, c)
 
 
 
@@ -231,7 +326,27 @@ def getCompressionDepth(Tr, alpha, fc, b):
     return Tr / (alpha * phiC * fc * b)
     
     
+
+def getSmin(db:float, amax:float):
+    """
+    Returns minimum spacing for a given rebar with a given aggregate.
+
+    Parameters
+    ----------
+    db : float
+        The diameter for the rebar.
+    amax : float
+        The aggregate size.
+
+    Returns
+    -------
+    float
+        The minimum clear spacing
+
+    """
+    return np.min((1.4*db, 1.4*amax, 30))
     
+       
 
 
 def getAsmin(fc:float, fy:float, bt:float, h:float):

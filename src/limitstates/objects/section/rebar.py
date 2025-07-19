@@ -18,12 +18,12 @@ from ..read import DBConfig, _loadSectionDBDict
 from ...units import ConverterLength
 
 
-__all__ = ['Rebar', 'RebarGroup', 'RebarCollection', 'RebarFactory',
-           'RebarPlacer']
+__all__ = ['Rebar', 'RebarGroup', 'RebarCollection', 'RebarFactory']
 
 class Rebar(SectionMonolithic):
     def __init__(self, mat:MaterialElastic, name:str, d:float, dnet:float,  
-                 A:float, xy:tuple = None, lUnit = 'mm'):
+                 A:float, xy:tuple = None, rcurve:float = None, 
+                 rhook:float = None, lUnit = 'mm'):
         self.mat = mat
         self.name = name
         self.A = A
@@ -182,7 +182,16 @@ class RebarCollection:
     def __init__(self, groups:list[RebarGroup]):
         self.groups = groups
         self.Nbars = sum([len(group) for group in self.groups])
+    
+    # TODO: DOCUMENT
+    def addBars(self, groups:list[RebarGroup]):
+        if not self.groups:
+            self.groups = groups
+        else:
+            self.groups += groups
+        self.Nbars = sum([len(group) for group in self.groups])
         
+    
     def __len__(self):
         return len(self.groups)
     
@@ -195,7 +204,8 @@ class RebarCollection:
         coordsTmp = []
         for group in self.groups:
             coordsTmp.append(group.getAttr('xy'))
-        return np.array(coordsTmp)
+        return coordsTmp
+        # return np.array(coordsTmp)
     
     @property
     def coordsFlat(self):
@@ -309,6 +319,9 @@ class RebarFactory:
         matdb = _loadSectionDBDict(config)   
         tmpDict = matdb.to_dict(orient='index')
         self.dbDict = {tmpDict[key]['name']:tmpDict[key] for key in tmpDict}
+        self.barTypes = [tmpDict[key]['name'] for key in tmpDict]
+
+    # def 
 
     def getRebar(self, barType:str, xy:tuple = None) -> Rebar:
         
@@ -321,48 +334,14 @@ class RebarFactory:
                             barParams['d'], 
                             barParams['dnet'], 
                             barParams['A'],
+                            barParams['rcurve'],
+                            barParams['A'],
                             self.lUnit)
      
         if xy:
             rebar.setxy(xy)
         return rebar
         
-class RebarPlacer:
-    
-
-    def __init__(self, factory:RebarFactory):
-        
-        self.factory = factory
-        
-        # self.lUnit = lUnit
-
-
-    def getRebarLayer(self, Nbar:int, barType:str, 
-                     deff:float, width:float, offset:float = 0, 
-                     direction:str='x') -> RebarLayer:
-        """
-        Evenly distributes a set of bars within a row.
-        """
-        
-        if direction == 'x':
-            positions = self._getBarPositon(Nbar, width, offset)
-            xyOut = [(x, deff) for x in positions]
-        else:
-            positions = self._getBarPositon(Nbar, width)
-            xyOut = [(deff, y) for y in positions]
-        
-        bars = []
-        for ii in range(Nbar):
-            bars.append(self.factory.getRebar(barType, xyOut[ii]))
-            
-        return  RebarLayer(bars)
-            
-    def _getBarPositon(self, Nbar:int, width:float, offset:float):
-        
-        if Nbar == 1:
-            return [(width - offset)/2]
-        else:
-            return list(np.linspace(offset, width + offset, Nbar))
 
 
 

@@ -21,7 +21,7 @@ from .material import MaterialAbstract
 from .section import SectionAbstract, SectionRectangle, LayerClt, SectionCLT, LayerGroupClt, SectionSteel
 
 
-__all__ = ["getSteelSections", "getRectangularSections"]
+__all__ = ["getSteelSections", "getRectangularSections", "DBConfig"]
 
 
 filepath = os.path.realpath(__file__)

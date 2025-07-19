@@ -9,11 +9,12 @@ from .material import MaterialRebarCSA24
 from limitstates import SectionRectangle, SectionCLT
 
 
-
+#TODO TEST
 def loadRebarFactory(matRebar:MaterialRebarCSA24,
-              db:str = 'rebar', lUnit = 'mm') -> RebarFactory:
+                      db:str = 'rebar', lUnit = 'mm') -> RebarFactory:
     """
-    Loads all CLT sections in the given database.
+    Reads the standard CSA A23. rebar.
+    Rebar bends are based on ACI tables 25.3.1
 
     Parameters
     ----------
@@ -22,8 +23,8 @@ def loadRebarFactory(matRebar:MaterialRebarCSA24,
 
     Returns
     -------
-    sections : list
-        A list of the desired clt sections.
+    rebarFactory : RebarFactory
+        The output rebar factory for the databae.
 
     """
     
@@ -34,21 +35,23 @@ def loadRebarFactory(matRebar:MaterialRebarCSA24,
     return rebarFactory
 
 
-rebarFactory = loadRebarFactory(MaterialRebarCSA24(400))
+REBARFACTORY = loadRebarFactory(MaterialRebarCSA24(400))
 
+#TODO TEST
 def getStandardRebar(barName:str, 
                      matRebar:MaterialRebarCSA24 = None,
                      xy:tuple = None,
                      lUnit:str = 'mm') -> Rebar:
     """
     Gets a standard CSA rebar.
+    Rebar bends are based on ACI tables 25.3.1
 
     Parameters
     ----------
     barName : str
         The rebar size. One of 10M, 15M, 20M, 25M, 30M, 35M, 45M, 55M.
     matRebar : MaterialRebarCSA24, optional
-        The rebar material to use. By default a 400MPa is used. 
+        The rebar material to use. By default a 400MPa material is used. 
         The default is None.
     xy : tuple, optional
         The xy position of the rebar. The default is None.
@@ -66,7 +69,7 @@ def getStandardRebar(barName:str,
     if not xy:
         xy = (0,0)
             
-    rebar = rebarFactory.getRebar(barName, xy)
+    rebar = REBARFACTORY.getRebar(barName, xy)
     
     if matRebar:
         rebar.mat = matRebar

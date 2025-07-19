@@ -12,16 +12,16 @@ fy = 400
 mat      = c24.MaterialConcreteCSA24(fc)
 matRebar = c24.MaterialRebarCSA24(fy)
 
-b = 500
-d = 300
+# b = 500
+# d = 300
 
 
-concreteSection = ls.SectionRectangle(mat, b, d)
-config = DBConfig('csa', 'rebar', 'rebar')
-rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
+# concreteSection = ls.SectionRectangle(mat, b, d)
+# config = DBConfig('csa', 'rebar', 'rebar')
+# rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
 
 
-def addRebarLayer():
+# def addRebarLayer():
     
 
 # steelSections = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
@@ -31,12 +31,12 @@ def addRebarLayer():
 #     column = s16.getBeamColumnSteelCsa24(L, section, 'mm')
 #     return column
 
-def test_Mr():
-    """
-    Mr from compression tables in blue book
-    """
-    assert mat.fc == 30
-    assert matRebar.fy == 400
+# def test_Mr():
+#     """
+#     Mr from compression tables in blue book
+#     """
+#     assert mat.fc == 30
+#     assert matRebar.fy == 400
     # Cr      = s16.checkColumnCr(column) / 1000
     # CrSol = 542
     # assert Cr == pytest.approx(CrSol, rel = 0.02)

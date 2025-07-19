@@ -9,26 +9,26 @@ import pytest
 
 
 
-fc = 30
-fy = 400
-mat      = c24.MaterialConcreteCSA24(fc)
-matRebar = c24.MaterialRebarCSA24(fy)
+# fc = 30
+# fy = 400
+# mat      = c24.MaterialConcreteCSA24(fc)
+# matRebar = c24.MaterialRebarCSA24(fy)
 
-b = 500
-d = 300
-section = ls.SectionRectangle(mat, b, d)
-config = DBConfig('csa', 'rebar', 'rebar')
+# b = 500
+# d = 300
+# section = ls.SectionRectangle(mat, b, d)
+# config = DBConfig('csa', 'rebar', 'rebar')
 
-rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
-placer = ls.RebarPlacer(rebarFactory)
+# rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
+# placer = ls.RebarPlacer(rebarFactory)
 
 
-layer1 = placer.getRebarLayer(5, '25M', 375, 300, 50)
-layer2 = placer.getRebarLayer(5, '25M', 425, 300, 50)
+# layer1 = placer.getRebarLayer(5, '25M', 375, 300, 50)
+# layer2 = placer.getRebarLayer(5, '25M', 425, 300, 50)
 
-Lbars = ls.RebarCollection([layer1, layer2])
+# Lbars = ls.RebarCollection([layer1, layer2])
 
-concreteSection = ls.SectionConcrete(section, Lbars)
+# concreteSection = ls.SectionConcrete(section, Lbars)
 
 # steelSections = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
 
@@ -41,6 +41,11 @@ def test_Mr():
     """
     Mr from compression tables in blue book
     """
+    fc = 30
+    fy = 400
+    mat      = c24.MaterialConcreteCSA24(fc)
+    matRebar = c24.MaterialRebarCSA24(fy)
+    
     assert mat.fc == 30
     assert matRebar.fy == 400
     # Cr      = s16.checkColumnCr(column) / 1000
