@@ -118,7 +118,28 @@ def test_placement_side():
 
     assert coords[-1,0] == (40 + dbar/2 + dbar + dbar*1.4)
     assert coords[1,1] == 40 + dbar/2 + dbar + sActual
+    
+    locationEnum = 4
+    
+    dbar = 30
 
+    placer = _init_placer()
+    placer.place(Nbar, barType, locationEnum)
+    
+    section = placer.section
+    
+    assert len(section.rebar) == 2
+    assert section.rebar.Nbars == Nbar
+
+    coords = section.rebar.getCoords(flatten=True)
+    sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
+
+    assert coords[0,0] == section.concrete.b - (40 + dbar/2)
+    assert coords[0,1] == 40 + dbar/2
+
+    assert coords[-1,0] == section.concrete.b - (40 + dbar/2 + dbar + dbar*1.4)
+    assert coords[1,1] == 40 + dbar/2 + dbar + sActual
+    
 
 
 if __name__ == '__main__':

@@ -72,21 +72,52 @@ class SectionConcrete:
 
 class SectionNASolver:
     """
-    Solves for the neutral axis in the section using a 
-    
-    
-    Assumes all bars use the same material.
+    Attempts to solves for the neutral axis of a section. Assumes all 
+    bars use the same material.
     
     Solves for the neutral axis within a section.
     The neutral axis is measured from the top of the section.
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The concrete section to solve the NA of.
+    concreteFunction : function
+        A function that returns the compressive force in the concrete, 
+        given the section and neutral axis location.
+    steelFunction : function
+        A function that returns the tensile force in the steel, 
+        
+    Pf : float, optional
+        A axial force applied to the section. The default is 0.
+    yMoment : bool, optional
+        A flag that specifies if moment is applied in the y or x direction. 
+        The default is True, for moment being applied about the x axis.
+    positiveMoment : bool, optional
+        A flag that specifies is moment is positive or negative. 
+        The default is True for positive
+    tol : float, optional
+        The tolerance required for convergence, i.e. the difference between
+        the calcualted concrete and steel force. The default is 1e-3.
+    maxIter : float, optional
+        The maximum number of iterations needed before convergence is 
+        reached. The default is 100.
+    logging : bool, optional
+        A flag that turns on or off logging. Currently is inactive. 
+        The default is True.
+
+    Returns
+    -------
+    None.
+
     """
-    
     def __init__(self, section: SectionConcrete, 
                  concreteFunction, steelFunction,
                  Pf:float = 0, yMoment: bool = True, 
                  positiveMoment:bool = True,
-                 tol: float = 1e-3, maxIter: float = 100,
+                 tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
+
         
         self.section = section
         self.rebar = section.rebar
@@ -175,14 +206,13 @@ class SectionNASolver:
         return NAtrial, nn
 
 def solveForNA(section: SectionConcrete, 
-             Pf:float = 0, momentDirection: str = 'x', 
+             Pf:float = 0, yMoment: bool = True, 
              positiveMoment = True,
              tol: float = 1e-3, maxIter: float = 100):
     
     
-    naSolver = SectionNASolver(section, Pf, momentDirection, positiveMoment, 
+    naSolver = SectionNASolver(section, Pf, yMoment, positiveMoment, 
                                tol, maxIter)
-
 
     return naSolver.calcNA()
 
@@ -284,7 +314,7 @@ class RebarPlacerRow(RebarPlacer):
             
         else:
             self.h = self.section.concrete.b
-            self.b = self.section.concrete.h     
+            self.b = self.section.concrete.d   
 
     def _setClearCover(self):
         self.clearCover = self.c + self.dstir
@@ -368,105 +398,105 @@ def RebarPlacerFactory(placementStrategy: RebarPlacementStrategyEnum) -> RebarPl
     
 
         
-class ___SectionRebarPlacer:
+# class ___SectionRebarPlacer:
     
 
-    def __init__(self, section:SectionConcrete, 
-                       factory:RebarFactory, 
-                       cover:float):
+#     def __init__(self, section:SectionConcrete, 
+#                        factory:RebarFactory, 
+#                        cover:float):
         
-        self.section = section
-        self.factory = factory
+#         self.section = section
+#         self.factory = factory
         
-        self.cover = cover
+#         self.cover = cover
 
-        self._setClearCover()
-        self.lUnit = section.lUnit
+#         self._setClearCover()
+#         self.lUnit = section.lUnit
 
-    def _setClearCover(self, direction:str='x'):
+#     def _setClearCover(self, direction:str='x'):
         
-        self.dStirrup = self.section.stirrups.d
-        self.clearCover = self.cover + self.dStirrup
+#         self.dStirrup = self.section.stirrups.d
+#         self.clearCover = self.cover + self.dStirrup
 
         
-        self.w = self.section.concrete.b
-        self.wRow = self.section.concrete.b -  self.clearCover*2
+#         self.w = self.section.concrete.b
+#         self.wRow = self.section.concrete.b -  self.clearCover*2
 
-    def getBarsInRow(self, Nbar:int, barType:str, 
-                     deff:float, width:float, direction:str='x'):
-        """
-        Evenly distributes a set of bars within a row.
-        """
+#     def getBarsInRow(self, Nbar:int, barType:str, 
+#                      deff:float, width:float, direction:str='x'):
+#         """
+#         Evenly distributes a set of bars within a row.
+#         """
         
-        if direction == 'x':
-            positions = self._getBarPositon(Nbar, self.section.b)
-            xyOut = [(x, deff) for x in positions]
-        else:
-            positions = self._getBarPositon(Nbar, self.section.d)
-            xyOut = [(deff, y) for y in positions]
+#         if direction == 'x':
+#             positions = self._getBarPositon(Nbar, self.section.b)
+#             xyOut = [(x, deff) for x in positions]
+#         else:
+#             positions = self._getBarPositon(Nbar, self.section.d)
+#             xyOut = [(deff, y) for y in positions]
         
-        bars = []
-        for ii in range(Nbar):
-            bars.append( self.factory.getRebar(barType, xyOut[ii]))
+#         bars = []
+#         for ii in range(Nbar):
+#             bars.append( self.factory.getRebar(barType, xyOut[ii]))
             
-        return  RebarCollection(bars)
+#         return  RebarCollection(bars)
             
-    def _getBarPositon(self, Nbar:int, width:float):
-        if Nbar == 1:
-            return [width/2]
-        else:
-            return list(np.linspace(0,1, Nbar)*width)
+#     def _getBarPositon(self, Nbar:int, width:float):
+#         if Nbar == 1:
+#             return [width/2]
+#         else:
+#             return list(np.linspace(0,1, Nbar)*width)
 
 
-class LayerPlacementStrategies(IntEnum):
-    """
-    In the 
-    """
-    # Strategy 1, bars are evenly distributed within a given width
-    # 1: |    .    |
-    # 2: | .     . |
-    # 4: | . . . . |
+# class LayerPlacementStrategies(IntEnum):
+#     """
+#     In the 
+#     """
+#     # Strategy 1, bars are evenly distributed within a given width
+#     # 1: |    .    |
+#     # 2: | .     . |
+#     # 4: | . . . . |
     
-    # 1: |    .    |
-    # 2: | .     . |
-    # 4: | ..   .. |
+#     # 1: |    .    |
+#     # 2: | .     . |
+#     # 4: | ..   .. |
 
-    centered = 1
-    outterFirst = 2
+#     centered = 1
+#     outterFirst = 2
 
 
-def getRebarLayer(Nbar:int, 
-                  barType:str, 
-                  factory:RebarFactory, 
-                  strategy:LayerPlacementStrategies = 1):
-    """
-    Creates a group of rebar at a y position in the section.
+# def getRebarLayer(Nbar:int, 
+#                   barType:str, 
+#                   factory:RebarFactory, 
+#                   strategy:LayerPlacementStrategies = 1):
+#     """
+#     Creates a group of rebar at a y position in the section.
     
 
-    Returns
-    -------
-    None.
+#     Returns
+#     -------
+#     None.
 
-    """
+#     """
 
-    factory
+#     factory
 
-def getRebarLayerRow(self, Nbar:int, barType:str, 
-                 deff:float, width:float, direction:str='x'):
-    """
-    Evenly distributes a set of bars within a row.
-    """
+# def getRebarLayerRow(self, Nbar:int, barType:str, 
+#                  deff:float, width:float, direction:str='x'):
+#     """
+#     Evenly distributes a set of bars within a row.
+#     """
     
-    if direction == 'x':
-        positions = self._getBarPositon(Nbar, self.section.b)
-        xyOut = [(x, deff) for x in positions]
-    else:
-        positions = self._getBarPositon(Nbar, self.section.d)
-        xyOut = [(deff, y) for y in positions]
+#     if direction == 'x':
+#         positions = self._getBarPositon(Nbar, self.section.b)
+#         xyOut = [(x, deff) for x in positions]
+#     else:
+#         positions = self._getBarPositon(Nbar, self.section.d)
+#         xyOut = [(deff, y) for y in positions]
     
-    bars = []
-    for ii in range(Nbar):
-        bars.append( self.factory.getRebar(barType, xyOut[ii]))
+#     bars = []
+#     for ii in range(Nbar):
+#         bars.append( self.factory.getRebar(barType, xyOut[ii]))
         
-    return  RebarCollection(bars)
+#     return  RebarCollection(bars)
             

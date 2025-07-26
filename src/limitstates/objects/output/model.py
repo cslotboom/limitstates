@@ -77,7 +77,7 @@ class GeomModelConcrete(GeomModel):
         dy0 = self.dy0
         
         x = self.xyRebar[:,0] + dx0 - self.b/2 
-        y = self.h - self.xyRebar[:,1] + dy0  -self.h/2
+        y = self.xyRebar[:,1] + dy0  -self.h/2
         return list(x), list(y)
       
     def getFillRadii(self) -> list[float]:

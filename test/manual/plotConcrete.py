@@ -4,7 +4,7 @@ import limitstates as ls
 
 
 
-Nbar = 6
+Nbar = 7
 barType = '30M'
 
 matConc  = c24.MaterialConcreteCSA24(25)
