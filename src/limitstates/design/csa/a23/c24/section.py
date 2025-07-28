@@ -5,7 +5,7 @@ Contains functions for managing sections specific to CSAo86-19
 from limitstates.objects.read import DBConfig
 from limitstates.objects.section import SectionConcrete
 from limitstates.objects.section.rebar import RebarFactory, Rebar
-from limitstates.objects.section.concrete import SectionNASolver, RebarPlacerRow, RebarPlacementConfig
+from limitstates.objects.section.concrete import SectionNASolver, RebarPlacerRow, RebarSpacingConfig
 from .material import MaterialRebarCSA24
 
 from .beamColumn import getSectionCr, getSectionSr
@@ -66,12 +66,11 @@ def getStandardRebar(barName:str,
         A rebar object at the input location.
 
     """
-
     
     if not xy:
         xy = (0,0)
             
-    rebar = REBARFACTORY.getRebar(barName, xy)
+    rebar = REBARFACTORY.getRebar(barName, xy, lUnit)
     
     if matRebar:
         rebar.mat = matRebar
@@ -172,13 +171,5 @@ def solveForNA(section: SectionConcrete,
 
 
 
-
-class RebarPlacerRowCSA24(RebarPlacerRow):
         
-    def __init__(self, section: SectionConcrete, 
-                 placementConfig: RebarPlacementConfig, 
-                 lUnit = 'mm'):
-        
-        rebarFactory = loadRebarFactory()
-        super().__init__(section, placementConfig, rebarFactory)
     

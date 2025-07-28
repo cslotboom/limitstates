@@ -32,6 +32,8 @@ class SectionConcrete:
     def __init__(self, concrete:SectionRectangle,
                         rebar:RebarCollection = None,
                         stirrups:StirrupGroup = None):
+
+        
         self.concrete = concrete
         self.rebar = rebar
         self.stirrups = stirrups
@@ -228,7 +230,7 @@ class RebarLocationEnum(IntEnum):
     Right = 4
     
 @dataclass
-class   RebarPlacementConfig:
+class   RebarSpacingConfig:
     clearSpacing: float
     cover: float
     dstirrup: float
@@ -238,21 +240,24 @@ class   RebarPlacementConfig:
 class RebarPlacer(ABC):
     
     def __init__(self, section: SectionConcrete,
-                 placementConfig: RebarPlacementConfig, 
-                 rebarFactory: RebarFactory):
+                 rebarFactory:  RebarFactory,
+                 spacingConfig: RebarSpacingConfig = None):
 
         self.section      = section 
         self.factory = rebarFactory
         
-        self.c = placementConfig.cover
-        self.s = placementConfig.clearSpacing
-        self.dstir = placementConfig.dstirrup
-        self.rcurve = placementConfig.stirrupCurveRadius
-                
+        if spacingConfig:
+            self.setSpacingConfig(spacingConfig)
+
     @abstractmethod
     def place(self, Nbars:int, barType:str):
         pass
-
+    
+    def setSpacingConfig(self, spacingConfig:RebarSpacingConfig):
+        self.c = spacingConfig.cover
+        self.s = spacingConfig.clearSpacing
+        self.dstir = spacingConfig.dstirrup
+        self.rcurve = spacingConfig.stirrupCurveRadius
 
 
 class RebarPlacerManual():
@@ -303,9 +308,9 @@ class RebarPlacerManual():
 class RebarPlacerRow(RebarPlacer):
     
     def __init__(self, section:SectionConcrete, 
-                 placementConfig:RebarPlacementConfig, 
-                 rebarFactory):
-        super().__init__(section, placementConfig, rebarFactory)
+                 rebarFactory,
+                 placementConfig:RebarSpacingConfig = None):
+        super().__init__(section, rebarFactory, placementConfig)
     
     def _setDimensions(self, location):
         if location == 1 or location == 2:
@@ -386,9 +391,29 @@ class RebarPlacerRow(RebarPlacer):
     
         return RebarCollection(layers)
     
-    def place(self, Nbars:int, barType:str, location:RebarLocationEnum):                
+    def place(self, Nbars:int, barType:str, location:RebarLocationEnum = 1):      
+        """
+        Place Nbars of the type "barType" within the rebar section. The locatin
+        enumeration is used to specify where the section the bars are placed,
+        i.e. at the bottom, top, left or right. By default the bars are placed
+        in the bottom layer.
+
+        Parameters
+        ----------
+        Nbars : int
+            The number of bars to place.
+        barType : str
+            The type of bar to place.
+        location : RebarLocationEnum
+            The location bars are placed. 1 for bottom, 2 for top, 3 for left,
+            and 4 for right.
+
+        """          
         self.section.addBars(self._place(Nbars, barType, location))
  
+    
+ 
+    
 def RebarPlacerFactory(placementStrategy: RebarPlacementStrategyEnum) -> RebarPlacer:
     # pass
     if placementStrategy == RebarPlacementStrategyEnum.BeamBottomBars:

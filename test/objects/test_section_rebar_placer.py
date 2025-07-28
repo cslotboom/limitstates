@@ -29,9 +29,9 @@ def _init_placer():
     c = 30
     s = 1.4*30
     dstirrup = 10
-    configPlacement = ls.RebarPlacementConfig(s, c, dstirrup)
+    configPlacement = ls.RebarSpacingConfig(s, c, dstirrup)
     
-    return ls.RebarPlacerRow(concreteSection, configPlacement, rebarFactory)
+    return ls.RebarPlacerRow(concreteSection, rebarFactory, configPlacement)
 
 
 def test_placement_init():

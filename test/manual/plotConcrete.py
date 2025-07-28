@@ -19,7 +19,7 @@ rebarFactory    = ls.RebarFactory(matRebar, configDB, 'mm')
 s = 1.4*30
 c = 30
 dstirrup = 10
-configPlacement = ls.RebarPlacementConfig(s, c, dstirrup)
+configPlacement = ls.RebarSpacingConfig(s, c, dstirrup)
 
 locationEnum = 1
 placer = ls.RebarPlacerRow(concreteSection, configPlacement, rebarFactory)

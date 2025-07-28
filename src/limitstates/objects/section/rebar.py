@@ -30,6 +30,9 @@ class Rebar(SectionMonolithic):
         self.d = d
         self.dnet = dnet
         self.xy = xy
+        self.rcurve = rcurve
+        self.rhook  = rhook
+        self.lenght:None
         
         self._initUnits(lUnit)
                
@@ -50,6 +53,7 @@ class Rebar(SectionMonolithic):
         lfactor = self.lConvert(self._validateLunit(lUnit))        
         return self.d * lfactor**2
 
+    #TODO: test
     def convertUnits(self, lUnit:str):
         """
         Converts the rebar length units from one set of units to another.
@@ -62,7 +66,7 @@ class Rebar(SectionMonolithic):
         """
         cfactor = self.lConvert(lUnit)
         self.lUnit = lUnit
-        self.A = self.A*cfactor
+        self.A = self.A*cfactor**2
         self.d = self.d*cfactor
         self.dnet = self.dnet*cfactor
         self.xy = (self.xy[0]*cfactor,self.xy[1]*cfactor)
@@ -311,8 +315,43 @@ class RebarFactory:
     
     def __init__(self, mat:MaterialElastic, dbConfig:DBConfig, lUnit:str):
         self.mat = mat
-        self.lUnit = lUnit
         self._loadDB(dbConfig)
+        self._initUnits(lUnit)
+        
+        self.dbcFactor = 1
+        
+    def _initUnits(self, lUnit:str='mm'):
+        """
+        Initiates units of the cross sections. Cross sections have length units
+        only.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The length unit to use. The default is 'mm'.
+        """
+        self.lUnit      = lUnit
+        self.lConverter = ConverterLength()
+    
+    def lConvert(self, outputUnit:str):
+        """
+        Get the conversion factor from the current unit to the output unit
+        for length units
+        
+        Parameters
+        ----------
+        outputUnit : str
+            The unit to get the conversion factor to.
+
+        Returns
+        -------
+        float
+            The conversion factor between the current length unit and the
+            target output length unit.
+
+        """
+
+        return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
         
     def _loadDB(self, config:DBConfig):
             
@@ -321,34 +360,69 @@ class RebarFactory:
         self.dbDict = {tmpDict[key]['name']:tmpDict[key] for key in tmpDict}
         self.barTypes = [tmpDict[key]['name'] for key in tmpDict]
 
-    # def 
+    def getRebar(self, barType:str, xy:tuple = None, lUnit = None) -> Rebar:
+        """
+        Gets a rebar of the input bar type, with propreties from the rebar
+        database.
+        Units in the database will be overwritten by the specified unit if 
+        they are different.
 
-    def getRebar(self, barType:str, xy:tuple = None) -> Rebar:
+        Parameters
+        ----------
+        barType : str
+            The bar type to create.
+        xy : tuple, optional
+            The location of the rebar from the bottom left point in the secton. 
+            The default is None.
+        lUnit : TYPE, optional
+            The output units desired for the rebar. The default is None.
+            Units in the database will be overwritten by the specified unit
+            if they are different.
+
+
+        Returns
+        -------
+        Rebar
+            DESCRIPTION.
+
+        """
         
         try:
             barParams = self.dbDict[barType]
         except:
             raise Exception(f'{barType} not found in database')
+        
+        cFactor = self.dbcFactor
+        if lUnit and self.lUnit != lUnit:
+            cFactor *= self.lConverter.getConversionFactor(self.lUnit, lUnit)
+            # cFactor *= self.cFactor
+            
         rebar = Rebar(self.mat, 
-                            barParams['name'], 
-                            barParams['d'], 
-                            barParams['dnet'], 
-                            barParams['A'],
-                            barParams['rcurve'],
-                            barParams['A'],
-                            self.lUnit)
+                        barParams['name'], 
+                        barParams['d'] * cFactor, 
+                        barParams['dnet'] * cFactor, 
+                        barParams['A'] * cFactor**2,
+                        rcurve = barParams['rcurve'] * cFactor,
+                        # barParams['A'] * cFactor**2,
+                        lUnit = self.lUnit)
      
         if xy:
             rebar.setxy(xy)
         return rebar
         
-
+    def setMaterial(self, mat:MaterialElastic):
+        self.mat = mat
+        
+    def setLunit(self, lUnit):
+        self.dbcFactor = self.lConverter.getConversionFactor(self.lUnit, lUnit)
+        self.lUnit = lUnit
 
 
 class StirrupGroup:
     rebar:Rebar
     rStirrup:float
     dstirrup:float
+    lUnit:str
 
 
 
