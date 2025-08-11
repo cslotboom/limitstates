@@ -2,8 +2,9 @@
 Contains classes for working with fire design, and modifying sections according
 to CSA o86 Annex B
 """
-
+from typing import Union
 from .....objects.fireportection import FirePortection
+
 __all__ = ["GypusmFlatCSA19", "GypusmRectangleCSA19"]
 
 # =============================================================================
@@ -34,7 +35,7 @@ class GypusmFlatCSA19(FirePortection):
     Nside:int = 1    
     portectionTypes:dict = firePortectionOptions
     
-    def __init__(self, portection: list[str] | str ):
+    def __init__(self, portection: Union[list[str] , str] ):
         if isinstance(portection, str):
             portection = [portection]
         
@@ -69,7 +70,7 @@ class GypusmRectangleCSA19(FirePortection):
     Nside:int = 4
     portectionTypes:dict = firePortectionOptions
 
-    def __init__(self, portection:list[str] | str ):
+    def __init__(self, portection: Union[list[str] , str] ):
         
         if len(portection) == 1:
             portection = portection*4

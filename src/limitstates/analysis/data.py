@@ -4,11 +4,10 @@ diagram (SFD), bending moment diagram (BMD), or
 
 """
 
-
+from typing import Union
 import hysteresis as hys
 import numpy as np
 from limitstates import ConverterLength
-# ConverterLength
 
 
 class DesignDiagram:
@@ -57,7 +56,7 @@ class DesignDiagram:
         return self.xInflections
     
         
-    def getForceAtx(self, x:float|list):
+    def getForceAtx(self, x: Union[float, list]):
         """
         A function that can be used to calcualte the y values at a set of input
         x points. Linear interpolation is used to determine y where a x point 
@@ -65,7 +64,7 @@ class DesignDiagram:
 
         Parameters
         ----------
-        x : float|list
+        x : Optional[float, list]
             The points to calcualte y values at.
 
         Returns

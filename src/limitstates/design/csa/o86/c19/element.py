@@ -1,8 +1,8 @@
 """
-Xontains specific beamcolumn implementations for CSA glulam beams.
+Contains specific beamcolumn implementations for CSA glulam beams.
 These are largely set up to ease development and provide type hints.
 """
-
+from typing import Union
 from dataclasses import dataclass
 
 from limitstates.objects import (Member, SectionRectangle, initSimplySupportedMember, 
@@ -48,12 +48,12 @@ class DesignPropsGlulam19:
     isCurved : bool
         A flag that specifies if the beam is curved. Curved members are 
         not currently supported.
-    Lx : float|list[float]
+    Lx : float,list[float]
         The beam column's unsupported length in the section's x direction, which
         is typically the strong direction.
         If the beam is mult-segment, this is a list of the beam length, multiplied
         by the factor ke from table 
-    Ly : float|list[float]
+    Ly : float,list[float]
         The beam column's unsupported length in the section's y direction, which
         is typically the weak direction.
     kexB : float
@@ -70,12 +70,12 @@ class DesignPropsGlulam19:
     """
     firePortection:GypusmRectangleCSA19 = None
     sectionFire:SectionRectangle = None
-    lateralSupport:bool|list[bool] = True
+    lateralSupport:Union[bool, list[bool]] = True
     isCurved:bool = False
-    Lx:float|list[float] = None
-    Ly:float|list[float] = None
+    Lx:Union[float,list[float]] = None
+    Ly:Union[float,list[float]] = None
     
-    kexB:float|list[float] = None
+    kexB:Union[float,list[float]]  = None
     kexC:float = None
     keyC:float = None
     
@@ -119,13 +119,13 @@ class EleDisplayPropsGlulam19(EleDisplayProps):
             self.configObjectBurnt = PlotConfigObject(MATCOLOURS['glulamBurnt'],
                                                  cFillLines = MATCOLOURS['black'])
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
+    def setPlotOrigin(self, newOriginLocation:Union[int,PlotOriginPositionEnum]):
         """
         Updates the plot 
 
         Parameters
         ----------
-        newOriginLocation : int|PlotOriginPositionEnum
+        newOriginLocation : int,PlotOriginPositionEnum
             DESCRIPTION.
 
         Returns

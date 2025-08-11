@@ -8,20 +8,22 @@ Features of a plot:
     - Show a dictionary of results
 
 """
+from typing import Union
+
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.path as mpath
+
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Circle, Polygon
+from matplotlib.axes import  Axes
 
 from .. section import SectionAbstract, SectionRectangle, SectionSteel, SteelSectionTypes, SectionCLT, SectionConcrete
 from .. element import BeamColumn
 from .. display import MATCOLOURS, PlotConfigCanvas, PlotConfigObject, PlotOriginPositionEnum
 # from .model import GeomModel, GeomModelRectangle, GeomModelIbeam, GeomModelIbeamRounded, GeomModelGlulam
 import limitstates.objects.output.model as md
-
-import matplotlib.patches as mpatches
-import matplotlib.path as mpath
-from matplotlib.axes import  Axes
 
 class SectionPlotter:
     
@@ -224,7 +226,7 @@ def _defaultConfigFactory(section) -> PlotConfigObject:
     return defaultProps
 
 def _plotGeomFactory(section: SectionAbstract, 
-                     originLocation: int|PlotOriginPositionEnum,
+                     originLocation: Union[int,PlotOriginPositionEnum],
                      xy0) -> md.GeomModel:
     """
     A function that returns the appropriate geometry object given a section.
@@ -347,7 +349,7 @@ def plotSection(section:SectionAbstract,
                 canvasConfig: PlotConfigCanvas = None,
                 objectConfig: PlotConfigObject = None,
                 ax:Axes = None,
-                summarizeGeometry: bool|list[str]=False,
+                summarizeGeometry: Union[bool, list[str]]=False,
                 *args, **kwargs):
     """
     Creates a plot of the section centered at xy0.
@@ -384,7 +386,7 @@ def plotSection(section:SectionAbstract,
     ax : Axes, optional
         An overwrite that allows plots to be created on a specific figure. 
         The default is None, which creates a new plot.
-    summarizeGeometry : bool|list[str], optional
+    summarizeGeometry : bool,list[str], optional
         XXX does not work currently.
         A list of the input attributes to summarize. The default is False.
     *args : list
@@ -640,7 +642,7 @@ def _getPlotLayers(sFire):
 
 def plotElementSection(element:BeamColumn, 
                        ax = None, 
-                       summarizeGeometry: bool|list[str]=False):
+                       summarizeGeometry: Union[bool, list[str]]=False):
     """
     Creates a plot of the section the element is using. Only applies to 
     elements that have a "eleDisplayProps" set.
@@ -658,7 +660,7 @@ def plotElementSection(element:BeamColumn,
     ax : Axes, optional
         An overwrite that allows plots to be created on a specific figure. 
         The default is None, which creates a new plot.
-    summarizeGeometry : bool|list[str], optional
+    summarizeGeometry : bool,list[str], optional
         XXX currently unused XXX
         If false, dispalys nothing.    
         If true, tries to find a default proprety list defined in the 

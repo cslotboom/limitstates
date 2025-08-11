@@ -4,7 +4,7 @@ These are largely set up to ease development and provide type hints.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 from limitstates import (Member, initSimplySupportedMember, SectionSteel)
 
 #need to input GypusmRectangleCSA19 directly to avoid circular import errors
@@ -25,34 +25,34 @@ class DesignPropsSteel24:
     lateralSupport : bool, optional
         A flag that specifies if the beam is laterally supported. 
         By default is set to true.
-    kx : float|list, optional
+    kx : float,list, optional
         The k factor in the x direction of the section, which is it's strong
         axis. The effective length used by design, Lex, is a product of kx 
         and Lx for each section.
-    ky : float|list, optional
+    ky : float,list, optional
         The k factor in the y direction of the section, which is it's weak
         axis. The effective length used by design, Ley, is a product of ky 
         and Ly for each section.
-    kz : float|list, optional
+    kz : float,list, optional
         The k factor in the z direction of the section, which is it's tortional
         axis. The effective length used by design, Lez, is a product of kz 
         and Lz for each section.
-    Lx : float|list, optional
+    Lx : float,list, optional
         The length of the beam, or spans, in the strong axis direction.
-    Ly : float|list, optional
+    Ly : float,list, optional
         The length of the beam, or spans, in the strong weak direction.
-    Lz : float|list, optional
+    Lz : float,list, optional
         The length of the beam, or spans, in the strong torisonal direction.
     webStiffened : bool, optional
         A flag that specifies is the beam has a stiffened web.
     """
-    lateralSupport:bool|list[float] = True
-    kx:float|list[float] = 1
-    ky:float|list[float] = 1
-    kz:float|list[float] = 1
-    Lx:Optional[float|list[float]] = None    
-    Ly:Optional[float|list[float]] = None    
-    Lz:Optional[float|list[float]] = None    
+    lateralSupport:Union[bool, list[float]] = True
+    kx:Union[float, list[float]] = 1
+    ky:Union[float, list[float]] = 1
+    kz:Union[float, list[float]] = 1
+    Lx:Union[float, list[float]] = None    
+    Ly:Union[float, list[float]] = None    
+    Lz:Union[float, list[float]] = None    
 
     webStiffened:float = False
     
@@ -69,12 +69,15 @@ class DesignPropsSteel24:
         self.Lez = self.Lz * self.kz
         
     def __post_init__(self):
+        """
+        In the most common case.
+        """
         pass
-        # if self.Lx and self.kx:
+        # if isinstance(self.Lx , float) and isinstance(self.kx, float):
         #     self.Lex = self.Lx * self.kx
-        # if self.Ly and self.ky:
+        # if isinstance(self.Ly , float) and isinstance(self.ky, float):
         #     self.Ley = self.Ly * self.ky
-        # if self.Lz and self.kz:
+        # if isinstance(self.Lz , float) and isinstance(self.kz, float):
         #     self.Lez = self.Lz * self.kz
                 
 class BeamColumnSteelCsa24(BeamColumn):
@@ -115,7 +118,7 @@ class BeamColumnSteelCsa24(BeamColumn):
 
         # Initialize the design propreties if none are given.        
         if designProps is None:
-            designProps = DesignPropsSteel24()
+            designProps = DesignPropsSteel24(Lx = member.L)
 
         # Initialize the design propreties if none are given.        
         if eleDisplayProps is None:
@@ -133,9 +136,9 @@ def getBeamColumnSteelCsa24(L:float, section:SectionSteel, lUnit:str='m',
                             kx:float = 1, 
                             ky:float = 1,
                             kz:float = 1,
-                            Lx:float|None = None,
-                            Ly:float|None = None,
-                            Lz:float|None = None,
+                            Lx:Union[float,None] = None,
+                            Ly:Union[float,None] = None,
+                            Lz:Union[float,None] = None,
                             lateralSupport:bool = True) -> BeamColumnSteelCsa24:
 
     """
@@ -157,15 +160,15 @@ def getBeamColumnSteelCsa24(L:float, section:SectionSteel, lUnit:str='m',
         The section the beamcolumn ises.
     lUnit : str
         The units for the input length of the member.
-    kx : float|list, optional
+    kx : float,list, optional
         The k factor in the x direction of the section, which is it's strong
         axis. The effective length used by design, Lex, is a product of kx 
         and Lx for each section.
-    ky : float|list, optional
+    ky : float,list, optional
         The k factor in the y direction of the section, which is it's weak
         axis. The effective length used by design, Ley, is a product of ky 
         and Ly for each section.
-    kz : float|list, optional
+    kz : float,list, optional
         The k factor in the z direction of the section, which is it's tortional
         axis. The effective length used by design, Lez, is a product of kz 
         and Lz for each section.

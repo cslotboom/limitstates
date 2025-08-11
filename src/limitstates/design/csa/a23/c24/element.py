@@ -2,7 +2,7 @@
 Xontains specific beamcolumn implementations for CSA glulam beams.
 These are largely set up to ease development and provide type hints.
 """
-
+from typing import Union
 from dataclasses import dataclass
 
 from limitstates.objects import (Member, SectionConcrete, initSimplySupportedMember)
@@ -37,12 +37,12 @@ class DesignPropsConcrete24:
         A flag that is set equal to true if the beamcolumn has continuous
         lateral support for bending.
         For single spans beams. For multi-segment beams.
-    Lx : float|list[float]
+    Lx : float, list[float]
         The beam column's unsupported length in the section's x direction, which
         is typically the strong direction.
         If the beam is mult-segment, this is a list of the beam length, multiplied
         by the factor ke from table 
-    Ly : float|list[float]
+    Ly : float, list[float]
         The beam column's unsupported length in the section's y direction, which
         is typically the weak direction.
     kexB : float
@@ -63,12 +63,12 @@ class DesignPropsConcrete24:
     sectionRegions:list[list[float]] = None
     
     
-    lateralSupport:bool|list[bool] = True
+    lateralSupport:Union[bool,list[bool]] = True
     
-    Lx:float|list[float] = None
-    Ly:float|list[float] = None
+    Lx:Union[float,list[float]] = None
+    Ly:Union[float,list[float]] = None
     
-    kexB:float|list[float] = None
+    kexB:Union[float,list[float]] = None
     kexC:float = None
     keyC:float = None
     
@@ -105,13 +105,13 @@ class EleDisplayPropsConcrete24(EleDisplayProps):
             self.configObjectBurnt = PlotConfigObject(MATCOLOURS['glulamBurnt'],
                                                  cFillLines = MATCOLOURS['black'])
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
+    def setPlotOrigin(self, newOriginLocation:Union[int, PlotOriginPositionEnum]):
         """
         Updates the plot 
 
         Parameters
         ----------
-        newOriginLocation : int|PlotOriginPosition
+        newOriginLocation : int,PlotOriginPosition
             DESCRIPTION.
 
         Returns
@@ -162,7 +162,7 @@ class BeamColumnConcreteCsa24(BeamColumn):
     
     def __init__(self, 
                  member: Member, 
-                 section: SectionConcrete|list[SectionConcrete],
+                 section: Union[SectionConcrete, list[SectionConcrete]],
                  designProps: DesignPropsConcrete24 = None, 
                  userProps: dataclass = None,
                  eleDisplayProps: dataclass = None):

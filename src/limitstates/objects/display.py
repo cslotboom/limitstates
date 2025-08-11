@@ -7,7 +7,7 @@ All classes are unit agnostic.
 
 
 """
-from typing import Optional
+from typing import Optional, Union
 from enum import IntEnum
 
 from dataclasses import dataclass, field
@@ -80,7 +80,7 @@ class PlotConfigObject:
         The colour to use for the outline of the object.    
     lineWidth : float, optional
         The linewidth to use for the object, in units of the canvas.
-    newOriginLocation : int|PlotOriginPositionEnum
+    newOriginLocation : int,PlotOriginPositionEnum
         A flag that changes the default location the plot is placed at.
         
         1 is plotted at the centroid.
@@ -98,11 +98,11 @@ class PlotConfigObject:
     showOutline:bool = True
     cLine:str = MATCOLOURS['black']
     lineWidth:float = 1
-    originLocation: PlotOriginPositionEnum|int = 1
+    originLocation: Union[PlotOriginPositionEnum, int] = 1
     cFillLines:Optional[str] = None
     cFillPatch:Optional[str] = None
     
-    patchType:PatchTypeEnum|int = 1
+    patchType: Union[PatchTypeEnum, int] = 1
 
 
 @dataclass
@@ -142,13 +142,13 @@ class EleDisplayProps:
         if self.configObject == None:
             self.configObject = PlotConfigObject('#B3CFE5')
             
-    def setPlotOrigin(self, newOriginLocation:int|PlotOriginPositionEnum):
+    def setPlotOrigin(self, newOriginLocation:Union[int,PlotOriginPositionEnum]):
         """
         Sets the type of origin location to use for the object.
 
         Parameters
         ----------
-        newOriginLocation : int|PlotOriginPositionEnum
+        newOriginLocation : int,PlotOriginPositionEnum
             A flag that changes the default location the plot is placed at.
             
             1 is plotted at the centroid.

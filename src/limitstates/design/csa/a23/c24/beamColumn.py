@@ -1,8 +1,7 @@
 """
 Contains the code designc clauses
 """
-from enum import IntEnum
-from math import ceil
+from typing import Union
 
 import numpy as np
 
@@ -48,7 +47,8 @@ def getEndStrain(d:float, NAtrial:float, eConc:float):
     
     return eConc * (d / NAtrial - 1)
      
-def getSteelStrains(d:float, y:float|np.ndarray, NA:float, eConc:float):
+def getSteelStrains(d:float, y:Union[float, np.ndarray], 
+                    NA:float, eConc:float):
     """
     Returns the strain at a set if input positions y, given the neutral axis
     position.
@@ -315,7 +315,7 @@ def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
 def checkSectionYield(c:float, d:float, epsCmax:float, epsyLim = 0.02):
     
     """
-    A23.3 C1.10.5.2|
+    A23.3 C1.10.5.2
     """
     
     

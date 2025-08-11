@@ -2,7 +2,7 @@
 Represents netral geometry objects - these represent objects in space and are 
 independant of any type of design
 """
-
+from typing import Union
 from dataclasses import dataclass, field
 from .support import Support, SupportTypes2D
 from .. units import ConverterLength
@@ -34,7 +34,7 @@ class Node:
         A support object, either one that is custom defined or defined using
         SupportTypes2D.
     """
-    p1:np.ndarray | list
+    p1: Union[np.ndarray, list]
     units:str = 'm'
     label:str = None
     support:Support = field(default_factory=lambda: SupportTypes2D.FREE.value)

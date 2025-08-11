@@ -2,6 +2,8 @@
 Contains functions for managing sections specific to CSAo86-19
 """
 
+from typing import Union
+
 from limitstates.objects.section import SectionConcrete, RebarLocationEnum
 from limitstates.objects import (RebarPlacerRow, RebarSpacingConfig, 
                                  RebarPlacementStrategyEnum,
@@ -16,7 +18,7 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
         
     def __init__(self, section: SectionConcrete, 
                  designProps: DesignPropsConcrete24, 
-                 rebarMat:MaterialRebarCSA24|None = None, 
+                 rebarMat: Union[MaterialRebarCSA24, None] = None, 
                  lUnit: str = None):
         
         rebarFactory = REBARFACTORY
@@ -77,7 +79,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         sectionInd: int = 0,
                         placementStrategy: RebarPlacementStrategyEnum = 1,
                         placementKwargs: dict = None,
-                        rebarMat: MaterialRebarCSA24|None = None, 
+                        rebarMat: Union[MaterialRebarCSA24, None] = None, 
                         lUnit: str = 'mm'):
     """
     

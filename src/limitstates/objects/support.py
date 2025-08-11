@@ -22,7 +22,7 @@ class Support:
     ----------
     name : str
         The name for the node.
-    fixity : list | tuple
+    fixity : list , tuple
         A list or tuple representing the fixity of the node. A one means that
         the degree of freedom is fixed, and 0 means it is free to translate.
     reaction : dict

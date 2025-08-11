@@ -3,12 +3,13 @@ Contains functions for managing sections specific to CSAo86-19
 
 Note, right now all limits are calculated at once BEFORE the 
 """
+from typing import Callable, Union
 
-from .element import BeamColumnSteelCsa24
 from limitstates import SectionSteel, SteelSectionTypes, DesignDiagram
-from typing import Callable
 from numpy import pi, cumsum
 from enum import IntEnum
+
+from .element import BeamColumnSteelCsa24
 
 """
 !!!
@@ -823,7 +824,7 @@ def getOmega1FromDesignDiagram(bmd:DesignDiagram):
 
 def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24, 
                          bmd: DesignDiagram = None, 
-                         lateralSupportType: SegmentSupportTypes | int = 3):
+                         lateralSupportType: Union[SegmentSupportTypes , int] = 3):
     """
     Returns the Mr value for each region of a multiSpanBeam.
     Each span is given a value for Mr.
@@ -859,7 +860,7 @@ def checkMrBeamMultiSpan(element: BeamColumnSteelCsa24,
         The multi-span element to check.
     bmd : DesignDiagram
         The bending moment diagram for the load case to be checked.
-    lateralSupportType : SegmentSupportTypes | int, optional
+    lateralSupportType : SegmentSupportTypes , int, optional
         The type of lateral support condition for bending. The default is 3:
             
         - 1 will return a beam lateral restraint on all segments

@@ -29,4 +29,4 @@ beam = s16.BeamColumnSteelCsa24(member, section)
 Mr = s16.checkBeamMrSupported(beam) / 1000
 
 # Make a Plot of the Section.
-fig, ax = ls.plotElementSection(beam, True)
+fig, ax = ls.plotElementSection(beam)

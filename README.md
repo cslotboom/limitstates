@@ -39,6 +39,9 @@ beam = s16.BeamColumnSteelCsa24(member, section)
 
 # Check capacity assuming it's laterally supported using CSA's s16 standard.
 Mr = s16.checkBeamMrSupported(beam) / 1000
+
+# Make a Plot of the Section.
+fig, ax = ls.plotElementSection(beam)
 ```
 
 # Installation
@@ -88,7 +91,7 @@ The specific items required for version 1 are below:
 - [x] Add beam shear checks.
 
 #### CSA S16
-- [ ] Develop multi-span beam checks.
+- [x] Develop multi-span beam checks.
 - [ ] Add beam shear checks.
 
 #### CSA A23.3

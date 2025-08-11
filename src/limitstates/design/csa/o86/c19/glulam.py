@@ -1,6 +1,8 @@
 """
 Contains the code designc clauses
 """
+
+from typing import Union
 from numpy import pi, diff, cumsum
 from enum import IntEnum
 
@@ -184,7 +186,7 @@ def checkGlulamMr(S:float, Fb:float, kzbg:float, kL:float = 1, kx:float=1,
     
 #     return checkGlulamMr(Smm, section.mat.fb*knet, kzbg, kL, kx, phi)
 
-def _checkIfLatSupport(supportCondition:bool|list[bool]):
+def _checkIfLatSupport(supportCondition:Union[bool, list[bool]]):
     """
     Checks a simple span if it is laterally supported
     """
@@ -397,7 +399,7 @@ class SegmentSupportTypes(IntEnum):
 
 def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19, 
                               bmd: DesignDiagram, 
-                              lateralSupportType: SegmentSupportTypes | int = 2,
+                              lateralSupportType: Union[SegmentSupportTypes , int] = 2,
                               knet:float = 1, 
                               useFire:bool = False,
                               kse = 1, kt = 1, kx = 1):
@@ -428,7 +430,7 @@ def checkMrGlulamBeamMultiSpan(element: BeamColumnGlulamCsa19,
         The multi-span element to check.
     bmd : DesignDiagram
         The bending moment diagram for the load case to be checked.
-    lateralSupportType : SegmentSupportTypes | int, optional
+    lateralSupportType : SegmentSupportTypes , int, optional
         The type of lateral support condition for bending. The default is 2.
         
         - 1 will return a beam with continous lateral supported on all segments
