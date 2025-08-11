@@ -24,18 +24,16 @@ class SectionConcrete:
     
     
     """
-    concrete:SectionRectangle
-    rebar:RebarCollection
-    stirrups:StirrupGroup
+    concrete: SectionRectangle
+    rebar: RebarCollection
+    stirrups: StirrupGroup
     
     
-    def __init__(self, concrete:SectionRectangle,
-                        rebar:RebarCollection = None,
-                        stirrups:StirrupGroup = None):
-
-        
+    def __init__(self, concrete: SectionRectangle,
+                        rebar: RebarCollection = None,
+                        stirrups: StirrupGroup = None):        
         self.concrete = concrete
-        self.rebar = rebar
+        self.rebar    = rebar
         self.stirrups = stirrups
 
     # TODO: DOCUMENT
@@ -47,15 +45,39 @@ class SectionConcrete:
 
     def getdMax(self, xDirection:bool=False, 
                 positiveMoment:bool=True):
-        
-        if xDirection:
-            positions = self.rebar.getxCoords()
-        else:
-            positions = self.rebar.getyCoords()
-        return positions
+        pass
+        # if xDirection:
+        #     positions = self.rebar.getxCoords()
+        # else:
+        #     positions = self.rebar.getyCoords()
+        # return positions
 
-    def getWidth(self, yMoment:bool = True, 
-                 positiveMoment = True, lunit = 'mm'):
+    def getWidth(self, 
+                 yMoment: bool = True, 
+                 positiveMoment: bool = True, 
+                 lunit:str = None):
+        """
+        The default units are mm
+
+        Parameters
+        ----------
+        yMoment : bool, optional
+            DESCRIPTION. The default is True.
+        positiveMoment : bool, optional
+            DESCRIPTION. The default is True.
+        lunit : str, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        b : TYPE
+            DESCRIPTION.
+
+        """
+        
+        if not lunit:
+            lunit = 'mm'
+        
         lfactor = self.concrete.lConvert(lunit)
         if yMoment:
             b = self.concrete.b * lfactor
@@ -63,8 +85,12 @@ class SectionConcrete:
             b = self.concrete.d * lfactor
         return b
 
-    def getDepth(self, yMoment:bool = True, 
-                 positiveMoment = True, lunit = 'mm'):
+    def getDepth(self, yMoment: bool = True, 
+                 positiveMoment: bool = True, 
+                 lunit: str = None):
+                
+        if not lunit:
+            lunit = 'mm'
         lfactor = self.concrete.lConvert(lunit)
         if yMoment:
             d = self.concrete.d * lfactor
@@ -116,7 +142,7 @@ class SectionNASolver:
     def __init__(self, section: SectionConcrete, 
                  concreteFunction, steelFunction,
                  Pf:float = 0, yMoment: bool = True, 
-                 positiveMoment:bool = True,
+                 positiveMoment: bool = True,
                  tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
 
@@ -161,10 +187,11 @@ class SectionNASolver:
         Checks the equlibrium at the current state.
 
         """
-        Cr = self.getCr(NAtrial)
+        Cr     = self.getCr(NAtrial)
         Fsteel = self.getFsteel(NAtrial)        
         Fnet = np.sum(Fsteel)
-        ratio = float(Fnet/Cr)
+        # ratio = float(Fnet/Cr)
+        ratio = abs(Fnet/Cr)
 
         return ratio
     
@@ -221,7 +248,7 @@ def solveForNA(section: SectionConcrete,
 class RebarPlacementStrategyEnum(IntEnum):
     Face = 1
     Perimeter = 2
-    FaceWithRadius = 1
+    FaceWithRadius = 3
 
 class RebarLocationEnum(IntEnum):
     Bottom = 1
@@ -253,7 +280,7 @@ class RebarPlacer(ABC):
     def place(self, Nbars:int, barType:str):
         pass
     
-    def setSpacingConfig(self, spacingConfig:RebarSpacingConfig):
+    def setSpacingConfig(self, spacingConfig: RebarSpacingConfig):
         self.c = spacingConfig.cover
         self.s = spacingConfig.clearSpacing
         self.dstir = spacingConfig.dstirrup
@@ -264,9 +291,9 @@ class RebarPlacerManual():
     def __init__(self, factory:RebarFactory):
         self.factory = factory
         
-    def getRebarLayer(self, Nbar:int, barType:str, 
-                     deff:float, width:float, offset:float = 0, 
-                     yDirection:bool = True) -> RebarLayer:
+    def getRebarLayer(self, Nbar: int, barType: str, 
+                     deff: float, width: float, offset:float = 0, 
+                     yDirection: bool = True) -> RebarLayer:
         """
         Evenly distributes Nbar of the given type within a row width wide, 
         and centered around deff.

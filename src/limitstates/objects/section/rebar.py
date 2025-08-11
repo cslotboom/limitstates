@@ -264,7 +264,7 @@ class RebarCollection:
         #     return np.concatenate(coords)
         # else:
         #     return coords
-    
+    # TODO: FIX THE DIRECTION
     def getdeff(self, direction = 'y', lUnit = ''):
         """
         Calcualtes the effective depth of a rebar group, which
@@ -313,14 +313,14 @@ class RebarCollection:
 
 class RebarFactory:
     
-    def __init__(self, mat:MaterialElastic, dbConfig:DBConfig, lUnit:str):
+    def __init__(self, mat: MaterialElastic, dbConfig: DBConfig, lUnit: str):
         self.mat = mat
         self._loadDB(dbConfig)
         self._initUnits(lUnit)
         
         self.dbcFactor = 1
         
-    def _initUnits(self, lUnit:str='mm'):
+    def _initUnits(self, lUnit: str = None):
         """
         Initiates units of the cross sections. Cross sections have length units
         only.
@@ -330,6 +330,8 @@ class RebarFactory:
         lUnit : str, optional
             The length unit to use. The default is 'mm'.
         """
+        if not lUnit:
+            lUnit = 'mm'
         self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
@@ -424,6 +426,8 @@ class StirrupGroup:
     dstirrup:float
     lUnit:str
 
-
+    def __init__(self, rebar:Rebar):
+        self.rebar = rebar
+        
 
 

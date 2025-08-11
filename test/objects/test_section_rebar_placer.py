@@ -1,8 +1,10 @@
 """
-Tests if materials can initalize correctly and use unit conversions.
+Author: CS
+Date: 202050803
+Description:
+    Checks if rebar is palced correctly.
 """
 
-import pytest
 import limitstates.design.csa.a23.c24 as c24
 import limitstates as ls
 

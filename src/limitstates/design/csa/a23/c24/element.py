@@ -33,18 +33,10 @@ class DesignPropsConcrete24:
 
     Parameters
     ----------
-    firePortection : GypusmRectangleCSA19
-        The the structural member used to represent the beam's position,
-        orientation and support conditions.
-    sectionFire : SectionRectangle
-        The fire section for the beamcolumn member.
     lateralSupport : bool, optional
         A flag that is set equal to true if the beamcolumn has continuous
         lateral support for bending.
         For single spans beams. For multi-segment beams.
-    isCurved : bool
-        A flag that specifies if the beam is curved. Curved members are 
-        not currently supported.
     Lx : float|list[float]
         The beam column's unsupported length in the section's x direction, which
         is typically the strong direction.
@@ -65,17 +57,20 @@ class DesignPropsConcrete24:
         A factor that converts the actual span length into the effective span
         length for compression. See table A.4 for guidance. 
     """
+    
+    
+    cover:float = None
+    sectionRegions:list[list[float]] = None
+    
+    
     lateralSupport:bool|list[bool] = True
-    isCurved:bool = False
+    
     Lx:float|list[float] = None
     Ly:float|list[float] = None
     
     kexB:float|list[float] = None
     kexC:float = None
     keyC:float = None
-    
-    burnDimensions:list[float] = None
-
     
     def setkexB(self, kexB):
         self.kexB  = kexB
@@ -163,14 +158,21 @@ class BeamColumnConcreteCsa24(BeamColumn):
 
     """
     designProps:DesignPropsConcrete24
+    section:SectionConcrete
     
-    def __init__(self, member:Member, section:SectionConcrete,
-                 designProps:DesignPropsConcrete24 = None, 
-                 userProps:dataclass = None,
-                 eleDisplayProps:dataclass = None):
+    def __init__(self, 
+                 member: Member, 
+                 section: SectionConcrete|list[SectionConcrete],
+                 designProps: DesignPropsConcrete24 = None, 
+                 userProps: dataclass = None,
+                 eleDisplayProps: dataclass = None):
 
+        if isinstance(section, list):
+            raise Exception('MultiSection Elements are not supported yet.')
+        
         
         self._initMain(member, section)
+        
         # Initialize the design propreties if none are given.        
         if designProps is None:
             designProps = DesignPropsConcrete24()
@@ -178,8 +180,7 @@ class BeamColumnConcreteCsa24(BeamColumn):
         # Initialize the design propreties if none are given.        
         if eleDisplayProps is None:
             eleDisplayProps = EleDisplayPropsConcrete24(self.section, 
-                                                   self.member,
-                                                   sectionFire = designProps.sectionFire)
+                                                        self.member)
 
         self._initProps(designProps, userProps, eleDisplayProps)
         
@@ -189,14 +190,11 @@ class BeamColumnConcreteCsa24(BeamColumn):
     def setLy(self, Ly):
         self.designProps.Ly = Ly       
     
-    def setSectionFire(self, sectionFire, burnDims = None):
-        self.designProps.sectionFire = sectionFire
-        self.eleDisplayProps.sectionFire = sectionFire
-        
-        if burnDims is not None:
-            self.designProps.burnDimensions = burnDims
-            self.eleDisplayProps.burnDimensions = burnDims
-
+    def getSection(self, ind: int = 0):
+        if isinstance(self.section, list):
+            return self.section[ind]
+        else:
+            return self.section
 
 
 

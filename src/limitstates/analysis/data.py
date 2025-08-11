@@ -102,10 +102,12 @@ class DesignDiagram:
         return max(abs(y[ind1:ind2]))
     
     
-    def _initUnits(self, lUnit:str='m'):
+    def _initUnits(self, lUnit:str=None):
         """
-        Inititiates the unit of the section.
+        Inititiates the unit of the section. Units are m by default.
         """
+        if not lUnit:
+            lUnit = 'm'
         self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     

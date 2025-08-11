@@ -74,10 +74,10 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
     
 def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         Nbars: int, barType: str,
-                        sectionInd: int = 0,
+                        sectionInd = 0,
                         placementStrategy: RebarPlacementStrategyEnum = 1,
                         placementKwargs: dict = None,
-                        rebarMat: MaterialRebarCSA24|None = None, 
+                        rebarMat:MaterialRebarCSA24|None = None, 
                         lUnit: str = 'mm'):
     """
     

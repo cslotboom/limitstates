@@ -3,6 +3,7 @@ The material library contains material models
 """
 
 from limitstates import MaterialElastic
+from limitstates.units import ConverterLength
 from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, DBConfig, _sortCLTMatDict
 
 __all__ = ["MaterialConcreteCSA24", "MaterialRebarCSA24"]
@@ -25,8 +26,9 @@ class MaterialConcreteCSA24(MaterialElastic):
     beta:float = 0.9
 
     def __init__(self, fc:float, amax = 20, ey = 0.0035,
-                 sUnit:str='MPa', rhoUnit='kg/m3'):
+                 sUnit:str='MPa', rhoUnit='kg/m3', lUnit:str='mm'):
         self._initUnits(sUnit, rhoUnit)
+        self._initLUnit(lUnit)
         # self.__dict__.update(matDict)
         self.ey = ey
         
@@ -56,7 +58,28 @@ class MaterialConcreteCSA24(MaterialElastic):
 
     def setE(self):
         self.E = 1
+    
+    def _initLUnit(self, lUnit:str):
+        self.lUnit      = lUnit
+        self.lConverter = ConverterLength()
+    
+    def lConvert(self, outputUnit:str):
+        """
+        Get the conversion factor from the current unit to the output unit
+        in stress units.
+        
+        Parameters
+        ----------
+        outputUnit : str
+            The desired output unit for stress.
 
+        Returns
+        -------
+        float
+            The conversion factor between the base unit and the output unit.
+
+        """
+        return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
 
 class MaterialRebarCSA24(MaterialElastic):
 
@@ -92,6 +115,5 @@ class MaterialRebarCSA24(MaterialElastic):
 
     def _verifyMat(self):
         pass
-    
-    # def setG(self):
-    #     self.G = self.E / 16
+
+        

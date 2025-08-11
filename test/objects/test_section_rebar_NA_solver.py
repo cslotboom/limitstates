@@ -33,7 +33,7 @@ def _get_beam_1():
     placer = ls.RebarPlacerManual(rebarFactory)
     
     layer2 = placer.getRebarLayer(2, '25M', deff, 300)
-    Lbars = ls.RebarCollection([layer2])
+    Lbars  = ls.RebarCollection([layer2])
     concreteSection = ls.SectionConcrete(section, Lbars)
    
     return concreteSection
