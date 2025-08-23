@@ -27,7 +27,7 @@ class SectionAbstract(ABC):
     """
     
     @abstractmethod
-    def getEIx(lUnit='m', sUnit='Pa' ):
+    def getEIx(lUnit: str = 'm', sUnit: str = 'Pa' ):
         """
         Returns EI about the sections local x axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^4  
@@ -49,7 +49,7 @@ class SectionAbstract(ABC):
         pass
     
     @abstractmethod
-    def getEIy(lUnit='m', sUnit='Pa'):
+    def getEIy(lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns EI about the sections local y axis, which is generally the 
         weak axis. Returns in units of sUnit x lUnit^4  
@@ -70,7 +70,7 @@ class SectionAbstract(ABC):
         pass
     
     @abstractmethod
-    def getGAx(lUnit='m', sUnit='Pa'):
+    def getGAx(lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns GA about the sections local x axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^2  
@@ -111,7 +111,7 @@ class SectionAbstract(ABC):
         """
         pass
     
-    def _initUnits(self, lUnit:str='mm'):
+    def _initUnits(self, lUnit: str = 'mm'):
         """
         Initiates units of the cross sections. Cross sections have length units
         only.
@@ -125,7 +125,7 @@ class SectionAbstract(ABC):
         self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
-    def lConvert(self, outputUnit:str):
+    def lConvert(self, outputUnit: str):
         """
         Get the conversion factor from the current unit to the output unit
         for length units
@@ -167,10 +167,10 @@ class SectionMonolithic(SectionAbstract):
     def __len__(self):
         return 1
     
-    def _getCfactors(self, lUnit='m', sUnit='Pa'):
+    def _getCfactors(self, lUnit: str = 'm', sUnit: str ='Pa'):
         return self.mat.sConvert(sUnit), self.lConvert(lUnit)
     
-    def getEA(self, lUnit='m', sUnit='Pa'):
+    def getEA(self, lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns the axis stiffness EA for the section. 
         Returns in units of sUnit x lUnit^2  
@@ -192,7 +192,7 @@ class SectionMonolithic(SectionAbstract):
         sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.A * lfactor**2
         
-    def getEIx(self, lUnit='m', sUnit='Pa'):
+    def getEIx(self, lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns EI about the sections local x axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^4  
@@ -213,7 +213,7 @@ class SectionMonolithic(SectionAbstract):
         sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Ix * lfactor**4        
     
-    def getEIy(self, lUnit='m', sUnit='Pa'):
+    def getEIy(self, lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns EI about the sections local y axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^4  
@@ -234,7 +234,7 @@ class SectionMonolithic(SectionAbstract):
         sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Iy * lfactor**4
     
-    def getGAx(self, lUnit='m', sUnit='Pa'):
+    def getGAx(self, lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns GA about the sections local x axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^2  
@@ -255,7 +255,7 @@ class SectionMonolithic(SectionAbstract):
         sfactor, lfactor = self._getCfactors(lUnit, sUnit)
         return self.mat.E * sfactor * self.Avx * lfactor**2
          
-    def getGAy(self, lUnit='m', sUnit='Pa'):
+    def getGAy(self, lUnit: str = 'm', sUnit: str = 'Pa'):
         """
         Returns GA about the sections local y axis, which is generally the 
         strong axis. Returns in units of sUnit x lUnit^2  
@@ -325,9 +325,10 @@ class SectionGeneric(SectionMonolithic):
 
     """
     
-    def __init__(self, mat:MaterialElastic, Ix:float = 1, A:float = 1, 
-                 Iy:float = 1, J:float = 1, Avx:float = None, Avy:float = None, 
-                 lUnit:str='mm'):
+    def __init__(self, mat: MaterialElastic, Ix: float = 1, A: float = 1, 
+                 Iy: float = 1, J: float = 1, Avx: float = None, 
+                 Avy: float = None, 
+                 lUnit: str = 'mm'):
 
         
         self.mat:MaterialAbstract = mat
@@ -356,7 +357,8 @@ class SectionRectangle(SectionMonolithic):
 
     """
     
-    def __init__(self, mat:MaterialElastic, b:float, d:float, lUnit:str='mm'):
+    def __init__(self, mat: MaterialElastic, 
+                 b: float, d: float, lUnit: str = 'mm'):
         self._initUnits(lUnit)
         self.mat = mat
         
@@ -535,7 +537,7 @@ class SectionSteel(SectionMonolithic):
         else:
             return self.Sy*lfactor**3    
     
-    def getI(self, useX = True, lUnit = 'mm'):
+    def getI(self, useX: bool = True, lUnit:str = 'mm'):
         """
         Returns the section's moment of inertia in the units 
         and direction input.

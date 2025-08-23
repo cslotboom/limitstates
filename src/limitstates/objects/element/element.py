@@ -224,17 +224,19 @@ class BeamColumn(Element1D):
 
     """
     
-    def __init__(self, member:Member, section:SectionAbstract, 
-                 designProps:dataclass = None, userProps:dict = None,
-                 eleDisplayProps:EleDisplayProps = None):
+    def __init__(self, member: Member, section: SectionAbstract, 
+                 designProps: dataclass = None, userProps: dict = None,
+                 eleDisplayProps: EleDisplayProps = None):
         
         self._initMain(member, section)
         self._initProps(designProps, userProps, eleDisplayProps)
 
       
-    def _initMain(self, member:Member, section:SectionAbstract, lUnit:str='m'):
-        self.member:Member = member
-        self.section:SectionAbstract = section
+    def _initMain(self, member: Member, 
+                  section: SectionAbstract, 
+                  lUnit: str='m'):
+        self.member = member
+        self.section = section
             
     def __repr__(self):
         return f"<limitstates {self.member.L}{self.member.lUnit} BeamColumn>"

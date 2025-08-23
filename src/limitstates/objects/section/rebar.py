@@ -107,15 +107,14 @@ class RebarGroup(collections.UserList):
         """ Returns an array of the rebar coordinants. """
         return self.getCoords(lUnit)[:,0]
     
-    def getdeff(self, direction:str = 'y', lUnit:str = ''):
+    def getyAvg(self, lUnit: str = ''):
         """
         Calcualtes the effective depth of a rebar group, which
         is the average position of the rebar.
 
         Parameters
         ----------
-        direction : str, optional
-            The direction to calculate deff in. The default is 'y'.
+
 
         Returns
         -------
@@ -124,10 +123,34 @@ class RebarGroup(collections.UserList):
 
         """
 
-        if direction == 'y':
-            return np.average(self.getyCoords(lUnit))
-        elif direction == 'x':
-            return np.average(self.getxCoords(lUnit))
+        return np.average(self.getyCoords(lUnit))
+
+
+    def getxAvg(self, lUnit: str = ''):
+        """
+        Calcualtes the effective depth of a rebar group, which
+        is the average position of the rebar.
+
+        Parameters
+        ----------
+        direction : str, optional
+            The direction to calculate deff in. The default is 'y'.
+        posMoment : bool, optional
+            A flag that specifies if moment is positive or negative. Positive
+            moment is defined as moment that creates tension at the "bottom"
+            of the beam. e.g. a simply supported beam has positive bending.
+            
+            If set to true, then the NA will be measured from the "bottom" of the
+            section, which will be assumed to be in compression.
+            
+            The default is True.
+        Returns
+        -------
+        float
+            The average depth of the rebar within the group.
+
+        """
+        return np.average(self.getxCoords(lUnit))
         
     def getNetArea(self, lUnit = ''):
         lUnit = self[0]._validateLunit(lUnit)
@@ -156,14 +179,15 @@ class RebarGroup(collections.UserList):
 class RebarLayer(RebarGroup):
     
 
-    def getdeff(self, direction = 'y', lUnit = ''):
+    def getyAvg(self, lUnit: str = ''):
         """
         Returns the depth of a rebar layer in the input direction.
 
         Parameters
         ----------
-        direction : str, optional
-            The direction to calculate deff in. The default is 'y'.
+        yMoment : bool, optional
+            A flag that controls the direction deff is calculated in. 
+            The default is 'y'.
 
         Returns
         -------
@@ -176,10 +200,32 @@ class RebarLayer(RebarGroup):
         lUnit = bar._validateLunit(lUnit)
         lfactor = bar.lConvert(lUnit)     
         
-        if direction == 'y':
-            return bar.xy[1] * lfactor
-        elif direction == 'x':
-            return bar.xy[0] * lfactor
+        return bar.xy[1] * lfactor
+
+    def getxAvg(self, lUnit: str = ''):
+        """
+        Returns the depth of a rebar layer in the input direction.
+
+        Parameters
+        ----------
+        yMoment : bool, optional
+            A flag that controls the direction deff is calculated in. 
+            The default is 'y'.
+
+        Returns
+        -------
+        float
+            The average depth of the rebar within the group.
+
+        """
+        
+        bar = self[0]
+        lUnit = bar._validateLunit(lUnit)
+        lfactor = bar.lConvert(lUnit)     
+        return bar.xy[0] * lfactor
+
+
+
 
 class RebarCollection:
     
@@ -258,22 +304,15 @@ class RebarCollection:
         """ Returns an array of the rebar coordinants. """
         return self._getDirCoords(0, lUnit, flatten)
 
-
-
-        # if flatten:
-        #     return np.concatenate(coords)
-        # else:
-        #     return coords
-    # TODO: FIX THE DIRECTION
-    def getdeff(self, direction = 'y', lUnit = ''):
+    def getyAvg(self, lUnit: str = 'mm'):
         """
-        Calcualtes the effective depth of a rebar group, which
+        Calculates the effective depth of a rebar group, which
         is the average position of the rebar.
+        
+        Depth is measured from the top of a rebar section
 
         Parameters
         ----------
-        direction : str, optional
-            The direction to calculate deff in. The default is 'y'.
 
         Returns
         -------
@@ -286,22 +325,41 @@ class RebarCollection:
         A = 0
         for group in self.groups:
             Atemp = group.getNetArea(lUnit)
-            dA += group.getdeff(direction, lUnit) * Atemp
+            dA += group.getyAvg(lUnit) * Atemp
             A  += Atemp
-            
         return dA / A
-        # if direction == 'y':
-        #     return np.average(self.getyCoords())
-        # elif direction == 'x':
-        #     return np.average(self.getxCoords())
-            
+    
+    def getxAvg(self, lUnit: str = 'mm'):
+        """
+        Calculates the effective depth of a rebar group, which
+        is the average position of the rebar.
+        
+        Depth is measured from the top of a rebar section
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        float
+            The average depth of the rebar within the group.
+
+        """
+        
+        dA = 0
+        A = 0
+        for group in self.groups:
+            Atemp = group.getNetArea(lUnit)
+            dA += group.getxAvg(lUnit) * Atemp
+            A  += Atemp
+        return dA / A  
+    
     def getAreas(self, lUnit = ''):  
         areas = []
         for group in self.groups:
             areas.append(group.getAreas(lUnit))
             
         return areas
-
         
     def getNetArea(self, lUnit = ''):
         

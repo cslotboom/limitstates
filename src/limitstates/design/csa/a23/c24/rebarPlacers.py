@@ -74,6 +74,7 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
          
         
     
+    
 def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         Nbars: int, barType: str,
                         sectionInd: int = 0,
@@ -126,3 +127,47 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
         placer.place(Nbars, barType, location)
         
     
+def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
+                            Nbars: int, barType: str,
+                            sectionInd: int = 0,
+                            location: RebarLocationEnum = 1,
+                            rebarMat: Union[MaterialRebarCSA24, None] = None, 
+                            lUnit: str = 'mm'):
+    """
+    
+    
+
+    Parameters
+    ----------
+    element : BeamColumnConcreteCsa24
+        DESCRIPTION.
+    Nbars : int
+        DESCRIPTION.
+    barType : str
+        DESCRIPTION.
+    sectionInd : TYPE, optional
+        DESCRIPTION. The default is 0.
+    placementStrategy : RebarPlacementStrategyEnum, optional
+        DESCRIPTION. The default is 1.
+    placementKwargs : dict, optional
+        DESCRIPTION. The default is None.
+
+    Raises
+    ------
+    Exception
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    if isinstance(element.section, list):
+        raise Exception('Multiple sections in a concrete element is not supported.')
+    section = element.section
+    
+    placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
+
+    placer.place(Nbars, barType, location)
+        

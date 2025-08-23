@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from .section import SectionMonolithic, SectionRectangle
+from .section import SectionRectangle
 from .rebar import RebarFactory, RebarCollection, StirrupGroup, Rebar, RebarLayer
 
 
@@ -44,7 +44,7 @@ class SectionConcrete:
             self.rebar.addBars(rebar.groups)
 
     def getdMax(self, xDirection:bool=False, 
-                positiveMoment:bool=True):
+                posMoment:bool=True):
         pass
         # if xDirection:
         #     positions = self.rebar.getxCoords()
@@ -54,8 +54,8 @@ class SectionConcrete:
 
     def getWidth(self, 
                  yMoment: bool = True, 
-                 positiveMoment: bool = True, 
-                 lunit:str = None):
+                 posMoment: bool = True, 
+                 lunit: str = 'mm'):
         """
         The default units are mm
 
@@ -63,20 +63,26 @@ class SectionConcrete:
         ----------
         yMoment : bool, optional
             DESCRIPTION. The default is True.
-        positiveMoment : bool, optional
-            DESCRIPTION. The default is True.
+        posMoment : bool, optional
+            A flag that specifies if moment is positive or negative. Positive
+            moment is defined as moment that creates tension at the "bottom"
+            of the beam. e.g. a simply supported beam has positive bending.
+            
+            If set to true, then the NA will be measured from the "bottom" of the
+            section, which will be assumed to be in compression.
+            
+            The default is True.
         lunit : str, optional
             DESCRIPTION. The default is None.
 
         Returns
         -------
         b : TYPE
-            DESCRIPTION.
+            The width of the beam in the input set of units.
 
         """
         
-        if not lunit:
-            lunit = 'mm'
+           
         
         lfactor = self.concrete.lConvert(lunit)
         if yMoment:
@@ -86,17 +92,56 @@ class SectionConcrete:
         return b
 
     def getDepth(self, yMoment: bool = True, 
-                 positiveMoment: bool = True, 
-                 lunit: str = None):
+                 lUnit: str = 'mm'):
                 
-        if not lunit:
-            lunit = 'mm'
-        lfactor = self.concrete.lConvert(lunit)
+        lfactor = self.concrete.lConvert(lUnit)
         if yMoment:
             d = self.concrete.d * lfactor
         else:
             d = self.concrete.b * lfactor
         return d
+    
+    
+    def getdeff(self, yMoment: bool = True, 
+                posMoment: bool = True,
+                lUnit: str = 'mm'):
+        """
+        
+
+        Parameters
+        ----------
+        yMoment : bool, optional
+            A flag that specifies if moment is applied in the y or x direction. 
+            The default is True, for moment being applied about the x axis.
+        posMoment : bool, optional
+            A flag that specifies if moment is positive or negative. Positive
+            moment is defined as moment that creates tension at the "bottom"
+            of the beam. e.g. a simply supported beam has positive bending.
+            
+            If set to true, then the NA will be measured from the "bottom" of the
+            section, which will be assumed to be in compression.
+            
+            The default is True.
+        lUnit : str, optional
+            DESCRIPTION. The default is 'mm'.
+
+        Returns
+        -------
+        deff : TYPE
+            DESCRIPTION.
+
+        """
+
+        if yMoment:
+            davg = self.rebar.getyAvg(lUnit)
+        else:
+            davg = self.rebar.getxAvg(lUnit)
+        if posMoment:
+            d = self.getDepth(yMoment, lUnit)
+            deff = d - davg
+        else:
+            deff = davg
+        return deff
 
 class SectionNASolver:
     """
@@ -121,9 +166,15 @@ class SectionNASolver:
     yMoment : bool, optional
         A flag that specifies if moment is applied in the y or x direction. 
         The default is True, for moment being applied about the x axis.
-    positiveMoment : bool, optional
-        A flag that specifies is moment is positive or negative. 
-        The default is True for positive
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
+        moment is defined as moment that creates tension at the "bottom"
+        of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
     tol : float, optional
         The tolerance required for convergence, i.e. the difference between
         the calcualted concrete and steel force. The default is 1e-3.
@@ -142,7 +193,7 @@ class SectionNASolver:
     def __init__(self, section: SectionConcrete, 
                  concreteFunction, steelFunction,
                  Pf:float = 0, yMoment: bool = True, 
-                 positiveMoment: bool = True,
+                 posMoment: bool = True,
                  tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
 
@@ -154,7 +205,7 @@ class SectionNASolver:
         self.steelFunction = steelFunction
         
         self.yMoment = yMoment
-        self.positiveMoment = positiveMoment
+        self.posMoment = posMoment
         
         if yMoment:
             self.rebarCoords = self.rebar.getyCoords(flatten=True)
@@ -166,7 +217,7 @@ class SectionNASolver:
             self.b = section.concrete.d
 
         # If the moment isn't positive, flip the orientation of the rebar
-        if not positiveMoment:
+        if not posMoment:
             self.rebarCoords = self.d - self.rebarCoords
         
         self.tol = tol
@@ -175,11 +226,11 @@ class SectionNASolver:
 
     def getCr(self, NAtrial):
         return self.compressiveFunction(self.section, NAtrial, 
-                                        self.yMoment, self.positiveMoment)
+                                        self.yMoment, self.posMoment)
     
     def getFsteel(self, NAtrial):
         return self.steelFunction(self.section, NAtrial, 
-                                        self.yMoment, self.positiveMoment)
+                                        self.yMoment, self.posMoment)
 
         
     def checkEqulibrium(self, NAtrial):
@@ -236,11 +287,11 @@ class SectionNASolver:
 
 def solveForNA(section: SectionConcrete, 
              Pf:float = 0, yMoment: bool = True, 
-             positiveMoment = True,
+             posMoment = True,
              tol: float = 1e-3, maxIter: float = 100):
     
     
-    naSolver = SectionNASolver(section, Pf, yMoment, positiveMoment, 
+    naSolver = SectionNASolver(section, Pf, yMoment, posMoment, 
                                tol, maxIter)
 
     return naSolver.calcNA()
@@ -256,6 +307,18 @@ class RebarLocationEnum(IntEnum):
     Left = 3
     Right = 4
     
+    
+placementDict = {(True,  True):  RebarLocationEnum.Bottom, 
+                 (True,  False): RebarLocationEnum.Top, 
+                 (False, True):  RebarLocationEnum.Left, 
+                 (False, False): RebarLocationEnum.Right }
+
+def getRebarLocationEnum(yMoment:bool = True, 
+                         posMoment:bool = True) -> RebarLocationEnum:
+    return placementDict[(yMoment, posMoment)]
+
+
+
 @dataclass
 class   RebarSpacingConfig:
     clearSpacing: float

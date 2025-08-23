@@ -73,7 +73,7 @@ def test_Rebar_group():
     assert ycoords[2] == xy[1]
     
     # deff
-    assert 350 == bars1.getdeff()
+    assert 350 == bars1.getyAvg()
     
     # Anet
     assert 2100 == bars1.getNetArea()
@@ -117,7 +117,7 @@ def test_Rebar_Collection():
     
     
     # deff
-    assert 375 == barCollection.getdeff()
+    assert 375 == barCollection.getyAvg()
     
     # Anet
     assert 4200 == barCollection.getNetArea()
@@ -167,7 +167,7 @@ def test_Rebar_layer_placement_1():
     config = DBConfig('csa', 'rebar', 'rebar')
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
 
-    placer = ls.RebarPlacer(rebarFactory)
+    placer = ls.RebarPlacerManual(rebarFactory)
 
     d = 400
     b = 350

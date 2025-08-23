@@ -157,8 +157,8 @@ class BeamColumnConcreteCsa24(BeamColumn):
     None.
 
     """
-    designProps:DesignPropsConcrete24
-    section:SectionConcrete
+    designProps: DesignPropsConcrete24
+    section: SectionConcrete
     
     def __init__(self, 
                  member: Member, 
@@ -170,8 +170,9 @@ class BeamColumnConcreteCsa24(BeamColumn):
         if isinstance(section, list):
             raise Exception('MultiSection Elements are not supported yet.')
         
-        
-        self._initMain(member, section)
+        self.member = member
+        self.section = section
+        # self._initMain(member, section)
         
         # Initialize the design propreties if none are given.        
         if designProps is None:

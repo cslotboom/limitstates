@@ -1,5 +1,5 @@
 """
-Hss sections under Cr
+Initializes some sections and tests the return values
 """
 
 import limitstates.design.csa.a23.c24 as c24
@@ -9,67 +9,56 @@ import pytest
 
 
 
-# fc = 30
-# fy = 400
-# mat      = c24.MaterialConcreteCSA24(fc)
-# matRebar = c24.MaterialRebarCSA24(fy)
+    
+def _init_element() -> c24.BeamColumnConcreteCsa24:
+    """
+    Example 5.2 john Pao
+    """
+    h = 900
+    b = 450
+    fc = 25
+    c = 30
 
-# b = 500
-# d = 300
-# section = ls.SectionRectangle(mat, b, d)
-# config = DBConfig('csa', 'rebar', 'rebar')
+    mat         = c24.MaterialConcreteCSA24(fc)
+    section     = ls.SectionRectangle(mat, b, h)
+    stirrupBar  = c24.getStandardRebar('10M')
+    concreteSection = ls.SectionConcrete(section, stirrups = ls.StirrupGroup(stirrupBar))
+    designProps = c24.DesignPropsConcrete24(cover= c)
+    
+    member = ls.initSimplySupportedMember(5, 'm')
+    
+    return c24.BeamColumnConcreteCsa24(member, concreteSection, designProps)
 
-# rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
-# placer = ls.RebarPlacer(rebarFactory)
 
-
-# layer1 = placer.getRebarLayer(5, '25M', 375, 300, 50)
-# layer2 = placer.getRebarLayer(5, '25M', 425, 300, 50)
-
-# Lbars = ls.RebarCollection([layer1, layer2])
-
-# concreteSection = ls.SectionConcrete(section, Lbars)
-
-# steelSections = getSteelSections(mat, 'csa', 'cisc_12', 'hss')
-
-# def _initColumn(beamName, L):
-#     section = ls.getByName(steelSections, beamName)
-#     column = s16.getBeamColumnSteelCsa24(L, section, 'mm')
-#     return column
-
-def test_Mr():
+def test_section():
     """
     Mr from compression tables in blue book
     """
-    fc = 30
-    fy = 400
-    mat      = c24.MaterialConcreteCSA24(fc)
-    matRebar = c24.MaterialRebarCSA24(fy)
+    barType = '30M'
+    # Nbar = 6
+    yMoment = True
+    posMoment = True
+    # lUnit = 'mm'
+    Mf = 800
+    deffsol = 1.4*25
+
+    ele = _init_element()
     
-    assert mat.fc == 30
-    assert matRebar.fy == 400
-    # Cr      = s16.checkColumnCr(column) / 1000
-    # CrSol = 542
-    # assert Cr == pytest.approx(CrSol, rel = 0.02)
+    c24.placeRebarRowInElement(ele, 4, '25M')
     
-    # column = _initColumn('HSS254x152x9.5', 12000)
-    # Cr      = s16.checkColumnCr(column) / 1000
-    # CrSol = 317
-    # assert Cr == pytest.approx(CrSol, rel = 0.01)
+    deff = ele.section.getdeff()
+    assert deff == 900 - 30 - 25/2 - 10
     
-    # column = _initColumn('HSS254x152x9.5', 6000)
-    # Cr      = s16.checkColumnCr(column) / 1000
-    # CrSol = 992
-    # assert Cr == pytest.approx(CrSol, rel = 0.01)
+    deff = ele.section.getdeff(yMoment=True, posMoment=False)
+    assert deff ==  30 + 25/2 + 10
+
+    deff = ele.section.getdeff(yMoment=False, posMoment=True)
+    assert deff == 450 - 30 - 25/2 - 10
     
-    
-    # #Unsupported Check
-    # column = _initColumn('HSS152x152x9.5', 8000)
-    # Cr      = s16.checkColumnCr(column) / 1000
-    # CrSol = 421
-    # assert Cr == pytest.approx(CrSol, rel = 0.01)
+    deff = ele.section.getdeff(yMoment=False, posMoment=False)
+    assert deff ==  30 + 25/2 + 10
 
 
-# if __name__ == "__main__":
-#     test_fc()
+if __name__ == "__main__":
+    test_section()
 

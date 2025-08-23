@@ -5,17 +5,12 @@ Description:
     Checks if rebar is palced correctly 
 """
 
-
-import pytest
-
 import limitstates.design.csa.a23.c24 as c24
 from limitstates.objects.read import DBConfig
 import limitstates as ls
 
-
-
     
-def _init_element():
+def _init_element() -> c24.BeamColumnConcreteCsa24:
     """
     Example 5.2 john Pao
     """
@@ -39,18 +34,38 @@ def test_element_Mr():
     barType = '30M'
     # Nbar = 6
     yMoment = True
-    positiveMoment = True
-    lUnit = 'mm'
+    posMoment = True
+    # lUnit = 'mm'
     Mf = 800
-
+    deffsol = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
 
     c24.setBottomSteelForMr(Mf, ele, barType)
     
+    assert ele.section.rebar.Nbars == 5
+    assert ele.section.getdeff() == deffsol
+
+    # assert True
+    
+    
+
+def test_element_Mr_top():
+    barType = '30M'
+    # Nbar = 6
+    yMoment = True
+    posMoment = True
+    # lUnit = 'mm'
+    Mf = 800
+    deff =  30 + 10 + 30/2
+
+    ele = _init_element()
+    c24.setBottomSteelForMr(Mf, ele, barType, posMoment=posMoment)
     ls.plotSection(ele.section)
     
-    assert True
+    assert ele.section.rebar.Nbars == 5
+    assert ele.section.getdeff() == deff
+    
     # getSectionMr
     
     
@@ -73,4 +88,4 @@ def test_element_Mr():
 if __name__ == '__main__':
     # pass
     test_element_Mr()
-
+    # test_element_Mr_top()

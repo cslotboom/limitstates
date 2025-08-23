@@ -65,7 +65,7 @@ def getSteelStrains(d:float, y:Union[float, np.ndarray],
     
 def getSectionSr(section:SectionConcrete, NAlocation:float, 
                  yMoment:bool = True,
-                 positiveMoment = True):
+                 posMoment = True):
     """
     Gets gets an array with the force in each rebar. By default assumes
     that the rebars have yielded.
@@ -79,10 +79,13 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
     yMoment : bool, optional
         A flag that specifies if moment is about the y axis, i.e. the strong
         axis. The default is True, setting up strong axis bending.
-    positiveMoment : TYPE, optional
-        A flog that specifies if moment is positive or negative. Positive
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
         moment is defined as moment that creates tension at the "bottom"
         of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
         
         The default is True.
 
@@ -111,7 +114,7 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
         coords = section.rebar.getxCoords(lunit, True)
 
     # Reverse the coordinates if the moment is negative
-    if not positiveMoment:
+    if not posMoment:
         coords = h - coords
     
     eConc = section.concrete.mat.ey
@@ -137,7 +140,7 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
     
 def getSectionCr(section:SectionConcrete, NAlocation:float, 
                  yMoment:bool = True,
-                 positiveMoment = True):
+                 posMoment = True):
     """
     Gets the concrete compressive force at a section, given a NA location.
     Alpha and beta for the concrete are set at at the material.
@@ -151,7 +154,7 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
     yMoment : bool, optional
         A flag that specifies if moment is about the y axis, i.e. the strong
         axis. The default is True, setting up strong axis bending.
-    positiveMoment : TYPE, optional
+    posMoment : bool, optional
         A flag that specifies if moment is positive or negative. Positive
         moment is defined as moment that creates tension at the "bottom"
         of the beam. e.g. a simply supported beam has positive bending.
@@ -176,7 +179,7 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
     lunit = 'mm'
     sunit = 'MPa'    
     
-    b = section.getWidth(yMoment, positiveMoment, lunit)
+    b = section.getWidth(yMoment, posMoment, lunit)
 
     sconvert = section.concrete.mat.sConvert(sunit)
     fc = section.concrete.mat.fc * sconvert
@@ -190,9 +193,9 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
 
 def getSectionMr(section:SectionConcrete, NAlocation:float, 
                  yMoment:bool = True,
-                 positiveMoment = True):
-    Sr = getSectionSr(section, NAlocation, yMoment, positiveMoment)
-    Cr = getSectionCr(section, NAlocation, yMoment, positiveMoment)
+                 posMoment = True):
+    Sr = getSectionSr(section, NAlocation, yMoment, posMoment)
+    Cr = getSectionCr(section, NAlocation, yMoment, posMoment)
     
     if yMoment:
         coords = section.rebar.getyCoords('mm', flatten=True)
@@ -212,7 +215,7 @@ def getBalancedNA(deff:float, eyConc:float = 0.0035,
 
 def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
                         eySteel = 0.002, yMoment:bool = True, 
-                        positiveMoment = True):
+                        posMoment = True):
     """
     Estimates the balanced NA position for a section. If no deff is provided,
     then the depth will be estimated as 80% of the section height.
@@ -228,8 +231,15 @@ def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
         DESCRIPTION. The default is None.
     yMoment : bool, optional
         DESCRIPTION. The default is True.
-    positiveMoment : TYPE, optional
-        DESCRIPTION. The default is True.
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
+        moment is defined as moment that creates tension at the "bottom"
+        of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
 
     Returns
     -------
@@ -242,7 +252,7 @@ def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
     
     if not deff :
         print('No depth provided. Depth is estimated as 80% of h')
-        deff = section.getDepth(yMoment, positiveMoment, lunit)*0.8
+        deff = section.getDepth(yMoment, posMoment, lunit)*0.8
         # deff  =
     
     eyConc = section.concrete.mat.ey
@@ -253,7 +263,7 @@ def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
 def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
                         eySteel:float = 0.002, fySteel:float = 400,
                         yMoment:bool = True, 
-                        positiveMoment = True):
+                        posMoment = True):
     """
     Estimates the balanced NA position for a section. If no deff is provided,
     then the depth will be estimated as 80% of the section height.
@@ -268,8 +278,15 @@ def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
         DESCRIPTION. The default is None.
     yMoment : bool, optional
         DESCRIPTION. The default is True.
-    positiveMoment : TYPE, optional
-        DESCRIPTION. The default is True.
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
+        moment is defined as moment that creates tension at the "bottom"
+        of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
 
     Returns
     -------
@@ -282,12 +299,12 @@ def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
     
     if not deff :
         print('No depth provided. Depth is estimated as 80% of h')
-        deff = section.getDepth(yMoment, positiveMoment, lunit)
+        deff = section.getDepth(yMoment, posMoment, lunit)
         # deff  =
     
     eyConc = section.concrete.mat.ey
     c = getBalancedNA(deff, eyConc, eySteel)
-    Cr = getSectionCr(section, c, yMoment, positiveMoment)
+    Cr = getSectionCr(section, c, yMoment, posMoment)
  
     return Cr / (phiS * fySteel)
 
@@ -403,9 +420,15 @@ class SectionNASolverCSA24(SectionNASolver):
     yMoment : bool, optional
         A flag that specifies if moment is applied in the y or x direction. 
         The default is True, for moment being applied about the x axis.
-    positiveMoment : bool, optional
-        A flag that specifies is moment is positive or negative. 
-        The default is True for positive
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
+        moment is defined as moment that creates tension at the "bottom"
+        of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
     tol : float, optional
         The tolerance required for convergence, i.e. the difference between
         the calcualted concrete and steel force. The default is 1e-3.
@@ -423,16 +446,16 @@ class SectionNASolverCSA24(SectionNASolver):
     """
     def __init__(self, section: SectionConcrete, 
                  Pf:float = 0, yMoment: bool = True, 
-                 positiveMoment:bool = True,
+                 posMoment:bool = True,
                  tol: float = 1e-3, maxIter: float = 100,
                  logging:bool = True):
         super().__init__(section, getSectionCr, getSectionSr,
-                         Pf, yMoment, positiveMoment, tol, maxIter, logging)
+                         Pf, yMoment, posMoment, tol, maxIter, logging)
         
 # TODO, move this function into it's own folder?
 def solveForNA(section: SectionConcrete, 
              Pf:float = 0, momentDirection: str = 'x', 
-             positiveMoment = True,
+             posMoment = True,
              tol: float = 1e-3, maxIter: float = 100):
     """
     Attempts to solves for the neutral axis of a section. Assumes all 
@@ -450,9 +473,15 @@ def solveForNA(section: SectionConcrete,
     yMoment : bool, optional
         A flag that specifies if moment is applied in the y or x direction. 
         The default is True, for moment being applied about the x axis.
-    positiveMoment : bool, optional
-        A flag that specifies is moment is positive or negative. 
-        The default is True for positive
+    posMoment : bool, optional
+        A flag that specifies if moment is positive or negative. Positive
+        moment is defined as moment that creates tension at the "bottom"
+        of the beam. e.g. a simply supported beam has positive bending.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
     tol : float, optional
         The tolerance required for convergence, i.e. the difference between
         the calcualted concrete and steel force. The default is 1e-3.
@@ -469,7 +498,7 @@ def solveForNA(section: SectionConcrete,
 
     """
     
-    naSolver = SectionNASolverCSA24(section, Pf, momentDirection, positiveMoment, 
+    naSolver = SectionNASolverCSA24(section, Pf, momentDirection, posMoment, 
                                tol, maxIter)
 
     return naSolver.calcNA()

@@ -132,15 +132,15 @@ def test_beam_underReinforced_NA_reversed():
     
     concreteSection = _get_beam_2()
     solver = ls.SectionNASolver(concreteSection, c24.getSectionCr, c24.getSectionSr,
-                                positiveMoment=False)
+                                posMoment=False)
    
     NA = solver.calcNA()
     a = 65.4
     c = a / 0.9
     assert NA == pytest.approx(c, 0.03)
    
-    Cr = c24.getSectionCr(concreteSection, NA, positiveMoment=False)
-    Tr = sum(c24.getSectionSr(concreteSection, NA, positiveMoment=False))
+    Cr = c24.getSectionCr(concreteSection, NA, posMoment=False)
+    Tr = sum(c24.getSectionSr(concreteSection, NA, posMoment=False))
     assert Cr == pytest.approx(Tr, 0.001)
 
 
