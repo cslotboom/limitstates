@@ -41,9 +41,9 @@ def test_section_loadandParse():
     assert len(sectionsDict[2]['t']) == 7
     assert len(sectionsDict[0]['o']) == 3
     assert len(sectionsDict[2]['o']) == 7
-    assert len(sectionsDict[20]['o']) == 7
+    assert len(sectionsDict[26]['o']) == 7
     
-    assert sectionsDict[20]['name'] == '245 V5'
+    assert sectionsDict[26]['name'] == '245 V3'
     
 def test_section_read():
     mats = loadCltMatDB(db)

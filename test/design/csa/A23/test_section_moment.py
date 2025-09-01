@@ -8,14 +8,14 @@ Description:
 import limitstates.design.csa.a23.c24 as c24
 from limitstates.objects.read import DBConfig
 import limitstates as ls
-
+import pytest
     
-def _init_element() -> c24.BeamColumnConcreteCsa24:
+def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
     """
     Example 5.2 john Pao
     """
-    h = 900
-    b = 450
+    # h = 900
+    # b = 450
     fc = 25
     c = 30
 
@@ -32,60 +32,111 @@ def _init_element() -> c24.BeamColumnConcreteCsa24:
 
 def test_element_Mr():
     barType = '30M'
-    # Nbar = 6
-    yMoment = True
-    posMoment = True
-    # lUnit = 'mm'
     Mf = 800
     deffsol = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
 
     c24.setBottomSteelForMr(Mf, ele, barType)
-    
-    assert ele.section.rebar.Nbars == 5
-    assert ele.section.getdeff() == deffsol
+    section = ele.getSection()
 
-    # assert True
+    assert section.rebar.Nbars == 5
+    assert section.getdeff() == deffsol
+    # ls.plotSection(ele.section)
     
+    assert 800 < c24.getSectionMr(section) / 1000
+
+# def test_element_Mr():
+#     barType = '30M'
+#     Mf = 800
+#     deffsol = 900 - 30 - 10 - 30/2
+
+#     ele = _init_element()
+
+#     c24.setBottomSteelForMr(Mf, ele, barType)
+#     section = ele.getSection()
+#     assert section.rebar.Nbars == 5
+#     assert section.getdeff() == deffsol
+#     # ls.plotSection(ele.section)
+
+def test_element_rho():
     
+    ele = _init_element()
+
+    rho = c24.getSectionBalancedRho(ele.section)
+    
+    assert rho == pytest.approx(0.022, 0.02)
+    # assert ele.section.getdeff() == deffsol
 
 def test_element_Mr_top():
     barType = '30M'
-    # Nbar = 6
-    yMoment = True
-    posMoment = True
-    # lUnit = 'mm'
+
+    posMoment = False
+
     Mf = 800
-    deff =  30 + 10 + 30/2
+
+    deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
     c24.setBottomSteelForMr(Mf, ele, barType, posMoment=posMoment)
+    section = ele.getSection()
+    assert section.rebar.Nbars == 5
+    assert section.getdeff(posMoment=posMoment) == deff
+    assert section.getdeff() == 30 + 10 + 30/2
+
+    
+
+def test_element_Mr_right():
+    barType = '30M'
+    Mf = 700
+    deffsol = 450 - 30 - 10 - 30/2
+    yMoment = False
+    posMoment = True
+
+    ele = _init_element()
+    c24.setBottomSteelForMr(Mf, ele, barType, yMoment=yMoment, posMoment=posMoment)
+    # ls.plotSection(ele.section)
+    section = ele.getSection()
+    assert section.rebar.Nbars == 11
+    assert section.getdeff(yMoment) == deffsol
+
+def test_element_Mr_left():
+    barType = '30M'
+    yMoment = False
+    posMoment = False
+    Mf = 700
+    deff = 900 - 30 - 10 - 30/2
+
+    ele = _init_element()
+    OR = c24.setBottomSteelForMr(Mf, ele, barType, yMoment=yMoment, posMoment=posMoment)
+    # ls.plotSection(ele.section)
+    section = ele.getSection()
+    assert section.rebar.Nbars == 11
+
+    
+def test_element_Mr_over_reinforced():
+    barType = '30M'
+    Mf = 800
+    deffsol = 900 - 30 - 10 - 30/2
+
+    ele = _init_element(650, 400)
+
+    c24.setBottomSteelForMr(Mf, ele, barType)
     ls.plotSection(ele.section)
-    
-    assert ele.section.rebar.Nbars == 5
-    assert ele.section.getdeff() == deff
-    
-    # getSectionMr
-    
-    
-    # assert len(section.rebar) == 2
-    # assert section.rebar.Nbars == Nbar
+    section = ele.getSection()
 
-    # dbar = 30
-    # coords = section.rebar.getCoords(flatten=True)
-    # sActual = 42.5
+    assert ele.section.rebar.Nbars == 10
+    assert Mf < c24.getSectionMr(ele.section) / 1000
 
-    # assert coords[0,0] == 40 + dbar/2
-    # assert coords[0,1] == (40 + dbar/2)
+    # assert section.getdeff() == deffsol
 
-    # assert coords[1,0] == 40 + dbar/2 + dbar + sActual
-    # assert coords[-1,1] == (40 + dbar/2 + dbar + dbar*1.4)
-
-    
 
 
 if __name__ == '__main__':
     # pass
     test_element_Mr()
-    # test_element_Mr_top()
+    test_element_rho()
+    test_element_Mr_top()
+    test_element_Mr_right()
+    test_element_Mr_left()
+    test_element_Mr_over_reinforced()

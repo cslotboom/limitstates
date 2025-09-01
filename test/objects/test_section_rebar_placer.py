@@ -36,6 +36,11 @@ def _init_placer():
     return ls.RebarPlacerRow(concreteSection, rebarFactory, configPlacement)
 
 
+def test_bar_position():
+    assert 1 == ls.getRebarLocationEnum(True, True)
+    assert 2 == ls.getRebarLocationEnum(True, False)
+
+
 def test_placement_init():
     barType = '30M'
     strategy = _init_placer()
@@ -57,6 +62,8 @@ def test_placement_bottom():
     placer.place(Nbar, barType, locationEnum)
     
     section = placer.section
+    
+    assert '5 bars at x = 55' in str(section.rebar.groups[0])
     
     assert len(section.rebar) == 2
     assert section.rebar.Nbars == Nbar
@@ -121,6 +128,8 @@ def test_placement_side():
     assert coords[-1,0] == (40 + dbar/2 + dbar + dbar*1.4)
     assert coords[1,1] == 40 + dbar/2 + dbar + sActual
     
+    assert c24.getSectionMr(section)
+    
     locationEnum = 4
     
     dbar = 30
@@ -145,7 +154,7 @@ def test_placement_side():
 
 
 if __name__ == '__main__':
-    # pass
+    test_bar_position()
     test_placement_init()
     test_placement_bottom()
     test_placement_top()

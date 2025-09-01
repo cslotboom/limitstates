@@ -194,6 +194,7 @@ class SectionNASolver:
                  concreteFunction, steelFunction,
                  Pf:float = 0, yMoment: bool = True, 
                  posMoment: bool = True,
+                 NAtrial = None,
                  tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
 
@@ -219,6 +220,12 @@ class SectionNASolver:
         # If the moment isn't positive, flip the orientation of the rebar
         if not posMoment:
             self.rebarCoords = self.d - self.rebarCoords
+        
+        if not NAtrial:
+            self.NAtrial = self.d / 2
+        else:
+            self.NAtrial = NAtrial
+
         
         self.tol = tol
         self.maxIter = maxIter
@@ -270,7 +277,9 @@ class SectionNASolver:
     
     def _run_analysis(self, root):
 
-        NAtrial = self.d / 2
+        NAtrial = self.NAtrial
+        
+        
         self.trials = []
         self.residual = []
         r = self.checkEqulibrium(NAtrial)
@@ -287,11 +296,12 @@ class SectionNASolver:
 
 def solveForNA(section: SectionConcrete, 
              Pf:float = 0, yMoment: bool = True, 
-             posMoment = True,
+             posMoment: bool = True,
+             NAtrial: float = None,
              tol: float = 1e-3, maxIter: float = 100):
     
     
-    naSolver = SectionNASolver(section, Pf, yMoment, posMoment, 
+    naSolver = SectionNASolver(section, Pf, yMoment, posMoment, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()
@@ -315,6 +325,22 @@ placementDict = {(True,  True):  RebarLocationEnum.Bottom,
 
 def getRebarLocationEnum(yMoment:bool = True, 
                          posMoment:bool = True) -> RebarLocationEnum:
+    """
+    
+
+    Parameters
+    ----------
+    yMoment : bool, optional
+        DESCRIPTION. The default is True.
+    posMoment : bool, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    RebarLocationEnum
+        DESCRIPTION.
+
+    """
     return placementDict[(yMoment, posMoment)]
 
 
@@ -355,23 +381,44 @@ class RebarPlacerManual():
         self.factory = factory
         
     def getRebarLayer(self, Nbar: int, barType: str, 
-                     deff: float, width: float, offset:float = 0, 
+                     position: float, width: float, offset:float = 0, 
                      yDirection: bool = True) -> RebarLayer:
         """
         Evenly distributes Nbar of the given type within a row width wide, 
-        and centered around deff.
+        and centered around "position".
         
-        deff is measured from the top of the section for the rebar placed in
-        the y axis, or from the right wall for rebar placed in the x axis.
-        
+        "position" is measured from the bottom of the section for the rebar 
+        placed in the y axis, or from the left wall for rebar placed in the 
+        x axis.
+
+        Parameters
+        ----------
+        Nbar : int
+            DESCRIPTION.
+        barType : str
+            DESCRIPTION.
+        position : float
+            DESCRIPTION.
+        width : float
+            DESCRIPTION.
+        offset : float, optional
+            DESCRIPTION. The default is 0.
+        yDirection : bool, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        RebarLayer
+            DESCRIPTION.
+
         """
-        
+
         if yDirection:
             positions = self._getBarPositon(Nbar, width, offset)
-            xyOut = [(x, deff) for x in positions]
+            xyOut = [(x, position) for x in positions]
         else:
             positions = self._getBarPositon(Nbar, width)
-            xyOut = [(deff, y) for y in positions]
+            xyOut = [(position, y) for y in positions]
         
         bars = []
         for ii in range(Nbar):
@@ -386,18 +433,18 @@ class RebarPlacerManual():
         else:
             return list(np.linspace(offset, width + offset, Nbar))
         
-    def place(self, Nbar:int, barType:str, deff:float, width:float, 
-              offset:float = 0, direction:str='x'):
+    # def place(self, Nbar:int, barType:str, deff:float, width:float, 
+    #           offset:float = 0, direction:str='x'):
         
         
-        self.section.addBars(self.getRebarLayer(Nbar, barType, 
-                                                deff, width, 
-                                                offset, direction))
+    #     self.section.addBars(self.getRebarLayer(Nbar, barType, 
+    #                                             deff, width, 
+    #                                             offset, direction))
 
 
 class RebarPlacerRow(RebarPlacer):
     
-    def __init__(self, section:SectionConcrete, 
+    def __init__(self, section: SectionConcrete, 
                  rebarFactory,
                  placementConfig:RebarSpacingConfig = None):
         super().__init__(section, rebarFactory, placementConfig)
@@ -440,7 +487,7 @@ class RebarPlacerRow(RebarPlacer):
         self._setClearCover()
         self.NbarsMax = self.getMaxBarsInRow()
    
-    def _place(self, Nbars:int, barType:str, location:RebarLocationEnum):
+    def _place(self, Nbars:int, barType:str, location: RebarLocationEnum):
         if Nbars < 2:
             raise Exception('Two or more bars must be placed in the section.')        
         
@@ -450,7 +497,7 @@ class RebarPlacerRow(RebarPlacer):
         barsRemaining = Nbars 
         
         layers = []
-        bars   = RebarLayer()
+        # bars   = RebarLayer()
         
         dbar = self.dbar
         

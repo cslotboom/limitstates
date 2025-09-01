@@ -9,9 +9,11 @@ For example, a csao86 CLT section will store it's information.
 """
 
 import collections
+from abc import ABC
+from typing import Iterable, Union
+
 import numpy as np
 
-from abc import ABC
 from .section import SectionMonolithic
 from ..material import MaterialElastic
 from ..read import DBConfig, _loadSectionDBDict
@@ -72,7 +74,26 @@ class Rebar(SectionMonolithic):
         self.xy = (self.xy[0]*cfactor,self.xy[1]*cfactor)
 
 class RebarGroup(collections.UserList):
-    
+    def __init__(self, iterable: Iterable[Rebar], ID: str = None):
+        """
+        A rebar group is a list of rebar, which can have an ID, and has methods
+        for returning rebar propreties as a collection.
+
+        Parameters
+        ----------
+        iterable : Iterable
+            A iterable of rebar.
+        ID : str, optional
+            An optional ID for the rebar group. The default is None.
+
+
+        """
+        super().__init__(item for item in iterable)
+        self.ID = ID
+
+    def __repr__(self):
+        return f"<limitstates rebar group with {self.Nbar} bars.>"
+        
     @property
     def mat(self):
         return self[0].mat
@@ -178,6 +199,38 @@ class RebarGroup(collections.UserList):
 
 class RebarLayer(RebarGroup):
     
+    # def __init__(self, args):
+    #     """
+    #     Finds the orientation of the layer.
+    #     """
+    #     super().__init__(args)
+    #     if args:
+    #         self._setOrientation()
+    _orientationSet = False
+    def _setOrientation(self):
+        bar1 = self[0]
+        bar2 = self[1]
+        
+        if bar1.xy[0] == bar2.xy[0]:
+            self.xOrientation = True
+            self._o = 'y'
+            self.layerHeight = bar1.xy[0]
+        else:
+            self.xOrientation = False
+            self._o = 'x'
+            self.layerHeight = bar1.xy[1]    
+        self._orientationSet = True
+        
+    def __repr__(self):
+        # The orientation may not get set if the user initalizes an empty 
+        # Rebar layer. If so, then return the str of the super class.
+        if not self._orientationSet:
+            try:
+                self._setOrientation()
+            except:
+                return str(super())        
+        return f"<limitstates rebar layer: {len(self)} bars at {self._o} = {self.layerHeight}>" 
+
 
     def getyAvg(self, lUnit: str = ''):
         """
@@ -197,7 +250,7 @@ class RebarLayer(RebarGroup):
         """
         
         bar = self[0]
-        lUnit = bar._validateLunit(lUnit)
+        lUnit   = bar._validateLunit(lUnit)
         lfactor = bar.lConvert(lUnit)     
         
         return bar.xy[1] * lfactor
@@ -233,15 +286,41 @@ class RebarCollection:
         self.groups = groups
         self.Nbars = sum([len(group) for group in self.groups])
     
-    # TODO: DOCUMENT
+    # TODO: DOCUMENT, rename?
     def addBars(self, groups:list[RebarGroup]):
         if not self.groups:
             self.groups = groups
         else:
             self.groups += groups
-        self.Nbars = sum([len(group) for group in self.groups])
+        self._updateSelfOnBarChange()
+
+    def removeGroups(self, inds: Union[int, list[int]]):
+        if isinstance(inds, int):
+            inds = [inds]
+        newGroups = []
+        for ii, group in enumerate(self.groups):
+            if ii in inds:
+                continue
+            newGroups.append(group)
         
+        self.groups = newGroups
+        self._updateSelfOnBarChange()
     
+    def _updateSelfOnBarChange(self):
+        self.Nbars = sum([len(group) for group in self.groups])
+
+        
+    def getBarByID(self, ID:str) -> RebarGroup|None:
+        """
+        """
+        
+        for group in self.groups:
+            if ID ==  group.ID:
+                return group
+        else:
+            return None
+                
+        
     def __len__(self):
         return len(self.groups)
     

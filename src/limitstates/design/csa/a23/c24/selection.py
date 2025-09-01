@@ -6,14 +6,14 @@ from math import ceil
 
 import limitstates as ls
 
-from .element import BeamColumnConcreteCsa24 
+from .element import BeamColumnConcreteCsa24
 from .section import REBARFACTORY, loadRebarFactory, Rebar
 from .material import MaterialRebarCSA24, MaterialConcreteCSA24
 from .rebarPlacers import RebarPlacerRowCSA24, placeRebarInElement
-from limitstates import DesignDiagram, SectionConcrete
-from limitstates.objects.section.concrete import SectionNASolver, RebarSpacingConfig, getRebarLocationEnum, SectionConcrete
-from .beamColumn import phiC, phiS, getSectionMr, solveForNA
-
+# from limitstates import DesignDiagram, SectionConcrete
+from limitstates.objects.section.concrete import  getRebarLocationEnum
+from .beamColumn import (phiC, phiS, getSectionMr, solveForNA, 
+                         getSectionBalancedRho, getSectionAsmin)
 
 
 def getRequiredSteelForMr(Mr:float, 
@@ -57,7 +57,7 @@ def getRequiredSteelForMr(Mr:float,
     # If the discriminant is less than zero, no amount of rebar will fufil the
     # section requirements.
     if discriminant < 0:
-        raise Exception('The descriminant is less than zero, a large section is required.')
+        raise Exception('The descriminant is less than zero, a larger section is required.')
     
     # get the required amount of steel
     sfactor = rebar.mat.sConvert('MPa')
@@ -66,6 +66,72 @@ def getRequiredSteelForMr(Mr:float,
 
     return As   
 
+
+# def _getNbarRequired(section, yMoment, posMoment, lUnit):
+#     dEst = section.getdeff(yMoment, posMoment, lUnit)
+#     As   = getRequiredSteelForMr(Mr, section.concrete.mat, rebar, dEst, b)
+#     As   = max(As, Asmin)
+#     NbarReqNew = ceil(As/rebar.A)
+
+def _checkMr(section, yMoment, posMoment):
+    NA    = solveForNA(section, yMoment, posMoment)
+    MrSol = getSectionMr(section, NA, yMoment, posMoment)
+    return MrSol
+
+def _getNbarReq(Mr, dEst, section, rebar, b):
+
+    As   = getRequiredSteelForMr(Mr, section.concrete.mat, rebar, dEst, b)
+    Asmin = getSectionAsmin(section)
+    As = max(As, Asmin)
+    NbarReq = ceil(As/rebar.A)
+    
+    return NbarReq
+
+# def _getRho(section, yMoment, posMoment, lUnit, b):
+#     rhoBA = getSectionBalancedRho(section)
+#     dEst  = section.getdeff(yMoment, posMoment, lUnit)
+
+#     rhoNet = section.rebar.getNetArea('mm') / (b * dEst)
+
+#     return isOverReinforced
+
+def _isOverReinforced(rhoBA, rhoNet):
+    isOverReinforced = False
+    if rhoBA <= rhoNet:
+        isOverReinforced = True
+
+    return isOverReinforced
+ 
+
+
+def _placeTopBarIfOverreinforced(element, sectionInd, yMoment, posMoment,  
+                                 dEst, barType, rebar, lUnit):
+    section = element.getSection(sectionInd)
+    # get the width and depth of the section.
+    b = section.getWidth(yMoment, lUnit)    
+    d = section.getDepth(yMoment, lUnit)
+    
+    # Check if the beam is over-reinforced
+    rhoBA  = getSectionBalancedRho(section)
+    rhoNet = section.rebar.getNetArea('mm') / (b * dEst)    
+    
+    # Add top bars if the secton is over reinforced.
+    if _isOverReinforced(rhoBA, rhoNet):
+        drho  = rhoNet - rhoBA
+        AsTop = (b * d) * drho
+        NbarReqTop = ceil(AsTop / rebar.A)
+
+        location = getRebarLocationEnum(yMoment, not posMoment)
+        placementKwargs = {'location':location}
+
+        placeRebarInElement(element, NbarReqTop, barType, sectionInd,
+                            placementKwargs = placementKwargs,
+                            rebarMat = rebar.mat,
+                            lUnit = lUnit)   
+
+
+
+
 def setBottomSteelForMr(Mr: float, 
                         element: BeamColumnConcreteCsa24, 
                         barType: str,
@@ -73,11 +139,17 @@ def setBottomSteelForMr(Mr: float,
                         yMoment: bool = True,
                         posMoment: bool = True,
                         matRebar: MaterialRebarCSA24 = None,
+                        runDesignItertion: bool = True,
+                        addTopSteel: bool = True, 
                         lUnit: str = 'mm'):
+
     """
     Places bottom steel in a section. The the rebar will be placed such that
     the section has a moment capacity larger, than the input moment, if it is 
     possible to find a solution.
+    
+    The minimum steel will be used for the section, if it is larger than the
+    required steel.
 
     Parameters
     ----------
@@ -112,17 +184,14 @@ def setBottomSteelForMr(Mr: float,
     lUnit : str, optional
         The length unit to use for the rebar added. The default is in 'mm'.
 
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
+
 
     Returns
     -------
-    None.
+    isOverReinforced : bool
+        DESCRIPTION.
 
     """
-  
     
     # Init the material and rebar factory.
     if matRebar is None:
@@ -134,40 +203,162 @@ def setBottomSteelForMr(Mr: float,
     # Get the section, and reset the rebar in the section.
     section = element.getSection(sectionInd)
     section.rebar = None
+    designProps = element.designProps
 
     # get the width and depth of the section.
     b = section.getWidth(yMoment, lUnit)    
     d = section.getDepth(yMoment, lUnit)
     
     # estimate where the rebar in the section is placed
-    dEst = d*0.9 
-    As   = getRequiredSteelForMr(Mr, section.concrete.mat, rebar, dEst, b)
-    NbarReq = ceil(As/rebar.A)
+    dEstBot = d*0.9    
+    NbarReq = _getNbarReq(Mr, dEstBot, section, rebar, b)
     
     location = getRebarLocationEnum(yMoment, posMoment)
-    placementKwargs = {'location':location}
+    placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+    placer.place(NbarReq, barType, location)
+    Nrow  = len(section.rebar)
+    bottomBarInds = list(range(Nrow))
     
-    placeRebarInElement(element, NbarReq, barType, sectionInd,
-                        placementKwargs = placementKwargs,
-                        rebarMat = rebar.mat,
-                        lUnit = lUnit)
-
-    NA = solveForNA(section, yMoment, posMoment)
-    MrSol = getSectionMr(section, NA, yMoment, posMoment)
-    if MrSol < Mr:
-        placeRebarInElement(element, NbarReq + 1, barType, sectionInd,
-                            placementKwargs = placementKwargs,
-                            rebarMat = rebar.mat,
-                            lUnit = lUnit)
-
-    # TODO: fix
-    dEst = d - section.getdeff(yMoment, posMoment, lUnit)
-    As = getRequiredSteelForMr(Mr, section.concrete.mat, rebar, dEst, b)
-    NbarReqNew = ceil(As/rebar.A)
+    # Check if the beam is over-reinforced
+    rhoBA   = getSectionBalancedRho(section)
+    dEstBot = section.getdeff(yMoment, posMoment, lUnit)
+    rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
     
-    # If the new section requires
-    if NbarReqNew < NbarReq:
-        placeRebarInElement(element, NbarReq, barType, sectionInd,
-                            placementKwargs = placementKwargs,
-                            rebarMat = rebar.mat,
-                            lUnit = lUnit)
+    # Add top bars if the secton is over reinforced.
+    isOverReinforced = _isOverReinforced(rhoBA, rhoNet)
+    if isOverReinforced:
+        drho  = rhoNet - rhoBA
+        AsTop = (b * d) * drho
+        NbarReqTop = ceil(AsTop / rebar.A)
+
+        location = getRebarLocationEnum(yMoment, not posMoment)
+        placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+        placer.place(NbarReqTop, barType, location)
+    
+    # Check if the solution works
+    # dEst  = section.getdeff(yMoment, posMoment, lUnit)
+    # NbarReqNew = _getNbarReq(Mr, dEstBot, section, rebar, b)
+    # Nrow  = len(section.rebar)
+    # bottomBarInds = list(range(Nrow))
+
+    # Ensure the section works first checking the new 
+    NA    = solveForNA(section, yMoment, posMoment)
+    MrSol = getSectionMr(section, NA, yMoment, posMoment) / 1000
+    
+    """
+    There are two scenerios: 
+        We need to add more bars, (dest was too big)
+        We can reduce the number of bars
+
+        To deal with 1, we add check the moment is smaller than, and add bars
+        if it isn't
+        
+        To deal with 2, we try to reduce the number of bars required, until 
+        reaching failure
+
+    """
+    momentLow = MrSol < Mr
+
+    if momentLow:
+        atMin = True 
+    else:
+        atMin = False
+    
+
+    while momentLow or not atMin:
+        
+        # If the moment is too small, increase the number of bars
+        if momentLow:
+            NbarReq = NbarReq + 1
+        else:
+            NbarReq = NbarReq - 1
+        
+        # Remove the bottom bars
+        section.rebar.removeGroups(bottomBarInds)
+        NgroupsTop = len(section.rebar)
+            
+        location = getRebarLocationEnum(yMoment, posMoment)
+        placer   = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+        placer.place(NbarReq, barType, location)        
+
+        
+        # Remove update teh bottom bar inds for later removal.
+        Ngroups = len(section.rebar)
+        bottomBarInds = list(range(NgroupsTop, Ngroups))
+
+        NA = solveForNA(section, yMoment, posMoment, NAtrial=NA)
+        MrSol = getSectionMr(section, NA, yMoment, posMoment)  / 1000
+        
+        momentLow = MrSol < Mr
+        if momentLow:
+            atMin = True
+    
+    
+    return isOverReinforced
+
+
+
+def _runDesignIteration(Mr: float, 
+                        element: BeamColumnConcreteCsa24, 
+                        barType: str,
+                        NbarReq:int,
+                        bottomBarInds,
+                        rebar,
+                        sectionInd: int = 0,
+                        yMoment: bool = True,
+                        posMoment: bool = True,
+                        lUnit: str = 'mm'):
+       
+    """
+    There are two scenerios: 
+        We need to add more bars, (dest was too big)
+        We can reduce the number of bars
+
+        To deal with 1, we add check the moment is smaller than, and add bars
+        if it isn't
+        
+        To deal with 2, we try to reduce the number of bars required, until 
+        reaching failure
+
+    """
+    section = element.getSection(sectionInd)
+    designProps = element.designProps
+
+    NA    = solveForNA(section, yMoment, posMoment)
+    MrSol = getSectionMr(section, NA, yMoment, posMoment) / 1000
+    momentLow = MrSol < Mr
+
+    if momentLow:
+        atMin = True 
+    else:
+        atMin = False
+    
+
+    while momentLow or not atMin:
+        
+        # If the moment is too small, increase the number of bars
+        if momentLow:
+            NbarReq = NbarReq + 1
+        else:
+            NbarReq = NbarReq - 1
+        
+        # Remove the bottom bars
+        section.rebar.removeGroups(bottomBarInds)
+        NgroupsTop = len(section.rebar)
+            
+        location = getRebarLocationEnum(yMoment, posMoment)
+        placer   = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+        placer.place(NbarReq, barType, location)        
+
+        
+        # Remove update teh bottom bar inds for later removal.
+        Ngroups = len(section.rebar)
+        bottomBarInds = list(range(NgroupsTop, Ngroups))
+
+        NA = solveForNA(section, yMoment, posMoment, NAtrial=NA)
+        MrSol = getSectionMr(section, NA, yMoment, posMoment)  / 1000
+        
+        momentLow = MrSol < Mr
+        if momentLow:
+            atMin = True
+    

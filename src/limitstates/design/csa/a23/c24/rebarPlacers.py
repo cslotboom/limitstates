@@ -10,7 +10,7 @@ from limitstates.objects import (RebarPlacerRow, RebarSpacingConfig,
                                     SectionConcrete, RebarLocationEnum)
 from .material import MaterialRebarCSA24
 
-from .beamColumn import getSectionCr, getSectionSr, getSmin
+from .beamColumn import getSmin
 from .section import REBARFACTORY
 from .element import BeamColumnConcreteCsa24, DesignPropsConcrete24
 
@@ -125,6 +125,54 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
         placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
         location = placementKwargs['location']
         placer.place(Nbars, barType, location)
+
+    
+# def placeRebarInSection(section: SectionConcrete,
+#                         Nbars: int, barType: str,
+#                         placementStrategy: RebarPlacementStrategyEnum = 1,
+#                         placementKwargs: dict = None,
+#                         rebarMat: Union[MaterialRebarCSA24, None] = None, 
+#                         lUnit: str = 'mm'):
+#     """
+    
+    
+
+#     Parameters
+#     ----------
+#     element : BeamColumnConcreteCsa24
+#         DESCRIPTION.
+#     Nbars : int
+#         DESCRIPTION.
+#     barType : str
+#         DESCRIPTION.
+#     sectionInd : TYPE, optional
+#         DESCRIPTION. The default is 0.
+#     placementStrategy : RebarPlacementStrategyEnum, optional
+#         DESCRIPTION. The default is 1.
+#     placementKwargs : dict, optional
+#         DESCRIPTION. The default is None.
+
+#     Raises
+#     ------
+#     Exception
+#         DESCRIPTION.
+
+#     Returns
+#     -------
+#     None.
+
+#     """
+#     if placementStrategy != 1:
+#         raise Exception('Unsupported placement strategy used. Only strategies [1] are currently supported')
+        
+#     if placementStrategy != 1:
+#         raise Exception('Unsupported placement strategy used.')
+
+    
+#     if placementStrategy == 1:
+#         placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
+#         location = placementKwargs['location']
+#         placer.place(Nbars, barType, location)
         
     
 def placeRebarRowInElement(element: BeamColumnConcreteCsa24,

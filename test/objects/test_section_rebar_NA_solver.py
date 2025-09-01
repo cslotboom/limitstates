@@ -32,7 +32,7 @@ def _get_beam_1():
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     placer = ls.RebarPlacerManual(rebarFactory)
     
-    layer2 = placer.getRebarLayer(2, '25M', deff, 300)
+    layer2 = placer.getRebarLayer(2, '25M', h - deff, 300)
     Lbars  = ls.RebarCollection([layer2])
     concreteSection = ls.SectionConcrete(section, Lbars)
    
@@ -60,7 +60,7 @@ def _get_beam_2():
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     placer = ls.RebarPlacerManual(rebarFactory)
     
-    layer2 = placer.getRebarLayer(2, '25M', deff, 300)
+    layer2 = placer.getRebarLayer(2, '25M', h - deff, 300)
     Lbars = ls.RebarCollection([layer2])
     concreteSection = ls.SectionConcrete(section, Lbars)
     
@@ -163,8 +163,8 @@ def test_beam_overReinforced():
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     placer = ls.RebarPlacerManual(rebarFactory)
 
-    layer1 = placer.getRebarLayer(5, '25M', 375, 300, 50)
-    layer2 = placer.getRebarLayer(5, '25M', 425, 300, 50)
+    layer1 = placer.getRebarLayer(5, '25M', d - 375, 300, 50)
+    layer2 = placer.getRebarLayer(5, '25M', d - 425, 300, 50)
 
     Lbars = ls.RebarCollection([layer1, layer2])
     concreteSection = ls.SectionConcrete(section, Lbars)
@@ -205,8 +205,8 @@ def test_beam_compression_steel():
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     placer = ls.RebarPlacerManual(rebarFactory)
 
-    layer1 = placer.getRebarLayer(2, '25M', 50, 300, 50)
-    layer2 = placer.getRebarLayer(4, '25M', 450, 300, 50)
+    layer1 = placer.getRebarLayer(2, '25M', h - 50, 300, 50)
+    layer2 = placer.getRebarLayer(4, '25M', h - 450, 300, 50)
 
     Lbars = ls.RebarCollection([layer1, layer2])
 

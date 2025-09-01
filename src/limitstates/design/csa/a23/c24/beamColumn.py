@@ -53,8 +53,7 @@ def getSteelStrains(d:float, y:Union[float, np.ndarray],
     Returns the strain at a set if input positions y, given the neutral axis
     position.
     
-    d and NA area measured from the top of the beam for positive moments, and
-    bottom of the beam for negative moments.
+    y, d and NA area measured from the compression face of the beam.
     The section is assume to have a strain of eConc at it's "top"
     
     
@@ -63,9 +62,9 @@ def getSteelStrains(d:float, y:Union[float, np.ndarray],
     
     return y * (eEnd + eConc) / d - eConc
     
-def getSectionSr(section:SectionConcrete, NAlocation:float, 
-                 yMoment:bool = True,
-                 posMoment = True):
+def getSectionSr(section: SectionConcrete, NAlocation: float, 
+                 yMoment: bool = True,
+                 posMoment: bool = True):
     """
     Gets gets an array with the force in each rebar. By default assumes
     that the rebars have yielded.
@@ -75,7 +74,7 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
     section : SectionConcrete
         The concrete section to check.
     NAlocation : float
-        The neutral axis location from the "start" of the beam in mm.
+        The neutral axis location from the tension edge of the beam in mm.
     yMoment : bool, optional
         A flag that specifies if moment is about the y axis, i.e. the strong
         axis. The default is True, setting up strong axis bending.
@@ -113,8 +112,9 @@ def getSectionSr(section:SectionConcrete, NAlocation:float,
         h = section.concrete.b * lfactor
         coords = section.rebar.getxCoords(lunit, True)
 
+    # the strains are measured from the tension face
     # Reverse the coordinates if the moment is negative
-    if not posMoment:
+    if posMoment:
         coords = h - coords
     
     eConc = section.concrete.mat.ey
@@ -150,7 +150,7 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
     section : SectionConcrete
         The concrete section to check.
     NAlocation : float
-        The neutral axis location from the "start" of the beam in mm.
+        The neutral axis location from the compression face of of the beam in mm.
     yMoment : bool, optional
         A flag that specifies if moment is about the y axis, i.e. the strong
         axis. The default is True, setting up strong axis bending.
@@ -164,15 +164,11 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
         
         The default is True.
 
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
 
     Returns
     -------
     C : float
-        The output compression force in the section..
+        The output compression force in the section.
 
     """
     
@@ -191,9 +187,20 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
 
 
 
-def getSectionMr(section:SectionConcrete, NAlocation:float, 
+def getSectionMr(section:SectionConcrete, NAlocation:float = None, 
                  yMoment:bool = True,
                  posMoment = True):
+    """
+    NA is measured from the compression face of the section 
+    while coordinates are measured from the bottom of the section.
+    """
+    
+    if not NAlocation:
+        # The section could have no rebar, if so return 0
+        if not section.rebar or len(section.rebar) == 0:
+            return 0        
+        NAlocation    = solveForNA(section, yMoment, posMoment)
+    
     Sr = getSectionSr(section, NAlocation, yMoment, posMoment)
     Cr = getSectionCr(section, NAlocation, yMoment, posMoment)
     
@@ -201,16 +208,39 @@ def getSectionMr(section:SectionConcrete, NAlocation:float,
         coords = section.rebar.getyCoords('mm', flatten=True)
     else:
         coords = section.rebar.getxCoords('mm', flatten=True)
-    rebarCoords = coords - NAlocation
+    d = section.getDepth(yMoment, 'mm')
+    
+    # NAlocation is measured from the tension edge of the beam
+    # coordinates are measured in an absolute position.
+    if posMoment:
+        rebarCoords = (d - coords) - NAlocation
+    else:
+        rebarCoords = coords - NAlocation
 
     Mr =  (sum(Sr * rebarCoords) + Cr * (NAlocation/2)) / 1000
     return Mr
 
 
-def getBalancedNA(deff:float, eyConc:float = 0.0035,
-                           eySteel:float = 0.002):
+def getBalancedNA(deff:float, eyConc: float = 0.0035,
+                  eySteel: float = 0.002):
     
     return eyConc / (eyConc + eySteel) * deff 
+
+def getBalancedRatio(eyConc: float = 0.0035,
+                     eySteel: float = 0.002):
+    
+    return eyConc / (eyConc + eySteel) 
+
+
+def getRhoBalanced(alpha:float, beta:float, fc: float, fy: float, 
+                   eyConc: float = 0.0035, eySteel: float = 0.002):
+    
+    ratio = getBalancedRatio(eyConc, eySteel)
+    
+    rho = ratio * alpha * beta * fc * phiC / (fy * phiS)
+    return rho
+
+
 
 
 def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
@@ -258,6 +288,30 @@ def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
     eyConc = section.concrete.mat.ey
     
     return getBalancedNA(deff, eyConc, eySteel)
+
+
+def getSectionBalancedRho(section: SectionConcrete, 
+                         eySteel:float = 0.002, fySteel:float = 400):
+    
+    """
+    RHo for the balanced condition is returned assuming Cr = Tr, and assuming
+    that all steel is in the same layer and has yielded.
+    
+    If steel is, the balanced condition equation is not correct.
+    """
+    
+    alpha = section.concrete.mat.alpha
+    beta = section.concrete.mat.beta
+    
+    sConvert = section.concrete.mat.sConvert('MPa')
+    fc = section.concrete.mat.fc * sConvert    
+    eyConc = section.concrete.mat.ey
+    # c = getBalancedNA(deff, eyConc, eySteel)
+    # Cr = getSectionCr(section, c, yMoment, posMoment)
+     
+    
+    return getRhoBalanced(alpha, beta, fc, fySteel, eyConc, eySteel)
+    
 
 
 def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
@@ -392,10 +446,53 @@ def getAsmin(fc:float, fy:float, bt:float, h:float):
     """
 
     
-    return 0.2 * (fc)**2 / fy * bt * h
+    return 0.2 * (fc)**0.5 / fy * bt * h
+
+
+def getSectionAsmin(section: SectionConcrete, fy: float = None):
+    """
+    Currently only applies to rectangular sections.
     
+    CSA A23.3 Cl.10.5.1.2
+    
+    If no fy is provided, the section's rebar will be used for fy. If the 
+    section has no rebar, a default value of 400MPa is used. 
 
+    Returns in units of sqmm    
+    
+    Parameters
+    ----------
+    fc : float
+        The concrete strength in MPa.
+    fy : float
+        The steel yield strength in MPa.
+    bt : float
+        The with of the beam in it's tension zone.
+    h : float
+        The total depth of the beam.
 
+    Returns
+    -------
+    float
+        The minimum required steel in mm..
+
+    """
+    
+    
+    sConvert = section.concrete.mat.sConvert('MPa')
+    fc = section.concrete.mat.fc * sConvert
+    
+    b = section.getWidth()
+    h = section.getDepth()
+        
+    # If the 
+    if fy is None and section.rebar:
+        sConvert = section.rebar.mat.sConvert('MPa')
+        fy = section.rebar.mat.fy
+    if fy is None and section.rebar is None:
+        fy = 400
+    
+    return getAsmin(fc, fy, b, h)
 
 
 
@@ -446,16 +543,17 @@ class SectionNASolverCSA24(SectionNASolver):
     """
     def __init__(self, section: SectionConcrete, 
                  Pf:float = 0, yMoment: bool = True, 
-                 posMoment:bool = True,
+                 posMoment: bool = True, NAtrial: float = None,
                  tol: float = 1e-3, maxIter: float = 100,
                  logging:bool = True):
         super().__init__(section, getSectionCr, getSectionSr,
-                         Pf, yMoment, posMoment, tol, maxIter, logging)
+                         Pf, yMoment, posMoment, 
+                         NAtrial, tol, maxIter, logging)
         
 # TODO, move this function into it's own folder?
 def solveForNA(section: SectionConcrete, 
-             Pf:float = 0, momentDirection: str = 'x', 
-             posMoment = True,
+             Pf:float = 0, yMoment: bool = True, 
+             posMoment = True, NAtrial: float = None,
              tol: float = 1e-3, maxIter: float = 100):
     """
     Attempts to solves for the neutral axis of a section. Assumes all 
@@ -498,7 +596,7 @@ def solveForNA(section: SectionConcrete,
 
     """
     
-    naSolver = SectionNASolverCSA24(section, Pf, momentDirection, posMoment, 
+    naSolver = SectionNASolverCSA24(section, Pf, yMoment, posMoment, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()

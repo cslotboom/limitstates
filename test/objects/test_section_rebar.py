@@ -56,15 +56,17 @@ def test_Rebar_group():
     """
     Checks the behaviour of a rebar group
     """
-    
+    ID = 'Bottom Bars'
     config = DBConfig('csa', 'rebar', 'rebar')
     rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
     xy = (0, 350)
     rebar1 = rebarFactory.getRebar('30M', xy)
     
-    bars1   = ls.RebarGroup([rebar1]*3)
+    bars1   = ls.RebarGroup([rebar1]*3, ID)
     coords  = bars1.getCoords()
     ycoords = bars1.getyCoords()
+    
+    assert bars1.ID == ID
     
     # Coordinates        
     assert np.all(coords[1] == xy)
