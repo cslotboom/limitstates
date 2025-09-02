@@ -109,7 +109,7 @@ def test_element_Mr_left():
 
     ele = _init_element()
     OR = c24.setBottomSteelForMr(Mf, ele, barType, yMoment=yMoment, posMoment=posMoment)
-    # ls.plotSection(ele.section)
+    ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11
 

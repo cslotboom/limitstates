@@ -66,13 +66,6 @@ def getRequiredSteelForMr(Mr:float,
 
     return As   
 
-
-# def _getNbarRequired(section, yMoment, posMoment, lUnit):
-#     dEst = section.getdeff(yMoment, posMoment, lUnit)
-#     As   = getRequiredSteelForMr(Mr, section.concrete.mat, rebar, dEst, b)
-#     As   = max(As, Asmin)
-#     NbarReqNew = ceil(As/rebar.A)
-
 def _checkMr(section, yMoment, posMoment):
     NA    = solveForNA(section, yMoment, posMoment)
     MrSol = getSectionMr(section, NA, yMoment, posMoment)
@@ -87,14 +80,6 @@ def _getNbarReq(Mr, dEst, section, rebar, b):
     
     return NbarReq
 
-# def _getRho(section, yMoment, posMoment, lUnit, b):
-#     rhoBA = getSectionBalancedRho(section)
-#     dEst  = section.getdeff(yMoment, posMoment, lUnit)
-
-#     rhoNet = section.rebar.getNetArea('mm') / (b * dEst)
-
-#     return isOverReinforced
-
 def _isOverReinforced(rhoBA, rhoNet):
     isOverReinforced = False
     if rhoBA <= rhoNet:
@@ -103,35 +88,6 @@ def _isOverReinforced(rhoBA, rhoNet):
     return isOverReinforced
  
 
-
-def _placeTopBarIfOverreinforced(element, sectionInd, yMoment, posMoment,  
-                                 dEst, barType, rebar, lUnit):
-    section = element.getSection(sectionInd)
-    # get the width and depth of the section.
-    b = section.getWidth(yMoment, lUnit)    
-    d = section.getDepth(yMoment, lUnit)
-    
-    # Check if the beam is over-reinforced
-    rhoBA  = getSectionBalancedRho(section)
-    rhoNet = section.rebar.getNetArea('mm') / (b * dEst)    
-    
-    # Add top bars if the secton is over reinforced.
-    if _isOverReinforced(rhoBA, rhoNet):
-        drho  = rhoNet - rhoBA
-        AsTop = (b * d) * drho
-        NbarReqTop = ceil(AsTop / rebar.A)
-
-        location = getRebarLocationEnum(yMoment, not posMoment)
-        placementKwargs = {'location':location}
-
-        placeRebarInElement(element, NbarReqTop, barType, sectionInd,
-                            placementKwargs = placementKwargs,
-                            rebarMat = rebar.mat,
-                            lUnit = lUnit)   
-
-
-
-
 def setBottomSteelForMr(Mr: float, 
                         element: BeamColumnConcreteCsa24, 
                         barType: str,
@@ -139,8 +95,9 @@ def setBottomSteelForMr(Mr: float,
                         yMoment: bool = True,
                         posMoment: bool = True,
                         matRebar: MaterialRebarCSA24 = None,
-                        runDesignItertion: bool = True,
                         addTopSteel: bool = True, 
+                        runDesignItertion: bool = True,
+                        placementStrategy: int = 1, 
                         lUnit: str = 'mm'):
 
     """
@@ -184,8 +141,6 @@ def setBottomSteelForMr(Mr: float,
     lUnit : str, optional
         The length unit to use for the rebar added. The default is in 'mm'.
 
-
-
     Returns
     -------
     isOverReinforced : bool
@@ -216,86 +171,77 @@ def setBottomSteelForMr(Mr: float,
     location = getRebarLocationEnum(yMoment, posMoment)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
     placer.place(NbarReq, barType, location)
+    
     Nrow  = len(section.rebar)
     bottomBarInds = list(range(Nrow))
     
-    # Check if the beam is over-reinforced
-    rhoBA   = getSectionBalancedRho(section)
-    dEstBot = section.getdeff(yMoment, posMoment, lUnit)
-    rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
     
-    # Add top bars if the secton is over reinforced.
+    # Check if the beam is over-reinforced
+    dEstBot = section.getdeff(yMoment, posMoment, lUnit)
+    rhoBA   = getSectionBalancedRho(section)
+    rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
+
+    # # Add top bars if the secton is over reinforced.
     isOverReinforced = _isOverReinforced(rhoBA, rhoNet)
     if isOverReinforced:
         drho  = rhoNet - rhoBA
-        AsTop = (b * d) * drho
-        NbarReqTop = ceil(AsTop / rebar.A)
+        _placeTopBarIfOverreinforced(element, sectionInd, yMoment, posMoment,  
+                                     drho, barType, rebar, lUnit)   
 
-        location = getRebarLocationEnum(yMoment, not posMoment)
-        placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-        placer.place(NbarReqTop, barType, location)
-    
-    # Check if the solution works
-    # dEst  = section.getdeff(yMoment, posMoment, lUnit)
-    # NbarReqNew = _getNbarReq(Mr, dEstBot, section, rebar, b)
-    # Nrow  = len(section.rebar)
-    # bottomBarInds = list(range(Nrow))
-
-    # Ensure the section works first checking the new 
-    NA    = solveForNA(section, yMoment, posMoment)
-    MrSol = getSectionMr(section, NA, yMoment, posMoment) / 1000
-    
-    """
-    There are two scenerios: 
-        We need to add more bars, (dest was too big)
-        We can reduce the number of bars
-
-        To deal with 1, we add check the moment is smaller than, and add bars
-        if it isn't
-        
-        To deal with 2, we try to reduce the number of bars required, until 
-        reaching failure
-
-    """
-    momentLow = MrSol < Mr
-
-    if momentLow:
-        atMin = True 
-    else:
-        atMin = False
-    
-
-    while momentLow or not atMin:
-        
-        # If the moment is too small, increase the number of bars
-        if momentLow:
-            NbarReq = NbarReq + 1
-        else:
-            NbarReq = NbarReq - 1
-        
-        # Remove the bottom bars
-        section.rebar.removeGroups(bottomBarInds)
-        NgroupsTop = len(section.rebar)
-            
-        location = getRebarLocationEnum(yMoment, posMoment)
-        placer   = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-        placer.place(NbarReq, barType, location)        
-
-        
-        # Remove update teh bottom bar inds for later removal.
-        Ngroups = len(section.rebar)
-        bottomBarInds = list(range(NgroupsTop, Ngroups))
-
-        NA = solveForNA(section, yMoment, posMoment, NAtrial=NA)
-        MrSol = getSectionMr(section, NA, yMoment, posMoment)  / 1000
-        
-        momentLow = MrSol < Mr
-        if momentLow:
-            atMin = True
-    
-    
+    if runDesignItertion:
+        _runDesignIteration(Mr, element, barType, NbarReq, bottomBarInds,
+                            rebar,sectionInd, yMoment, posMoment, lUnit)
+       
     return isOverReinforced
 
+
+
+def _initalBottomBarPlacement(Mr, element, sectionInd, yMoment, posMoment,  
+                                 barType, rebar, lUnit):
+    """
+    Places top bars in the section.
+    """
+    # Get the section, and reset the rebar in the section.
+    section = element.getSection(sectionInd)
+    section.rebar = None
+    
+    designProps = element.designProps
+
+    # get the width and depth of the section.
+    b = section.getWidth(yMoment, lUnit)    
+    d = section.getDepth(yMoment, lUnit)
+    
+    # estimate where the rebar in the section is placed
+    dEstBot = d*0.9    
+    NbarReq = _getNbarReq(Mr, dEstBot, section, rebar, b)
+    
+    location = getRebarLocationEnum(yMoment, posMoment)
+    placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+    placer.place(NbarReq, barType, location)
+
+
+
+
+
+def _placeTopBarIfOverreinforced(element, sectionInd, yMoment, posMoment,  
+                                 drho, barType, rebar, lUnit):
+    """
+    Places top bars in the section.
+    """
+    designProps = element.designProps
+    section = element.getSection(sectionInd)
+    b = section.getWidth(yMoment, lUnit)    
+    d = section.getDepth(yMoment, lUnit)
+    
+    AsTop = (b * d) * drho
+    NbarReqTop = ceil(AsTop / rebar.A)
+    if NbarReqTop < 2:
+        NbarReqTop = 2
+
+    
+    location = getRebarLocationEnum(yMoment, not posMoment)
+    placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
+    placer.place(NbarReqTop, barType, location)
 
 
 def _runDesignIteration(Mr: float, 
@@ -321,19 +267,23 @@ def _runDesignIteration(Mr: float,
         reaching failure
 
     """
-    section = element.getSection(sectionInd)
     designProps = element.designProps
+    section = element.getSection(sectionInd)
+    b = section.getWidth(yMoment, lUnit)    
+
 
     NA    = solveForNA(section, yMoment, posMoment)
     MrSol = getSectionMr(section, NA, yMoment, posMoment) / 1000
     momentLow = MrSol < Mr
+
+    hasTopBars = len(bottomBarInds) != len(section.rebar)
 
     if momentLow:
         atMin = True 
     else:
         atMin = False
     
-
+    
     while momentLow or not atMin:
         
         # If the moment is too small, increase the number of bars
@@ -348,7 +298,23 @@ def _runDesignIteration(Mr: float,
             
         location = getRebarLocationEnum(yMoment, posMoment)
         placer   = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-        placer.place(NbarReq, barType, location)        
+        placer.place(NbarReq, barType, location)
+        
+        if not hasTopBars:
+            dEstBot = section.getdeff(yMoment, posMoment, lUnit)
+            rhoBA   = getSectionBalancedRho(section)
+            rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
+
+            # # Add top bars if the secton is over reinforced.
+            isOverReinforced = _isOverReinforced(rhoBA, rhoNet)
+            
+            if isOverReinforced:
+                drho  = rhoNet - rhoBA
+                _placeTopBarIfOverreinforced(element, sectionInd, yMoment, 
+                                             posMoment,  drho, barType, rebar, 
+                                             lUnit)
+            
+                hasTopBars = True
 
         
         # Remove update teh bottom bar inds for later removal.

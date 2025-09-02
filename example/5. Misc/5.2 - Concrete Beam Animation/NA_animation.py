@@ -10,49 +10,92 @@ import limitstates as ls
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-def get_concrete_section():
+import limitstates as ls
+import limitstates.design.csa.a23.c24 as a23
+
+"""
+Next the beam section is defined. A concrete material is created, as well as
+a section and set of stirrups.
+"""
+# fc = 25
+# c = 30
+# L = 5
+# h = 900 
+# b = 450
+
+# barType = '30M'
+# Mf = 1100
+
+# mat         = a23.MaterialConcreteCSA24(fc)
+# section     = ls.SectionRectangle(mat, b, h)
+# stirrupBar  = a23.getStandardRebar('10M')
+# stirrups    = ls.StirrupGroup(stirrupBar)
+# concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
+
+# designProps = a23.DesignPropsConcrete24(cover= 50)
+
+# member = ls.initSimplySupportedMember(L, 'm')
+# beam   = a23.BeamColumnConcreteCsa24(member, concreteSection, designProps) 
+
+
+
+
+def get_concrete_section(h = 900, b = 450):
     """
 
     """
-
-    h = 500
-    b = 200
-    deff = 50
     fc = 25
-    fy = 400
-    cover = 50
-    mat      = c24.MaterialConcreteCSA24(fc)
-    matRebar = c24.MaterialRebarCSA24(fy)
-    
-    section = ls.SectionRectangle(mat, b, h)
-    config = DBConfig('csa', 'rebar', 'rebar')
-    
-    rebarFactory  = ls.RebarFactory(matRebar, config, 'mm')
-    placer = ls.RebarPlacerManual(rebarFactory)
-    
-    layer2 = placer.getRebarLayer(2, '25M', deff, b  -2*cover, cover)
-    Lbars = ls.RebarCollection([layer2])
-    concreteSection = ls.SectionConcrete(section, Lbars)
-    
-    return concreteSection
+    c = 30
+    L = 5
+     
 
-section = get_concrete_section()
-solver = ls.SectionNASolver(section, c24.getSectionCr, c24.getSectionSr)
-NAsolutions = solver.calcNA()
+    mat         = a23.MaterialConcreteCSA24(fc)
+    section     = ls.SectionRectangle(mat, b, h)
+    stirrupBar  = a23.getStandardRebar('10M')
+    stirrups    = ls.StirrupGroup(stirrupBar)
+    concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
+    
+    designProps = a23.DesignPropsConcrete24(cover= c)
+    
+    member = ls.initSimplySupportedMember(L, 'm')
+    beam   = a23.BeamColumnConcreteCsa24(member, concreteSection, designProps) 
+        
+    return beam
+    
+    
+barType = '30M'
+Mf = 1100
+    
+beam = get_concrete_section()
+section = beam.getSection()
+status = a23.setBottomSteelForMr(Mf, beam, barType)
+ls.plotSection(beam.section)
+
+Mr = a23.getSectionMr(beam.section) / 1000
+
+
+print('Overrienforced:', status)
+print(Mf, Mr)
+
+
 
 
 # =============================================================================
 # Initialize Plot
 # =============================================================================
+solver = ls.SectionNASolver(section, c24.getSectionCr, c24.getSectionSr)
+NAsolutions = solver.calcNA()
+
+
 NA = solver.trials[-1]
 eyConc = section.concrete.mat.ey
-
 h = section.concrete.d 
 emax = (eyConc * h / NA - eyConc)
 
+
 fig, axes = plt.subplots(ncols=3, sharey = True)
 # plt.subplots_adjust(right=0.1)
-fig.suptitle('Neutral Axis Solver', fontweight='bold')
+fig.suptitle('Concrete Beam Rebar Placer', fontweight='bold')
 axes[0].axvline(color="grey")
 axes[0].set_xlabel('Strain (1e-3)')
 axes[0].set_ylabel('Height (mm)')
@@ -70,8 +113,7 @@ NAmm = int(NA)
 Cr = int(solver.getCr(NA) / 1000)
 Tr = int(sum(solver.getFsteel(NA)) / 1000)
 
-
-message = r"$\bf{Output}$" +  f'\nN.A. Position: {NAmm} (mm)\nSteel Force: {Tr} (kN)\nConcrete Force: {Cr} (kN)\nIteration: {ii}'
+message = r"$\bf{Output}$\n" +  f'\nN.A. Position: {NAmm} (mm)\nSteel Force: {Tr} (kN)\nConcrete Force: {Cr} (kN)\nIteration: {ii}'
 text = axes[1].text(0.65, 0.75, message, 
                     ha='left', va='center', ma='left',
                     fontsize=10, transform=plt.gcf().transFigure)
@@ -102,6 +144,6 @@ Nitems = len(solver.trials)
 ani = animation.FuncAnimation(fig=fig, func=plot, frames=Nitems, interval=200)
 plt.show()
 
-f = r"animation.gif" 
-writergif = animation.PillowWriter(fps=9) 
-ani.save(f, writer=writergif)
+# f = r"animation.gif" 
+# writergif = animation.PillowWriter(fps=9) 
+# ani.save(f, writer=writergif)
