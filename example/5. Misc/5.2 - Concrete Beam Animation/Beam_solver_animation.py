@@ -59,6 +59,7 @@ Mr = round(a23.getSectionMr(beam.section) / 1000)
 # heights = [1500, 1400, 1300, 1200, 1100, 1000, 900, 800, 700]
 # heights = [1200, 1100, 1000, 900, 800, 700]
 heights = list(range(1200, 650, -50))
+heights += [700, 700, 700]
 hmax = max(heights)
 
 # =============================================================================
@@ -182,5 +183,5 @@ ani = animation.FuncAnimation(fig=fig, func=plot, frames=Nitems, interval=500)
 plt.show()
 
 f = r"animation.gif" 
-writergif = animation.PillowWriter(fps=2) 
+writergif = animation.PillowWriter(fps=2.5) 
 ani.save(f, writer=writergif)
