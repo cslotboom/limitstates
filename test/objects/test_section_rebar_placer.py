@@ -79,6 +79,34 @@ def test_placement_bottom():
 
 
 
+def test_placement_bottom_with_overwrite():
+    barType = '30M'
+    Nbar = 6
+    locationEnum = 1
+    
+    dbar = 30
+    dOverwrite = 60
+
+    placer = _init_placer()
+    placer.place(Nbar, barType, locationEnum, dOverwrite )
+    
+    section = placer.section
+    ls.plotSection(section)
+        
+    assert len(section.rebar) == 2
+    assert section.rebar.Nbars == Nbar
+
+    coords = section.rebar.getCoords(flatten=True)
+    sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
+
+    assert coords[0,0] == 40 + dbar/2
+    assert coords[0,1] == (dOverwrite)
+
+    assert coords[1,0] == 40 + dbar/2 + dbar + sActual
+    assert coords[-1,1] == (dOverwrite + dbar*1.4 + dbar)
+
+
+
 def test_placement_top():
     barType = '30M'
     Nbar = 7
@@ -157,6 +185,7 @@ if __name__ == '__main__':
     test_bar_position()
     test_placement_init()
     test_placement_bottom()
+    test_placement_bottom_with_overwrite()
     test_placement_top()
     test_placement_side()
     # test_placement_side()

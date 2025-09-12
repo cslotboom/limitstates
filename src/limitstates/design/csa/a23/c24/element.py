@@ -4,6 +4,8 @@ These are largely set up to ease development and provide type hints.
 """
 from typing import Union
 from dataclasses import dataclass
+from enum import IntEnum
+from math import radians
 
 from limitstates.objects import (Member, SectionConcrete, initSimplySupportedMember)
 from limitstates.objects.display import MATCOLOURS, PlotConfigCanvas,  PlotConfigObject
@@ -15,6 +17,13 @@ from limitstates import BeamColumn, EleDisplayProps, PlotOriginPositionEnum
 
 __all__ = ["DesignPropsConcrete24", "EleDisplayPropsConcrete24",
            "BeamColumnConcreteCsa24"]
+
+
+class ShearConfigurations(IntEnum):
+    MinTransverse = 1
+    NoTransverseAmax20 = 2
+    NoTransverse = 3
+
 
 @dataclass
 class DesignPropsConcrete24:
@@ -59,7 +68,10 @@ class DesignPropsConcrete24:
     """
     
     
-    cover:float = None
+    cover: float = None
+    lam: float = 1
+    shearReinforcenemtType: float = 1
+    theta: float = radians(35)
     sectionRegions:list[list[float]] = None
     
     

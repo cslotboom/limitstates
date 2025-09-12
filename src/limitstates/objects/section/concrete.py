@@ -53,8 +53,7 @@ class SectionConcrete:
         # return positions
 
     def getWidth(self, 
-                 yMoment: bool = True, 
-                 posMoment: bool = True, 
+                 yDirection: bool = True, 
                  lunit: str = 'mm'):
         """
         The default units are mm
@@ -80,27 +79,39 @@ class SectionConcrete:
         b : TYPE
             The width of the beam in the input set of units.
 
-        """
-        
-           
+        """          
         
         lfactor = self.concrete.lConvert(lunit)
-        if yMoment:
+        if yDirection:
             b = self.concrete.b * lfactor
         else:
             b = self.concrete.d * lfactor
         return b
 
-    def getDepth(self, yMoment: bool = True, 
+    def getDepth(self, yDirection: bool = True, 
                  lUnit: str = 'mm'):
                 
         lfactor = self.concrete.lConvert(lUnit)
-        if yMoment:
+        if yDirection:
             d = self.concrete.d * lfactor
         else:
             d = self.concrete.b * lfactor
         return d
     
+    def getRebarDepth(self, yShear: bool = True, 
+                    posShear: bool = True, 
+                    lUnit: str = 'mm'):
+        if yShear:
+            coords = self.rebar.getyCoords(lUnit, flatten=True)
+        else:
+            coords = self.rebar.getxCoords(lUnit, flatten=True)
+        if posShear:
+            dbeam = self.getDepth(posShear, lUnit)
+            drebar = min(coords)
+            dv = dbeam - drebar
+        else:
+            dv = max(coords)
+        return dv
     
     def getdeff(self, yMoment: bool = True, 
                 posMoment: bool = True,
@@ -441,7 +452,7 @@ class RebarPlacerManual():
     #                                             deff, width, 
     #                                             offset, direction))
 
-
+# TODO: document
 class RebarPlacerRow(RebarPlacer):
     
     def __init__(self, section: SectionConcrete, 
@@ -487,7 +498,8 @@ class RebarPlacerRow(RebarPlacer):
         self._setClearCover()
         self.NbarsMax = self.getMaxBarsInRow()
    
-    def _place(self, Nbars:int, barType:str, location: RebarLocationEnum):
+    def _place(self, Nbars:int, barType:str, location: RebarLocationEnum,
+              depthOverwrite:float = None):
         if Nbars < 2:
             raise Exception('Two or more bars must be placed in the section.')        
         
@@ -507,12 +519,27 @@ class RebarPlacerRow(RebarPlacer):
             else:
                 NBarRow = barsRemaining                
             
-            if location==1 or location==3:
-                deff = (self.clearCover + dbar/2 + (dbar + self.s)*ii)
+            dRow = (dbar + self.s)*ii
+            
+            if depthOverwrite:
+                dbase = depthOverwrite
             else:
-                deff = self.h - (self.clearCover + dbar/2 + (dbar + self.s)*ii)
+                dbase = self.clearCover + dbar/2
+            # else:
+            if location==1 or location==3:
+                deff = (dbase + dRow)
+            else:
+                deff = self.h - (dbase + dRow)
                 
             
+            # if depthOverwrite:
+            #     deff = depthOverwrite + dRow
+            # # else:
+            # elif location==1 or location==3:
+            #     deff = (self.clearCover + dbar/2 + dRow)
+            # else:
+            #     deff = self.h - (self.clearCover + dbar/2 + dRow)
+                
             positions = self._getBarPositon(NBarRow, 
                                             self.bRow - dbar, 
                                             self.clearCover + dbar/2)
@@ -528,9 +555,10 @@ class RebarPlacerRow(RebarPlacer):
     
         return RebarCollection(layers)
     
-    def place(self, Nbars:int, barType:str, location:RebarLocationEnum = 1):      
+    def place(self, Nbars:int, barType:str, location:RebarLocationEnum = 1,
+              depthOverwrite = None):      
         """
-        Place Nbars of the type "barType" within the rebar section. The locatin
+        Place Nbars of the type "barType" within the rebar section. The location
         enumeration is used to specify where the section the bars are placed,
         i.e. at the bottom, top, left or right. By default the bars are placed
         in the bottom layer.
@@ -546,7 +574,7 @@ class RebarPlacerRow(RebarPlacer):
             and 4 for right.
 
         """          
-        self.section.addBars(self._place(Nbars, barType, location))
+        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
  
     
  

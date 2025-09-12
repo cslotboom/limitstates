@@ -64,13 +64,12 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
         return RebarSpacingConfig(s, c, dstirrup, rcurve)
         
         
-    def place(self, Nbars: int, barType: str, location: RebarLocationEnum): 
+    def place(self, Nbars: int, barType: str, location: RebarLocationEnum, depthOverwrite: float = None): 
         
         config = self.getSpacingRules(barType)
         self.setSpacingConfig(config)
 
-               
-        self.section.addBars(self._place(Nbars, barType, location))
+        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
          
         
     

@@ -563,8 +563,28 @@ class StirrupGroup:
     dstirrup:float
     lUnit:str
 
-    def __init__(self, rebar:Rebar):
+    def __init__(self, rebar:Rebar, spacing: float = 100, Nlegs: int = 2, lUnit:str = 'mm'):
         self.rebar = rebar
+        self.spacing = spacing
+        self.Nlegs = Nlegs
+
+        self._initUnits(lUnit)
         
 
 
+        
+    def _initUnits(self, lUnit: str = None):
+        """
+        Initiates units of the cross sections. Cross sections have length units
+        only.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The length unit to use. The default is 'mm'.
+        """
+        if not lUnit:
+            lUnit = 'mm'
+        self.lUnit      = lUnit
+        self.lConverter = ConverterLength()
+    

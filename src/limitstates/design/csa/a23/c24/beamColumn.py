@@ -2,10 +2,11 @@
 Contains the code designc clauses
 """
 from typing import Union
-
+from enum import IntEnum
 import numpy as np
+from math import tan
 
-from .element import BeamColumnConcreteCsa24 
+from .element import BeamColumnConcreteCsa24, ShearConfigurations
 from .section import REBARFACTORY, loadRebarFactory
 from .material import MaterialRebarCSA24
 from limitstates import DesignDiagram, SectionConcrete
@@ -185,8 +186,6 @@ def getSectionCr(section:SectionConcrete, NAlocation:float,
                 
     return phiC * alpha * beta * NAlocation * fc * b
 
-
-
 def getSectionMr(section:SectionConcrete, NAlocation:float = None, 
                  yMoment:bool = True,
                  posMoment = True):
@@ -241,8 +240,6 @@ def getRhoBalanced(alpha:float, beta:float, fc: float, fy: float,
     return rho
 
 
-
-
 def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
                         eySteel = 0.002, yMoment:bool = True, 
                         posMoment = True):
@@ -289,7 +286,6 @@ def getSectionBalancedNA(section:SectionConcrete, deff:float = None,
     
     return getBalancedNA(deff, eyConc, eySteel)
 
-
 def getSectionBalancedRho(section: SectionConcrete, 
                          eySteel:float = 0.002, fySteel:float = 400):
     
@@ -312,8 +308,6 @@ def getSectionBalancedRho(section: SectionConcrete,
     
     return getRhoBalanced(alpha, beta, fc, fySteel, eyConc, eySteel)
     
-
-
 def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
                         eySteel:float = 0.002, fySteel:float = 400,
                         yMoment:bool = True, 
@@ -362,27 +356,6 @@ def getSectionBalancedAnet(section:SectionConcrete, deff:float = None,
  
     return Cr / (phiS * fySteel)
 
-
-
-
-
-
-# def checkSteelStrain(epsCmax:float, d:float, c:float):
-    
-#     return epsCmax*(d/c - 1)
-
-
-
-# def checkSectionYield(fy, fc, As, d, b, alpha, beta, epsCmax, epsyLim = 0.02):
-    
-#     Tr = checkYieldTr(fy, As)
-#     a = getCompressionDepth(Tr, alpha, fc, b)
-#     c = a / beta
-#     checkSteelStrain(epsCmax, d, c)
-
-
-
-
 def checkSectionYield(c:float, d:float, epsCmax:float, epsyLim = 0.02):
     
     """
@@ -399,7 +372,6 @@ def getCompressionDepth(Tr, alpha, fc, b):
     return Tr / (alpha * phiC * fc * b)
     
     
-
 def getSmin(db:float, amax:float):
     """
     Returns minimum spacing for a given rebar with a given aggregate.
@@ -418,10 +390,7 @@ def getSmin(db:float, amax:float):
 
     """
     return np.max((1.4*db, 1.4*amax, 30))
-    
-       
-
-
+   
 def getAsmin(fc:float, fy:float, bt:float, h:float):
     """
     CSA A23.3 Cl.10.5.1.2
@@ -493,11 +462,6 @@ def getSectionAsmin(section: SectionConcrete, fy: float = None):
         fy = 400
     
     return getAsmin(fc, fy, b, h)
-
-
-
-
-
 
 
 class SectionNASolverCSA24(SectionNASolver):
@@ -603,42 +567,118 @@ def solveForNA(section: SectionConcrete,
 
 
 
+def getdveff(dv: float, h: float):
+    return max(0.9*dv, 0.72*h)
 
 
 
+def getShearBeta(shearEnum: ShearConfigurations, dv:float = None):
+    """
+    A23.3 EQ 11.9
+    """
 
+    if shearEnum == ShearConfigurations.MinTransverse:
+        beta = 0.18
+    elif shearEnum == ShearConfigurations.NoTransverseAmax20:
+        beta = (230) / (1000 + dv)
+    elif shearEnum == ShearConfigurations.NoTransverse:
+        raise Exception('Not implimented')
+    return beta
+
+
+
+def getElementVrc(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
+                 yShear: bool = True, posShear: bool = True):
+
+    section = element.getSection(sectionInd)
+    lam     = element.designProps.lam
+
+    shearENum = element.designProps.shearReinforcenemtType
+    dv = section.getRebarDepth(yShear, posShear)
+    h  = section.getDepth(yShear)
+    bw = section.getWidth(yShear)
+    dveff = getdveff(dv, h)
+    beta  = getShearBeta(shearENum, dveff)
     
-# def checkYieldTr(fy:float, As:float):
+    fc = section.concrete.mat.fc
+
+    return getVrc(lam, beta, fc, bw, dveff)
+
+def getVrc(lam: float, beta: float, fc: float,
+          bw: float, dv: float):
+    """
+    Returns the Value Vc for a concrete 
+    c.l. 11.3.4.
+
+    """
+
+    return phiC * lam * beta * fc**0.5 * bw * dv
+
+
+
+def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
+                 yShear: bool = True, posShear: bool = True):
+    """_summary_
+
+    Parameters
+    ----------
+    element : BeamColumnConcreteCsa24
+        _description_
+    sectionInd : int, optional
+        _description_, by default 0
+    yShear : bool, optional
+        _description_, by default True
+    posShear : bool, optional
+        _description_, by default True
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    section = element.getSection(sectionInd)
+    theta   = element.designProps.theta
+
+    fy = section.stirrups.rebar.mat.fy
+    Av = section.stirrups.Nlegs * section.stirrups.rebar.A
+    s  = section.stirrups.spacing
+
+    dv = section.getRebarDepth(yShear, posShear)
+    h  = section.getDepth(yShear)
+    dveff = getdveff(dv, h)
+   
+    return getVrs(Av, fy, dveff, theta, s)
+
+
+
+def getVrs(Av: float, fy: float, dv: float, theta: float, s: float):
+    """    
+
+    Returns the Value Vc for a concrete using the simplified method.
+    c.l. 11.3.4.
+
+    Theta from c.l. 11.3.6.3
     
-#     return phiS * fy * As
 
+    Parameters
+    ----------
+    Av : float
+        The area per leg of stirrup in sqmm
+    fy : float
+        The rebar yield stress in MPa
+    dv : float
+        The shear depth of the concrete section in the direction of interst, in mm.
+    theta : float
+        The angle of diagonal compressive stresses, see c.l. 11.3.6.3
+    s : float
+        The spacing of the stirrups
 
-    
+    Returns
+    -------
+    _type_
+        _description_
+    """
 
-    
-# def checkElementMr(Mr: float, 
-#                     element: BeamColumnConcreteCsa24,
-#                     positveMoment: bool = True,
-#                     sectionInd: int = 0):
-#     """
-#     Given an input element, calculate the moment resistance.
-#     """
-#     pass
-    
-#     return None
-
-
-
-
-
-# def designElementMr(Mr: float, 
-#                     element: BeamColumnConcreteCsa24,
-#                     barType: str = None,
-#                     positveMoment: bool = True,
-#                     sectionInd: int = 0):    
-#     pass
-    
-#     return None
-
+    return phiS * Av * fy * dv / (tan(theta) * s)
 
 

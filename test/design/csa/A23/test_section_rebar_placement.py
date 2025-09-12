@@ -36,7 +36,7 @@ def _init_element():
     section     = ls.SectionRectangle(mat, b, h)
     stirrupBar  = c24.getStandardRebar('10M')
     concreteSection = ls.SectionConcrete(section, stirrups = ls.StirrupGroup(stirrupBar))
-    designProps = c24.DesignPropsConcrete24(cover= c)
+    designProps = c24.DesignPropsConcrete24(cover = c)
     
     member = ls.initSimplySupportedMember(5, 'm')
     
