@@ -71,17 +71,17 @@ def test_element_rho():
 def test_element_Mr_top():
     barType = '30M'
 
-    posMoment = False
+    posForce = False
 
     Mf = 800
 
     deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    c24.setBottomSteelForMr(Mf, ele, barType, posMoment=posMoment)
+    c24.setBottomSteelForMr(Mf, ele, barType, posForce=posForce)
     section = ele.getSection()
     assert section.rebar.Nbars == 5
-    assert section.getdeff(posMoment=posMoment) == deff
+    assert section.getdeff(posForce=posForce) == deff
     assert section.getdeff() == 30 + 10 + 30/2
 
     
@@ -90,25 +90,25 @@ def test_element_Mr_right():
     barType = '30M'
     Mf = 700
     deffsol = 450 - 30 - 10 - 30/2
-    yMoment = False
-    posMoment = True
+    yForce = False
+    posForce = True
 
     ele = _init_element()
-    c24.setBottomSteelForMr(Mf, ele, barType, yMoment=yMoment, posMoment=posMoment)
+    c24.setBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
     # ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11
-    assert section.getdeff(yMoment) == deffsol
+    assert section.getdeff(yForce) == deffsol
 
 def test_element_Mr_left():
     barType = '30M'
-    yMoment = False
-    posMoment = False
+    yForce = False
+    posForce = False
     Mf = 700
     deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    OR = c24.setBottomSteelForMr(Mf, ele, barType, yMoment=yMoment, posMoment=posMoment)
+    OR = c24.setBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
     ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11

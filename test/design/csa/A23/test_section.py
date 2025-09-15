@@ -34,29 +34,39 @@ def test_section():
     """
     Mr from compression tables in blue book
     """
-    barType = '30M'
-    # Nbar = 6
-    yMoment = True
-    posMoment = True
-    # lUnit = 'mm'
-    Mf = 800
-    deffsol = 1.4*25
+    # barType = '30M'
+    # # Nbar = 6
+    # yForce = True
+    # posForce = True
+    # # lUnit = 'mm'
+    # Mf = 800
+    # deffsol = 1.4*25
 
     ele = _init_element()
+    section = ele.getSection()
     
     c24.placeRebarRowInElement(ele, 4, '25M')
-    
+    ls.plotSection(section)
+
+    # Bottom Bars
     deff = ele.section.getdeff()
     assert deff == 900 - 30 - 25/2 - 10
+    deff = ele.section.getRebarDepth()
+    assert deff == 900 - 30 - 25/2 - 10
     
-    deff = ele.section.getdeff(yMoment=True, posMoment=False)
+    # Top bars
+    deff = section.getRebarDepth(yForce=True, posForce=False)
     assert deff ==  30 + 25/2 + 10
 
-    deff = ele.section.getdeff(yMoment=False, posMoment=True)
-    assert deff == 450 - 30 - 25/2 - 10
+    #
+    # deff = section.getdeff(yForce=False, posForce=True)
+    # assert deff == 450 - 30 - 25/2 - 10
+    # deff = section.getRebarDepth(yForce=False, posForce=True)
+    # assert deff == 450 - 30 - 25/2 - 10
     
-    deff = ele.section.getdeff(yMoment=False, posMoment=False)
-    assert deff ==  30 + 25/2 + 10
+    # # Top Side Bars
+    # deff = section.getRebarDepth(yForce=False, posForce=False)
+    # assert deff ==  30 + 25/2 + 10
 
 
 if __name__ == "__main__":

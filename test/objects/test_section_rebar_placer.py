@@ -47,9 +47,6 @@ def test_placement_init():
     strategy._initPlacement(barType, 1)
     assert strategy.clearCover == 40    
     assert strategy.NbarsMax == 5
-    
-    # assert 
-
 
 def test_placement_bottom():
     barType = '30M'

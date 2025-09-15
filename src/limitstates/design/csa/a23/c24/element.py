@@ -19,6 +19,10 @@ __all__ = ["DesignPropsConcrete24", "EleDisplayPropsConcrete24",
            "BeamColumnConcreteCsa24"]
 
 
+
+phiC = 0.65
+phiS = 0.85
+
 class ShearConfigurations(IntEnum):
     MinTransverse = 1
     NoTransverseAmax20 = 2

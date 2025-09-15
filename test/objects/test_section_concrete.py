@@ -5,6 +5,8 @@ Description:
     Checks if rebar is palced correctly.
 """
 
+import numpy as np
+
 import limitstates.design.csa.a23.c24 as c24
 import limitstates as ls
 import matplotlib.pyplot as plt
@@ -44,13 +46,35 @@ def test_deff_overwrite_bottom():
 
 
     section = _init_beam_vertical_placer()
-    ls.plotSection(section) 
     # plt.show()
-    assert 430 == section.getRebarDepth(posShear = True)
-    assert 450 == section.getRebarDepth(posShear = False)
+    assert 430 == section.getRebarDepth(posForce = True)
+    assert 450 == section.getRebarDepth(posForce = False)
+
+def test_section_bottom_bar_status():
+
+
+    section = _init_beam_vertical_placer()
+    solution = np.array([True, True, True, True, True, False, False])
+    output = section.getBottomBarStatus()
+    assert np.all(solution == output)
+
+    solution = np.array([False, False, False, False, False, True, True])
+    output = section.getBottomBarStatus(posForce = False)
+    assert np.all(solution == output)
+
+
+def test_section_deff():
+
+
+    section = _init_beam_vertical_placer()
+    solution = 430
+    assert solution == approx(section.getdeff())
+
+    solution = 450
+    assert solution == approx(section.getdeff(posForce = False))
 
 
 if __name__ == '__main__':
-
     test_deff_overwrite_bottom()
-    # test_placement_side()
+    test_section_bottom_bar_status()
+    test_section_deff()

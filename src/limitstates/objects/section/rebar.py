@@ -156,7 +156,7 @@ class RebarGroup(collections.UserList):
         ----------
         direction : str, optional
             The direction to calculate deff in. The default is 'y'.
-        posMoment : bool, optional
+        posForce : bool, optional
             A flag that specifies if moment is positive or negative. Positive
             moment is defined as moment that creates tension at the "bottom"
             of the beam. e.g. a simply supported beam has positive bending.
@@ -197,15 +197,14 @@ class RebarGroup(collections.UserList):
         for bar in self:
             bar.convertUnits(lUnit)
 
+
+
+
+
+
+
 class RebarLayer(RebarGroup):
     
-    # def __init__(self, args):
-    #     """
-    #     Finds the orientation of the layer.
-    #     """
-    #     super().__init__(args)
-    #     if args:
-    #         self._setOrientation()
     _orientationSet = False
     def _setOrientation(self):
         bar1 = self[0]
@@ -238,7 +237,7 @@ class RebarLayer(RebarGroup):
 
         Parameters
         ----------
-        yMoment : bool, optional
+        yForce : bool, optional
             A flag that controls the direction deff is calculated in. 
             The default is 'y'.
 
@@ -261,7 +260,7 @@ class RebarLayer(RebarGroup):
 
         Parameters
         ----------
-        yMoment : bool, optional
+        yForce : bool, optional
             A flag that controls the direction deff is calculated in. 
             The default is 'y'.
 
@@ -433,12 +432,15 @@ class RebarCollection:
             A  += Atemp
         return dA / A  
     
-    def getAreas(self, lUnit = ''):  
+    def getAreas(self, lUnit = '', flatten = False):  
         areas = []
         for group in self.groups:
             areas.append(group.getAreas(lUnit))
-            
-        return areas
+        
+        if flatten:
+            return np.concatenate(areas)
+        else:
+            return areas
         
     def getNetArea(self, lUnit = ''):
         
@@ -447,6 +449,8 @@ class RebarCollection:
         for aGroup in areaGroups:
             area += sum(aGroup)
         return area
+
+
 
 class RebarFactory:
     

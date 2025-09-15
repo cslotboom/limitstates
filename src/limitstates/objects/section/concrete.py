@@ -44,13 +44,13 @@ class SectionConcrete:
             self.rebar.addBars(rebar.groups)
 
     def getdMax(self, xDirection:bool=False, 
-                posMoment:bool=True):
+                posForce:bool=True):
         pass
-        # if xDirection:
-        #     positions = self.rebar.getxCoords()
-        # else:
-        #     positions = self.rebar.getyCoords()
-        # return positions
+        if xDirection:
+            positions = self.rebar.getxCoords()
+        else:
+            positions = self.rebar.getyCoords()
+        return positions
 
     def getWidth(self, 
                  yDirection: bool = True, 
@@ -60,9 +60,9 @@ class SectionConcrete:
 
         Parameters
         ----------
-        yMoment : bool, optional
+        yForce : bool, optional
             DESCRIPTION. The default is True.
-        posMoment : bool, optional
+        posForce : bool, optional
             A flag that specifies if moment is positive or negative. Positive
             moment is defined as moment that creates tension at the "bottom"
             of the beam. e.g. a simply supported beam has positive bending.
@@ -88,6 +88,7 @@ class SectionConcrete:
             b = self.concrete.d * lfactor
         return b
 
+    # TODO, rename to get section depth?
     def getDepth(self, yDirection: bool = True, 
                  lUnit: str = 'mm'):
                 
@@ -98,33 +99,99 @@ class SectionConcrete:
             d = self.concrete.b * lfactor
         return d
     
-    def getRebarDepth(self, yShear: bool = True, 
-                    posShear: bool = True, 
+    def getRebarDepth(self, yForce: bool = True, 
+                    posForce: bool = True, 
                     lUnit: str = 'mm'):
-        if yShear:
+        if yForce:
             coords = self.rebar.getyCoords(lUnit, flatten=True)
         else:
             coords = self.rebar.getxCoords(lUnit, flatten=True)
-        if posShear:
-            dbeam = self.getDepth(posShear, lUnit)
+        if posForce:
+            dbeam = self.getDepth(posForce, lUnit)
             drebar = min(coords)
             dv = dbeam - drebar
         else:
             dv = max(coords)
         return dv
     
-    def getdeff(self, yMoment: bool = True, 
-                posMoment: bool = True,
+    
+    
+    def _get_rebar_depths(self, yForce: bool = True, 
+                          posForce: bool = True, 
+                          lUnit: str = 'mm'):
+            
+        d = self.getDepth(yForce, lUnit)
+
+        if yForce:
+            depths = self.rebar.getyCoords(lUnit, True)
+        else:
+            depths = self.rebar.getxCoords(lUnit, True)
+        
+        if posForce:
+            depths = d - depths
+            
+        return depths
+    
+    def getBottomBarStatus(self, NAlocation:float = None, 
+                            yForce: bool = True, posForce: bool = True,
+                            lUnit: str = 'mm') -> float:
+        """
+        Bottom bar status depends on wether the bar is in tension or 
+        compression. Bars in tension will be considered bottom bars, while
+        bars in compression are considered top bars.
+        
+        The NA location is specified, measured from the bottom of the section.
+        
+        If no NA location is specified, then the section will assume the 
+        neutral axis is at the middle of the beam.
+
+        Parameters
+        ----------
+        NAlocation : float, optional
+            The location of the neutral axis, measured from the compression
+            face of the. The default is None, which results in half the depth
+            of the beam in the direction of interest.
+        yForce : bool, optional
+            DESCRIPTION. The default is True.
+        posForce : bool, optional
+            DESCRIPTION. The default is True.
+        lUnit : str, optional
+            DESCRIPTION. The default is 'mm'.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        d = self.getDepth(yForce, lUnit)
+        depths = self._get_rebar_depths(yForce, posForce, lUnit)
+        
+        if not NAlocation:
+            NAlocation = d / 2
+    
+        return depths > NAlocation
+    
+    
+
+    # # TODO: test
+    def getdeff(self, NAlocation:float = None, 
+                yForce: bool = True, posForce: bool = True,
                 lUnit: str = 'mm'):
         """
+        Gets the effective depth in the input direction of interest.
+        
+        The NA location in the direction of interst is used to exclued bars 
+        from the depth calucation. The effective depth be to the centroid of 
+        the tension bar group.
         
 
         Parameters
         ----------
-        yMoment : bool, optional
+        yForce : bool, optional
             A flag that specifies if moment is applied in the y or x direction. 
             The default is True, for moment being applied about the x axis.
-        posMoment : bool, optional
+        posForce : bool, optional
             A flag that specifies if moment is positive or negative. Positive
             moment is defined as moment that creates tension at the "bottom"
             of the beam. e.g. a simply supported beam has positive bending.
@@ -142,17 +209,27 @@ class SectionConcrete:
             DESCRIPTION.
 
         """
+        
+        # Notes, this function seems like it should happen in rebar, however,
+        # the rebar will not know the section depth, which is needed
+        
+        d = self.getDepth(yForce, lUnit)
+        depths = self._get_rebar_depths(yForce, posForce, lUnit)
+        areas  = np.array(self.rebar.getAreas(lUnit, True))
+        
+        if not NAlocation:
+            NAlocation = d / 2
+    
+        bottomBars = depths > NAlocation
+        
+        depths = depths[bottomBars]
+        areas  = areas[bottomBars]
+        
+        return sum(depths * areas) / sum(areas)
 
-        if yMoment:
-            davg = self.rebar.getyAvg(lUnit)
-        else:
-            davg = self.rebar.getxAvg(lUnit)
-        if posMoment:
-            d = self.getDepth(yMoment, lUnit)
-            deff = d - davg
-        else:
-            deff = davg
-        return deff
+
+
+
 
 class SectionNASolver:
     """
@@ -174,10 +251,10 @@ class SectionNASolver:
         
     Pf : float, optional
         A axial force applied to the section. The default is 0.
-    yMoment : bool, optional
+    yForce : bool, optional
         A flag that specifies if moment is applied in the y or x direction. 
         The default is True, for moment being applied about the x axis.
-    posMoment : bool, optional
+    posForce : bool, optional
         A flag that specifies if moment is positive or negative. Positive
         moment is defined as moment that creates tension at the "bottom"
         of the beam. e.g. a simply supported beam has positive bending.
@@ -203,8 +280,8 @@ class SectionNASolver:
     """
     def __init__(self, section: SectionConcrete, 
                  concreteFunction, steelFunction,
-                 Pf:float = 0, yMoment: bool = True, 
-                 posMoment: bool = True,
+                 Pf:float = 0, yForce: bool = True, 
+                 posForce: bool = True,
                  NAtrial = None,
                  tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
@@ -216,10 +293,10 @@ class SectionNASolver:
         self.compressiveFunction = concreteFunction
         self.steelFunction = steelFunction
         
-        self.yMoment = yMoment
-        self.posMoment = posMoment
+        self.yForce = yForce
+        self.posForce = posForce
         
-        if yMoment:
+        if yForce:
             self.rebarCoords = self.rebar.getyCoords(flatten=True)
             self.d = section.concrete.d
             self.b = section.concrete.b
@@ -229,7 +306,7 @@ class SectionNASolver:
             self.b = section.concrete.d
 
         # If the moment isn't positive, flip the orientation of the rebar
-        if not posMoment:
+        if not posForce:
             self.rebarCoords = self.d - self.rebarCoords
         
         if not NAtrial:
@@ -244,11 +321,11 @@ class SectionNASolver:
 
     def getCr(self, NAtrial):
         return self.compressiveFunction(self.section, NAtrial, 
-                                        self.yMoment, self.posMoment)
+                                        self.yForce, self.posForce)
     
     def getFsteel(self, NAtrial):
         return self.steelFunction(self.section, NAtrial, 
-                                        self.yMoment, self.posMoment)
+                                        self.yForce, self.posForce)
 
         
     def checkEqulibrium(self, NAtrial):
@@ -306,13 +383,13 @@ class SectionNASolver:
         return NAtrial, nn
 
 def solveForNA(section: SectionConcrete, 
-             Pf:float = 0, yMoment: bool = True, 
-             posMoment: bool = True,
+             Pf:float = 0, yForce: bool = True, 
+             posForce: bool = True,
              NAtrial: float = None,
              tol: float = 1e-3, maxIter: float = 100):
     
     
-    naSolver = SectionNASolver(section, Pf, yMoment, posMoment, NAtrial,
+    naSolver = SectionNASolver(section, Pf, yForce, posForce, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()
@@ -334,16 +411,16 @@ placementDict = {(True,  True):  RebarLocationEnum.Bottom,
                  (False, True):  RebarLocationEnum.Left, 
                  (False, False): RebarLocationEnum.Right }
 
-def getRebarLocationEnum(yMoment:bool = True, 
-                         posMoment:bool = True) -> RebarLocationEnum:
+def getRebarLocationEnum(yForce:bool = True, 
+                         posForce:bool = True) -> RebarLocationEnum:
     """
     
 
     Parameters
     ----------
-    yMoment : bool, optional
+    yForce : bool, optional
         DESCRIPTION. The default is True.
-    posMoment : bool, optional
+    posForce : bool, optional
         DESCRIPTION. The default is True.
 
     Returns
@@ -352,7 +429,7 @@ def getRebarLocationEnum(yMoment:bool = True,
         DESCRIPTION.
 
     """
-    return placementDict[(yMoment, posMoment)]
+    return placementDict[(yForce, posForce)]
 
 
 

@@ -251,9 +251,12 @@ def _plotGeomFactory(section: SectionAbstract,
     elif isinstance(section, SectionConcrete):
         b, d  = section.concrete.b, section.concrete.d        
         xy    = _getPlotOrigin(originLocation, b, d, xy0)
-        xyRebar = section.rebar.coordsFlat
+        if section.rebar:
+            xyRebar = section.rebar.coordsFlat
+        else:
+            xyRebar = None
         radii  = [d/2 for d in section.rebar.getAttr('d',True)]
-        geom  = md.GeomModelConcrete(b, d,xyRebar, radii, *xy)    
+        geom  = md.GeomModelConcrete(b, d, xyRebar, radii, *xy)    
     else:
         raise Exception(f'Section of type {section} is not supported.')
         
@@ -320,15 +323,21 @@ def _plotfillLines(ax, geom, objectConfig:PlotConfigObject):
 
 def _plotfillPatches(ax, geom, objectConfig:PlotConfigObject):
     
+    
     if   objectConfig.patchType == 1:
         linex, liney = geom.getFillAreaVerticies()
         lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
         p = PatchCollection([Polygon(vert) for vert in lverts], 
                             color = objectConfig.cFillPatch)
     
+    # for rebar
     elif objectConfig.patchType == 2:
+        
+        # If there is no rebar set, don't plot anything.
+        if geom.xyRebar is None:
+            return 
         radii  = geom.getFillRadii()
-        x,y = geom.getFillAreaVerticies()
+        x, y = geom.getFillAreaVerticies()
         lverts = np.column_stack((x,y))
         p = PatchCollection([Circle(vert, r) for vert, r in zip(lverts, radii)], 
                             color = objectConfig.cFillPatch)        

@@ -4,6 +4,7 @@ Contains functions for managing sections specific to CSAo86-19
 
 from limitstates.objects.read import DBConfig
 from limitstates.objects.section.rebar import RebarFactory, Rebar
+
 from .material import MaterialRebarCSA24
 
 
@@ -79,4 +80,105 @@ def getStandardRebar(barName:str,
 
 
         
+
+# class SectionNASolverCSA24(SectionNASolver):
+#     """
+#     Attempts to solves for the neutral axis of a section. Assumes all 
+#     bars use the same material.
     
+#     Solves for the neutral axis within a section.
+#     The neutral axis is measured from the top of the section.
+
+#     Parameters
+#     ----------
+#     section : SectionConcrete
+#         The concrete section to solve the NA of.        
+#     Pf : float, optional
+#         A axial force applied to the section. The default is 0.
+#     yForce : bool, optional
+#         A flag that specifies if moment is applied in the y or x direction. 
+#         The default is True, for moment being applied about the x axis.
+#     posForce : bool, optional
+#         A flag that specifies if moment is positive or negative. Positive
+#         moment is defined as moment that creates tension at the "bottom"
+#         of the beam. e.g. a simply supported beam has positive bending.
+        
+#         If set to true, then the NA will be measured from the "bottom" of the
+#         section, which will be assumed to be in compression.
+        
+#         The default is True.
+#     tol : float, optional
+#         The tolerance required for convergence, i.e. the difference between
+#         the calcualted concrete and steel force. The default is 1e-3.
+#     maxIter : float, optional
+#         The maximum number of iterations needed before convergence is 
+#         reached. The default is 100.
+#     logging : bool, optional
+#         A flag that turns on or off logging. Currently is inactive. 
+#         The default is True.
+
+#     Returns
+#     -------
+#     None.
+
+#     """
+#     def __init__(self, section: SectionConcrete, 
+#                  Pf:float = 0, yForce: bool = True, 
+#                  posForce: bool = True, NAtrial: float = None,
+#                  tol: float = 1e-3, maxIter: float = 100,
+#                  logging:bool = True):
+#         super().__init__(section, getSectionCr, getSectionSr,
+#                          Pf, yForce, posForce, 
+#                          NAtrial, tol, maxIter, logging)
+        
+# # TODO, move this function into it's own folder?
+# def solveForNA(section: SectionConcrete, 
+#              Pf:float = 0, yForce: bool = True, 
+#              posForce = True, NAtrial: float = None,
+#              tol: float = 1e-3, maxIter: float = 100):
+#     """
+#     Attempts to solves for the neutral axis of a section. Assumes all 
+#     bars use the same material.
+    
+#     Solves for the neutral axis within a section.
+#     The neutral axis is measured from the top of the section.
+
+#     Parameters
+#     ----------
+#     section : SectionConcrete
+#         The concrete section to solve the NA of.        
+#     Pf : float, optional
+#         A axial force applied to the section. The default is 0.
+#     yForce : bool, optional
+#         A flag that specifies if moment is applied in the y or x direction. 
+#         The default is True, for moment being applied about the x axis.
+#     posForce : bool, optional
+#         A flag that specifies if moment is positive or negative. Positive
+#         moment is defined as moment that creates tension at the "bottom"
+#         of the beam. e.g. a simply supported beam has positive bending.
+        
+#         If set to true, then the NA will be measured from the "bottom" of the
+#         section, which will be assumed to be in compression.
+        
+#         The default is True.
+#     tol : float, optional
+#         The tolerance required for convergence, i.e. the difference between
+#         the calcualted concrete and steel force. The default is 1e-3.
+#     maxIter : float, optional
+#         The maximum number of iterations needed before convergence is 
+#         reached. The default is 100.
+#     logging : bool, optional
+#         A flag that turns on or off logging. Currently is inactive. 
+#         The default is True.
+
+#     Returns
+#     -------
+#     None.
+
+#     """
+    
+#     naSolver = SectionNASolverCSA24(section, Pf, yForce, posForce, NAtrial,
+#                                tol, maxIter)
+
+#     return naSolver.calcNA()
+
