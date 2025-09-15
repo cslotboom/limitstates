@@ -257,7 +257,7 @@ def getdveff(dv: float, h: float):
 
 def getSectiondveff(section: SectionConcrete, yForce, posForce, lUnit = 'mm'):
     
-    dv = section.getRebarDepth(yForce, posForce, lUnit)
+    dv = section.getRebarMaxDepth(yForce, posForce, lUnit)
     h  = section.getDepth(yForce, lUnit)
     
     return getdveff(dv, h)
@@ -286,7 +286,7 @@ def getElementVrc(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     lam     = element.designProps.lam
 
     shearENum = element.designProps.shearReinforcenemtType
-    dv = section.getRebarDepth(yForce, posForce)
+    dv = section.getRebarMaxDepth(yForce, posForce)
     h  = section.getDepth(yForce)
     bw = section.getWidth(yForce)
     dveff = getdveff(dv, h)
@@ -336,7 +336,7 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     Av = section.stirrups.Nlegs * section.stirrups.rebar.A
     s  = section.stirrups.spacing
 
-    dv = section.getRebarDepth(yForce, posForce)
+    dv = section.getRebarMaxDepth(yForce, posForce)
     h  = section.getDepth(yForce)
     dveff = getdveff(dv, h)
    

@@ -6,7 +6,7 @@ import limitstates.design.csa.a23.c24 as c24
 from limitstates.objects.read import DBConfig
 import limitstates as ls
 import pytest
-
+import numpy as np
 
 
     
@@ -49,24 +49,26 @@ def test_section():
     ls.plotSection(section)
 
     # Bottom Bars
-    deff = ele.section.getdeff()
+    deff = section.getdeff()
     assert deff == 900 - 30 - 25/2 - 10
-    deff = ele.section.getRebarDepth()
+    deff = section.getRebarMaxDepth()
     assert deff == 900 - 30 - 25/2 - 10
     
     # Top bars
-    deff = section.getRebarDepth(yForce=True, posForce=False)
+    deff = section.getRebarMaxDepth(yForce=True, posForce=False)
     assert deff ==  30 + 25/2 + 10
 
-    #
-    # deff = section.getdeff(yForce=False, posForce=True)
-    # assert deff == 450 - 30 - 25/2 - 10
-    # deff = section.getRebarDepth(yForce=False, posForce=True)
-    # assert deff == 450 - 30 - 25/2 - 10
+    # left / right directions
+    deff = section.getdeff(yForce=False, posForce=True)
+    coords = section.rebar.getxCoords(flatten = True)
+    assert deff == np.average(coords[2:4])
+    deff = section.getRebarMaxDepth(yForce=False, posForce=True)
+    assert deff == 450 - 30 - 25/2 - 10
     
     # # Top Side Bars
-    # deff = section.getRebarDepth(yForce=False, posForce=False)
+    deff = section.getRebarMaxDepth(yForce=False, posForce=False)
     # assert deff ==  30 + 25/2 + 10
+    assert deff == 450 - 30 - 25/2 - 10
 
 
 if __name__ == "__main__":

@@ -99,15 +99,33 @@ class SectionConcrete:
             d = self.concrete.b * lfactor
         return d
     
-    def getRebarDepth(self, yForce: bool = True, 
-                    posForce: bool = True, 
-                    lUnit: str = 'mm'):
+    def getRebarMaxDepth(self, yForce: bool = True, 
+                        posForce: bool = True, 
+                        lUnit: str = 'mm'):
+        """
+        Returns the depth from the compression face to the furthest away rebar.
+
+        Parameters
+        ----------
+        yForce : bool, optional
+            DESCRIPTION. The default is True.
+        posForce : bool, optional
+            DESCRIPTION. The default is True.
+        lUnit : str, optional
+            DESCRIPTION. The default is 'mm'.
+
+        Returns
+        -------
+        dv : TYPE
+            DESCRIPTION.
+
+        """
         if yForce:
             coords = self.rebar.getyCoords(lUnit, flatten=True)
         else:
             coords = self.rebar.getxCoords(lUnit, flatten=True)
         if posForce:
-            dbeam = self.getDepth(posForce, lUnit)
+            dbeam = self.getDepth(yForce, lUnit)
             drebar = min(coords)
             dv = dbeam - drebar
         else:
@@ -175,9 +193,8 @@ class SectionConcrete:
     
 
     # # TODO: test
-    def getdeff(self, NAlocation:float = None, 
-                yForce: bool = True, posForce: bool = True,
-                lUnit: str = 'mm'):
+    def getdeff(self, yForce: bool = True, posForce: bool = True,
+                NAlocation:float = None, lUnit: str = 'mm'):
         """
         Gets the effective depth in the input direction of interest.
         

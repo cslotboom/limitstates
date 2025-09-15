@@ -177,7 +177,7 @@ def setBottomSteelForMr(Mr: float,
     
     
     # Check if the beam is over-reinforced
-    dEstBot = section.getdeff(yForce, posForce, lUnit)
+    dEstBot = section.getdeff(yForce, posForce, d / 2, lUnit)
     rhoBA   = getSectionBalancedRho(section)
     rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
 
@@ -301,7 +301,8 @@ def _runDesignIteration(Mr: float,
         placer.place(NbarReq, barType, location)
         
         if not hasTopBars:
-            dEstBot = section.getdeff(yForce, posForce, lUnit)
+            # XXX: Consider recalculating NA Nocation
+            dEstBot = section.getdeff(yForce, posForce, NA, lUnit)
             rhoBA   = getSectionBalancedRho(section)
             rhoNet  = section.rebar.getNetArea('mm') / (b * dEstBot)    
 
