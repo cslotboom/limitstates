@@ -68,7 +68,7 @@ Mf = 1100
     
 beam = get_concrete_section()
 section = beam.getSection()
-status = a23.setBottomSteelForMr(Mf, beam, barType)
+status = a23.designBottomSteelForMr(Mf, beam, barType)
 ls.plotSection(beam.section)
 
 Mr = a23.getSectionMr(beam.section) / 1000

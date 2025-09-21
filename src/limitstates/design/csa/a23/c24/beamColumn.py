@@ -6,6 +6,8 @@ import numpy as np
 from math import tan
 
 from .element import BeamColumnConcreteCsa24, ShearConfigurations, phiC, phiS
+from .section import REBARFACTORY
+
 from .nasolver import getSectionCr
 from limitstates import DesignDiagram, SectionConcrete
 
@@ -255,11 +257,28 @@ def getdveff(dv: float, h: float):
     """
     return max(0.9*dv, 0.72*h)
 
-def getSectiondveff(section: SectionConcrete, yForce, posForce, lUnit = 'mm'):
+
+
+
+
+
+def getSectiondveff(section: SectionConcrete, yForce, posForce, 
+                    dvEstimate: float = None, lUnit = 'mm'):
+        
+    # Manual override to dv
+    if dvEstimate:
+        dv = dvEstimate
     
-    dv = section.getRebarMaxDepth(yForce, posForce, lUnit)
+    # if the rebar has not been set and there is no manual override, 
+    # raise exception
+    elif not section.rebar:
+        raise Exception("Rebar in section has not been placed, and no dv"\
+                        "estimate is given, Vc cannot be calcualted.")
+    # Calculate dv, this is the normal thing that happens. 
+    else:
+        dv = section.getRebarMaxDepth(yForce, posForce, lUnit)
+        
     h  = section.getDepth(yForce, lUnit)
-    
     return getdveff(dv, h)
     
 
@@ -271,25 +290,29 @@ def getShearBeta(shearEnum: ShearConfigurations, dv:float = None) -> float:
 
     if shearEnum == ShearConfigurations.MinTransverse:
         beta = 0.18
-    elif shearEnum == ShearConfigurations.NoTransverseAmax20:
-        beta = (230) / (1000 + dv)
     elif shearEnum == ShearConfigurations.NoTransverse:
+        beta = (230) / (1000 + dv)
+    elif shearEnum == ShearConfigurations.NoTransverseAmax20:
         raise Exception('Not implimented')
     return beta
 
 
 
+
+
 def getElementVrc(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True) -> float:
+                 yForce: bool = True, posForce: bool = True, 
+                 dvEstimate:float = None) -> float:
 
     section = element.getSection(sectionInd)
     lam     = element.designProps.lam
 
-    shearENum = element.designProps.shearReinforcenemtType
-    dv = section.getRebarMaxDepth(yForce, posForce)
-    h  = section.getDepth(yForce)
+    shearENum = element.designProps.shearReinforcementType
+    
+                        
+    # h  = section.getDepth(yForce)
     bw = section.getWidth(yForce)
-    dveff = getdveff(dv, h)
+    dveff = getSectiondveff(section, yForce, posForce, dvEstimate = dvEstimate)
     beta  = getShearBeta(shearENum, dveff)
     
     fc = section.concrete.mat.fc
@@ -312,6 +335,9 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
                  yForce: bool = True, posForce: bool = True)  -> float:
     """
     Returns the maximum for an element
+    
+    Theta is taken from the design propreties, and should be set according
+    to c.l. 11.3.6.3 if it hasn't already been.
 
     Parameters
     ----------
@@ -336,13 +362,9 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     Av = section.stirrups.Nlegs * section.stirrups.rebar.A
     s  = section.stirrups.spacing
 
-    dv = section.getRebarMaxDepth(yForce, posForce)
-    h  = section.getDepth(yForce)
-    dveff = getdveff(dv, h)
+    dveff = getSectiondveff(section, yForce, posForce)
    
     return getVrs(Av, fy, dveff, theta, s)
-
-
 
 def getVrs(Av: float, fy: float, dv: float, theta: float, s: float) -> float:
     """    
@@ -375,8 +397,76 @@ def getVrs(Av: float, fy: float, dv: float, theta: float, s: float) -> float:
     return phiS * Av * fy * dv / (tan(theta) * s)
 
 
+def getElementSminForVrs(element: BeamColumnConcreteCsa24, Vrs: float, 
+                         sectionInd: int = 0, barType: str = '10M', 
+                         Nlegs: int = 2, dvEstimate = None,
+                         yForce: bool = True, posForce: bool = True)  -> float:
+    """
+    Returns the maximum for an element
+    
+    Theta is taken from the design propreties, and should be set according
+    to c.l. 11.3.6.3 if it hasn't already been.
+
+    Parameters
+    ----------
+    element : BeamColumnConcreteCsa24
+        _description_
+    sectionInd : int, optional
+        _description_, by default 0
+    yForce : bool, optional
+        _description_, by default True
+    posForce : bool, optional
+        _description_, by default True
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    section = element.getSection(sectionInd)
+    theta   = element.designProps.theta
+        
+    rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
+    Av = rebar.A * Nlegs
+    fy = rebar.mat.fy
+    Av = Nlegs * rebar.A
 
 
+    dveff = getSectiondveff(section, yForce, posForce, dvEstimate=dvEstimate)
+   
+    return getSminForVrs(Av, fy, dveff, theta, Vrs)
+
+
+
+def getSminForVrs(Av: float, fy: float, dv: float, theta: float, Vs: float) -> float:
+    """    
+
+    Re-arranges to determine a required shear force, Vs, for 
+    c.l. 11.3.4.
+
+    Theta from c.l. 11.3.6.3
+    
+
+    Parameters
+    ----------
+    Av : float
+        The area per leg of stirrup in sqmm
+    fy : float
+        The rebar yield stress in MPa
+    dv : float
+        The shear depth of the concrete section in the direction of interst, in mm.
+    theta : float
+        The angle of diagonal compressive stresses, see c.l. 11.3.6.3
+    Vs : float
+        The required Vs of the stirrups
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+
+    return phiS * Av * fy * dv  / (Vs * tan(theta))
 
 
 
@@ -403,98 +493,23 @@ def getVmax(fc: float, bw: float, dveff: float) -> float:
     return 0.25 * phiC * fc * bw * dveff
 
 def getElementVmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True):
+                 yForce: bool = True, posForce: bool = True,
+                 dvEstimate: float = None):
     
     section = element.getSection(sectionInd)
 
-    dveff = getSectiondveff(section, yForce, posForce)
+    dveff = getSectiondveff(section, yForce, posForce, dvEstimate)
     bw = section.getWidth(yForce)
     
     sConvert = section.concrete.mat.sConvert('MPa')
     fc = section.concrete.mat.fc * sConvert
     return getVmax(fc, bw, dveff)
-    
 
-
-def getSmax(dveff: float, Vf: float = 0, Vrmax: float = 0) -> float:
-    """
-    Calculates the maximum shear a section can resist from 
-    A23.3 c.l. 13.3.3.
-    
-    If the applied force is greater than half of Vrmax, then tighter spacing
-    of stirrups is required.
-
-    Parameters
-    ----------
-    dveff : float
-        The effective shear depth in mm.
-    Vf : float, optional
-        The applied force on the section in kN. The default is 0.
-    Vrmax : float, optional
-        The maximum resistance of the section in kN. The default is 0.
-
-    Returns
-    -------
-    float
-        The maximum stirrup spacing in mm.
-
-    """
-    
-    sMin = min(0.7*dveff, 600)
-    
-    if Vf > Vrmax/2:
-        return sMin / 2
-    else:
-        return sMin
-       
-def getElementSmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                     yForce: bool = True, posForce: bool = True, 
-                     Vf: float = 0, Vrmax: float = 0):
-    
-    section = element.getSection(sectionInd)
-
-    dveff = getSectiondveff(section, yForce, posForce)
-    
-
-    return getSmax(dveff, Vf, Vrmax)
-     
-
-
-def getAmin(fc: float, bw: float, dv: float) -> float:
-    """
-    Calculates the maximum shear a section can resist from 
-    A23.3 c.l. 13.3.3.
-    
-    If the applied force is greater than half of Vrmax, then tighter spacing
-    of stirrups is required.
-
-    Parameters
-    ----------
-    dveff : float
-        The effective shear depth in mm.
-    Vf : float, optional
-        The applied force on the section in kN. The default is 0.
-    Vrmax : float, optional
-        The maximum resistance of the section in kN. The default is 0.
-
-    Returns
-    -------
-    float
-        The maximum stirrup spacing in mm.
-
-    """
-    
-    sMin = min(0.7*dveff, 600)
-    
-    if Vf > Vrmax/2:
-        return sMin / 2
-    else:
-        return sMin
-       
 
 
 def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True):
+                 yForce: bool = True, posForce: bool = True,
+                 dvEstimate: float = None):
     """_summary_
 
     Parameters
@@ -514,13 +529,189 @@ def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
         _description_
     """
     section = element.getSection(sectionInd)
+    lam     = element.designProps.lam
     theta   = element.designProps.theta
 
-    fy = section.stirrups.rebar.mat.fy
+
+    scConvert = section.concrete.mat.sConvert('MPa')
+    fc = section.concrete.mat.fc * scConvert    
+    
+    srConvert = section.stirrups.rebar.mat.sConvert('MPa')
+    fy = section.stirrups.rebar.mat.fy * srConvert
+    
     Av = section.stirrups.Nlegs * section.stirrups.rebar.A
     s  = section.stirrups.spacing
 
-    dveff = getSectiondveff(section, yForce, posForce)
+    bw = section.getWidth(yForce)
+    dveff = getSectiondveff(section, yForce, posForce, dvEstimate)
+    # dv = section.getRebarMaxDepth(yForce, posForce)
+    # h  = section.getDepth(yForce)
+    # dveff = getdveff(dv, h)
    
-    return getVrs(Av, fy, dveff, theta, s)
+    shearENum = element.designProps.shearReinforcementType
+    beta  = getShearBeta(shearENum, dveff)   
+   
+    Vrs = getVrs(Av, fy, dveff, theta, s)
+    Vrc = getVrc(lam, beta, fc, bw, dveff)
 
+    return Vrs + Vrc
+
+
+
+
+
+def getSmaxGeom(dveff: float, Vf: float = 0, Vrmax: float = 0) -> float:
+    """
+    Calculates the maximum shear a section can resist from 
+    A23.3 c.l. 13.3.3.
+    
+    If the applied force is greater than half of Vrmax, then tighter spacing
+    of stirrups is required.
+
+    Parameters
+    ----------
+    dveff : float
+        The effective shear depth in mm.
+    Vf : float, optional
+        The applied force on the section in kN. The default is 0.
+    Vrmax : float, optional
+        The maximum resistance of the section in kN. The default is 0.
+
+    Returns
+    -------
+    float
+        The maximum stirrup spacing in mm.
+
+    """
+    
+    sMax = min(0.7*dveff, 600)
+    
+    if Vf > Vrmax/2:
+        return sMax / 2
+    else:
+        return sMax
+       
+def getElementSmaxGeom(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
+                     yForce: bool = True, posForce: bool = True, 
+                     dvEst: float = None,
+                     Vf: float = 0, Vrmax: float = 0):
+    """
+    The maximum spacing possible by geometry
+    """
+    section = element.getSection(sectionInd)
+
+    dveff = getSectiondveff(section, yForce, posForce, dvEst)
+
+    return getSmaxGeom(dveff, Vf, Vrmax)
+     
+
+
+def getAvmin(fc: float, bw: float, fy: float, s: float) -> float:
+    """
+    Calculates the minimum area of shear reinforcement required according to 
+    A23.3 c.l. 11.2.8.2
+
+    Parameters
+    ----------
+    fc : float
+        The applied concrete strength in MPa.
+    bw : float
+        The width of the section at the shear .
+    s : float
+        The spacing of the stirrups.
+    fy : float
+        The yield strength of the rebar.
+
+    Returns
+    -------
+    float
+        DESCRIPTION.
+
+    """
+
+    Avmin = 0.06 * (fc)**0.5 * (bw * s / fy)
+    
+    return Avmin
+       
+
+def getStirrupSmax(fc: float, bw: float, fy: float, Av: float) -> float:
+    """
+    Calculates the minimum shear spacing required for a given shear area, by
+    rearranging A23.3 c.l. 11.2.8.2
+    
+    Generally used to calculate the maximum spacing that a given set of rebar
+    can be placed at
+
+    Parameters
+    ----------
+    fc : float
+        The applied concrete strength in MPa.
+    bw : float
+        The width of the section at the shear .
+    fy : float
+        The yield strength of the rebar.
+    Av : float
+        The spacing of the stirrups.
+        
+    Returns
+    -------
+    float
+        DESCRIPTION.
+
+    """
+
+    sMin = (Av * fy) / (0.06 * (fc)**0.5 * bw )
+    
+    return sMin
+       
+
+def getElementSmaxStirrup(element: BeamColumnConcreteCsa24, 
+                          sectionInd: int = 0, barType: str = '10M', 
+                          Nleg: int = 2, fy = 400, yForce = True):
+    """
+    The maximum spacing possible with a given bar
+    """
+    
+    section = element.getSection(sectionInd)
+
+    scConvert = section.concrete.mat.sConvert('MPa')
+    fc = section.concrete.mat.fc * scConvert    
+        
+    bw = section.getWidth(yForce)
+    
+    rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
+    Av = rebar.A * Nleg
+  
+    return getStirrupSmax(fc, bw, fy, Av)
+
+
+def getElementSmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
+                   barType: str = '10M', Nleg: int = 2, fy = 400,
+                     yForce: bool = True, posForce: bool = True, 
+                     dvEst: float = None, Vf: float = 0, Vrmax: float = 0):
+
+    S1 = getElementSmaxStirrup(element, sectionInd, barType, Nleg, fy, yForce)
+    S2 = getElementSmaxGeom(element, sectionInd, yForce, posForce, 
+                            dvEst, Vf, Vrmax)
+    
+    return min(S1, S2)
+
+# def getSminForBar(Vs, sectionInd: int = 0,
+#                    barType: str = '10M', 
+#                    Nleg: int = 2, fy = 400, yForce = True):
+    
+#     section = element.getSection(sectionInd)
+
+#     scConvert = section.concrete.mat.sConvert('MPa')
+#     fc = section.concrete.mat.fc * scConvert    
+        
+#     bw = section.getWidth(yForce)
+    
+#     rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
+#     Av = rebar.A * Nleg
+  
+#     return getStirrupSmin(fc, bw, fy, Av)
+
+
+def designStirrups():
+    pass

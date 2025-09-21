@@ -46,7 +46,7 @@ beam   = a23.BeamColumnConcreteCsa24(member, concreteSection, designProps)
 """
 The Bottom steel of the section is then defined.
 """
-status = a23.setBottomSteelForMr(Mf, beam, barType)
+status = a23.designBottomSteelForMr(Mf, beam, barType)
 ls.plotSection(beam.section)
 
 

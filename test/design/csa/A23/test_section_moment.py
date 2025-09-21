@@ -37,7 +37,7 @@ def test_element_Mr():
 
     ele = _init_element()
 
-    c24.setBottomSteelForMr(Mf, ele, barType)
+    c24.designBottomSteelForMr(Mf, ele, barType)
     section = ele.getSection()
 
     assert section.rebar.Nbars == 5
@@ -65,11 +65,10 @@ def test_element_Mr_top():
     deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    c24.setBottomSteelForMr(Mf, ele, barType, posForce=posForce)
+    c24.designBottomSteelForMr(Mf, ele, barType, posForce=posForce)
     section = ele.getSection()
     assert section.rebar.Nbars == 5
     assert section.getdeff(posForce=posForce) == deff
-    # assert section.getdeff() == 30 + 10 + 30/2
 
     
 
@@ -81,7 +80,7 @@ def test_element_Mr_right():
     posForce = True
 
     ele = _init_element()
-    c24.setBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
+    c24.designBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
     # ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11
@@ -95,7 +94,7 @@ def test_element_Mr_left():
     deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    OR = c24.setBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
+    OR = c24.designBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
     ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11
@@ -108,7 +107,7 @@ def test_element_Mr_over_reinforced():
 
     ele = _init_element(650, 400)
 
-    c24.setBottomSteelForMr(Mf, ele, barType)
+    c24.designBottomSteelForMr(Mf, ele, barType)
     ls.plotSection(ele.section)
     section = ele.getSection()
 

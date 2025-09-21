@@ -47,13 +47,46 @@ def test_element_Vrs():
     ele = _init_element(500, 300)
     assert c24.getElementVrs(ele) / 1000 == pytest.approx(151.5, 0.02)
 
+def test_element_Vr():
+    ele = _init_element(500, 300)
+    assert c24.getElementVr(ele) / 1000 == pytest.approx(151.5 + 68.4, 0.02)
+
 def test_max_shear_resistance():
+    """
+    6.2 john pao
+    """
     ele = _init_element(500, 300)
     assert c24.getElementVmax(ele) / 1000 == pytest.approx(475, 0.02)
 
 def test_max_stirrup_spacing():
+    """
+    6.2 john pao
+    """
     ele = _init_element(500, 300)
-    assert c24.getElementSmax(ele) == pytest.approx(273, 0.02)
+    assert c24.getElementSmaxGeom(ele) == pytest.approx(273, 0.02)
+
+
+def test_min_stirrup_spacing():
+    """
+    6.2 john pao
+    """
+    ele = _init_element(500, 300)
+
+    smin = c24.getElementSmaxStirrup(ele, barType='10M')
+    sSol = 400 * 200 / (0.06 * 25**0.5 * 300)
+    assert smin == pytest.approx(sSol, 0.02)
+
+
+def test_min_stirrup_spacing_for_Vrs():
+    """
+    6.4 john pao
+    """
+    ele = _init_element(700, 600)
+
+    Vrs = 136000
+    smin = c24.getElementSminForVrs(ele, Vrs)    
+    sSol = 408
+    assert smin == pytest.approx(sSol, 0.02)
 
 
 
@@ -61,8 +94,11 @@ if __name__ == '__main__':
     # pass
     test_element_Vrc()
     test_element_Vrs()
+    test_element_Vr()
     test_max_shear_resistance()
     test_max_stirrup_spacing()
+    test_min_stirrup_spacing()
+    test_min_stirrup_spacing_for_Vrs()
     # test_element_rho()
     # test_element_Mr_top()
     # test_element_Mr_right()

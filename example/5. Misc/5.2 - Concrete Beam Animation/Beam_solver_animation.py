@@ -46,7 +46,7 @@ Mf = 1100
     
 beam = get_concrete_section()
 section = beam.getSection()
-status = a23.setBottomSteelForMr(Mf, beam, barType)
+status = a23.designBottomSteelForMr(Mf, beam, barType)
 # ls.plotSection(beam.section)
 
 Mr = round(a23.getSectionMr(beam.section) / 1000)
@@ -133,7 +133,7 @@ def plot(ii):
 
     beam = get_concrete_section(heights[ii])
     section = beam.section
-    status = a23.setBottomSteelForMr(Mf, beam, barType)
+    status = a23.designBottomSteelForMr(Mf, beam, barType)
     Mr = round(a23.getSectionMr(section) / 1000)
     h = section.concrete.d 
     b = section.concrete.b

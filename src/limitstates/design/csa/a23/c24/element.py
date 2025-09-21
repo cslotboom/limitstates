@@ -25,8 +25,8 @@ phiS = 0.85
 
 class ShearConfigurations(IntEnum):
     MinTransverse = 1
-    NoTransverseAmax20 = 2
-    NoTransverse = 3
+    NoTransverse = 2
+    NoTransverseAmax20 = 3
 
 
 @dataclass
@@ -74,7 +74,7 @@ class DesignPropsConcrete24:
     
     cover: float = None
     lam: float = 1
-    shearReinforcenemtType: float = 1
+    shearReinforcementType: float = 1
     theta: float = radians(35)
     sectionRegions:list[list[float]] = None
     

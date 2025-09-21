@@ -1,18 +1,21 @@
 """
 Contains the code designc clauses
 """
-# from enum import IntEnum
-from math import ceil
+from enum import IntEnum
+from math import ceil, floor
 
 import limitstates as ls
 from limitstates.objects.section.concrete import  getRebarLocationEnum
 
-from .element import BeamColumnConcreteCsa24, phiC, phiS
+from .element import BeamColumnConcreteCsa24, ShearConfigurations, phiC, phiS
 from .section import REBARFACTORY, loadRebarFactory, Rebar
 from .material import MaterialRebarCSA24, MaterialConcreteCSA24
 from .rebarPlacers import RebarPlacerRowCSA24, placeRebarInElement
 # from limitstates import DesignDiagram, SectionConcrete
-from .beamColumn import getSectionBalancedRho, getSectionAsmin
+from .beamColumn import (getSectionBalancedRho, getSectionAsmin, getElementVrc,
+                         getElementVrs, getElementVmax, getElementVr, 
+                         getElementSmax, getElementSminForVrs,
+                         getElementSmaxGeom, getElementSmaxStirrup)
 from .nasolver import getSectionMr, solveForNA
 
 
@@ -85,10 +88,9 @@ def _isOverReinforced(rhoBA, rhoNet):
     if rhoBA <= rhoNet:
         isOverReinforced = True
 
-    return isOverReinforced
- 
+    return isOverReinforced 
 
-def setBottomSteelForMr(Mr: float, 
+def designBottomSteelForMr(Mr: float, 
                         element: BeamColumnConcreteCsa24, 
                         barType: str,
                         sectionInd: int = 0,
@@ -194,8 +196,6 @@ def setBottomSteelForMr(Mr: float,
        
     return isOverReinforced
 
-
-
 def _initalBottomBarPlacement(Mr, element, sectionInd, yForce, posForce,  
                                  barType, rebar, lUnit):
     """
@@ -218,10 +218,6 @@ def _initalBottomBarPlacement(Mr, element, sectionInd, yForce, posForce,
     location = getRebarLocationEnum(yForce, posForce)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
     placer.place(NbarReq, barType, location)
-
-
-
-
 
 def _placeTopBarIfOverreinforced(element, sectionInd, yForce, posForce,  
                                  drho, barType, rebar, lUnit):
@@ -328,4 +324,273 @@ def _runDesignIteration(Mr: float,
         momentLow = MrSol < Mr
         if momentLow:
             atMin = True
+    
+
+class ShearResultEnum(IntEnum):
+    rebarPlaced = 1
+    noRebarPlaced = 2
+    noSolutionPossible = 3
+    designFailed = 4
+    
+
+
+# def _get_initial_Vc(element, sectionInd, dvEstimate, dbar, logging):
+        
+#     # Initial Vc calculation
+#     if not element.rebar:
+#         printIfLogging(logging, f'No longditudinal bars found, attempting to use estimate.')
+#         dvEstimate = None
+#     elif not dvEstimate:
+#         printIfLogging(logging, f'No dv estimate given, estimating dv.')
+#         h = element.
+#         dvEstimate = element.designProps.cover + dbar + 25
+#         printIfLogging(logging, f'dv estimated as {dvEstimate}.')
+        
+#     Vc = getElementVrc(element, sectionInd, yForce, posForce, 
+#                        dvEstimate = dvEstimate) 
+
+
+    
+# def printIfLogging(string, logging):
+#     if logging:
+#         print(string)
+
+# TODO: implement designer superclass?
+class StirrupDesigner:
+    
+    def __init__(self, Vr: float, 
+                        element: BeamColumnConcreteCsa24, 
+                        sectionInd: int = 0,
+                        yForce: bool = True,
+                        posForce: bool = True,
+                        barType: str = '10M',
+                        ds: float = 50,
+                        smin: float = 100,
+                        NlegMax: int = 8,
+                        dvEstimate: float = None,
+                        logging = False,
+                        logFunction = print):
+        """
+        The rebar material used will be 400MPa rebar.
+        """
+        
+        self.Vr = Vr 
+        self.element = element
+        self.sectionInd = sectionInd
+        self.designSection = element.getSection(sectionInd)
+        
+        self.yForce = yForce
+        self.posForce = posForce
+        
+        self.ds = ds
+        self.smin = smin
+        self.NlegMax  = NlegMax
+        
+        self.dvEstimate = dvEstimate
+
+        
+        self.barType = barType
+        # self.matRebar = matRebar
+        self.rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
+        # if matRebar:
+        #     self.rebar.setMat(matRebar)
+
+        self.logging = logging
+        self.logFunction = logFunction
+        
+
+    def log(self, string):
+        if self.logging:
+            self.logFunction(string)
+        
+    def getdvEst(self):
+        element = self.element
+        section = self.designSection
+        dbar = self.rebar.d
+        
+        
+        if self.dvEstimate:
+            dvEstimate = self.dvEstimate
+            self.log('Using manual dv estimate.')
+        elif section.rebar:
+            dvEstimate = None
+            self.log('Using dv calculated from rebar.')
+        else:
+            self.log("No longditudinal bars found, and no manual dv estimate"\
+                     " given, estimating dv.")
+            h = section.getDepth(self.yForce, 'mm')
+            dvEstimate = h - (element.designProps.cover + dbar + 25)
+            self.log(f'dv estimated as: {dvEstimate}')
+        
+        return dvEstimate
+
+    def VcCalc(self, dvEst):
+        return getElementVrc(self.element, self.sectionInd, self.yForce, 
+                           self.posForce, dvEstimate = dvEst)
+
+
+    def runTrial(self, VsReq, NlegTrial, sMaxGeom, dvEst):
+        
+        smin = self.smin       
+        sminTrial = getElementSminForVrs(self.element, VsReq, self.sectionInd,
+                                         self.barType, NlegTrial, dvEst,
+                                         self.yForce, self.posForce)
+        
+        sMaxRebar = getElementSmaxStirrup(self.element, self.sectionInd, 
+                                          self.barType, NlegTrial, 
+                                          self.rebar.mat.fy, self.yForce)
+
+        sMax = min(sMaxGeom, sMaxRebar)
+        # Do we have a valid solution?
+        if sminTrial > sMax:
+            sminTrial = sMax
+
+        sBar = floor( sminTrial / self.ds) * self.ds
+        
+        if smin < sBar:
+            return sBar, True
+        else:
+            return sBar, False
+
+    def design(self) -> (float, ShearResultEnum):
+        designProps = self.element.designProps
+        designProps.shearReinforcementType = ShearConfigurations.NoTransverse
+        # dbar  = self.rebar.d
+        
+        Vr    = self.Vr
+        dvEst = self.getdvEst()
+        
+        
+        # Case 1: the section needs no reinforcing.
+        Vc    = self.VcCalc(dvEst)
+        if Vr < Vc:
+            return Vc, ShearResultEnum.noRebarPlaced
+        
+        # Case 2: Vrmax is exceeded.
+        Vrmax = getElementVmax(self.element, self.sectionInd, 
+                               self.yForce, self.posForce, dvEst)
+        if Vr > Vrmax:
+            self.log(f'No stirrup design possible for {self.designSection},\
+                  Vr = {round(Vr)} > Vrmax = {round(Vrmax)}')
+            return Vc, ShearResultEnum.noSolutionPossible
+
+        # Case 3: Try to find a spacing / Nleg pairing.
+        
+        # TODO: update so this is not tied to a section,
+        designProps = self.element.designProps
+        designProps.shearReinforcementType = ShearConfigurations.MinTransverse
+        Vc    = self.VcCalc(dvEst)
+        VsReq = Vr - Vc
+        
+        SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
+                                        self.yForce, self.posForce, 
+                                        dvEst, Vr, Vrmax)
+
+        NlegTrial = 2
+        solution = False
+        while not solution and (NlegTrial <= self.NlegMax):           
+            spacing, solution = self.runTrial(VsReq, NlegTrial, SMaxgeom, dvEst)
+            
+            if not solution:
+                NlegTrial += 2  
+        
+        
+        # Set the solution and do some final clean up
+        stirrups = ls.StirrupGroup(self.rebar, spacing,NlegTrial, 'mm')
+        self.designSection.stirrups = stirrups
+
+        VrOut = getElementVr(self.element, self.sectionInd, 
+                             self.yForce, self.posForce, dvEst)
+        
+        # If we are now greater than Vmax/2, the maximum spacing has changed.
+        # TODO: add iteration if greater than new smax
+        asdfasf
+        SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
+                                        self.yForce, self.posForce, 
+                                        dvEst, Vr, Vrmax)
+        
+        # if spacing > smax:
+        #     NlegTrial = 2
+        #     workingSolution = False
+        #     while not workingSolution or (NlegTrial <= self.NlegMax):
+        #         spacing, workingSolution = self.runTrial(VsReq, NlegTrial, smax)
+        #         NlegTrial += 2
+        
+        
+        
+        if not solution:
+            self.log(f'The maximum capacity found is less than the design ,\
+                  shear, with VrReq = {round(Vr)} > VrOut = {round(VrOut)}')
+            return VrOut, ShearResultEnum.designFailed
+        else:
+            return VrOut, ShearResultEnum.rebarPlaced
+
+
+
+        
+        
+        
+        
+def designStirrupsForVr(Vr: float, 
+                        element: BeamColumnConcreteCsa24, 
+                        barType: str = '10M',
+                        sectionInd: int = 0,
+                        yForce: bool = True,
+                        posForce: bool = True,
+                        ds: float = 50,
+                        dvEstimate: float = None,
+                        matRebar: MaterialRebarCSA24 = None,
+                        lUnit: str = 'mm',
+                        logging = True) -> ShearResultEnum:
+    pass
+    
+    # # initially estimate capacity with no stirrups.
+    # designProps = element.designProps
+    # designProps.shearReinforcementType = ShearConfigurations.NoTransverse
+    
+    # rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')    
+    # dbar  = rebar.d
+    
+    
+    # # Initial Vc calculation
+    # if not element.rebar:
+    #     printIfLogging(logging, f'No longditudinal bars found, attempting to use dv estimate.')
+    #     dvEstimate = None
+    # elif not dvEstimate:
+    #     printIfLogging(logging, f'No manual dv estimate given, estimating dv.')
+    #     h = element.section.concrete
+    #     dvEstimate = designProps.cover + dbar + 25
+    #     printIfLogging(logging, f'dv estimated as {dvEstimate}.')
+    # return  ShearResultEnum.noRebarPlaced
+        
+    # Vc = getElementVrc(element, sectionInd, yForce, posForce, 
+    #                    dvEstimate = dvEstimate) 
+    # # getSectionSmax(section, barType,)
+    
+    # if Vr < Vc:
+    #     return ShearResultEnum.noRebarPlaced
+
+
+    
+    # Vrmax = getElementVmax(element, sectionInd, yForce, posForce)
+    # section = element.getSection(sectionInd)
+    # if Vr > Vrmax:
+    #     if logging:
+    #         print(f'No stirrup design possible for {section},\
+    #               Vr = {round(Vr)} > Vrmax = {round(Vrmax)}')
+    #     return ShearResultEnum.noSolutionPossible
+
+    
+    # # set the stirrups to the 
+    # designProps = element.designProps
+    # designProps.shearReinforcementType = ShearConfigurations.MinTransverse
+    # Vc = getElementVrc(element, sectionInd, yForce, posForce) 
+
+    # dV = Vr - Vc
+    # getElementVrs(ele)
+    
+    
+        
+        
+        
     

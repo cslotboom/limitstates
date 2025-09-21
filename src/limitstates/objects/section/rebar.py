@@ -72,6 +72,10 @@ class Rebar(SectionMonolithic):
         self.d = self.d*cfactor
         self.dnet = self.dnet*cfactor
         self.xy = (self.xy[0]*cfactor,self.xy[1]*cfactor)
+        
+    def setMat(self, mat: MaterialElastic):
+        self.mat = mat
+        
 
 class RebarGroup(collections.UserList):
     def __init__(self, iterable: Iterable[Rebar], ID: str = None):
