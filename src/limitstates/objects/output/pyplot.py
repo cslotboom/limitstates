@@ -78,7 +78,7 @@ class SectionPlotter:
         return fig, ax  
     
     def _getFillColour(self, objectConfig, kwargs):
-        # overwrite teh colour if needed.
+        # overwrite the colour if needed.
         if 'c' in kwargs:
             c = kwargs['c']
             kwargs.pop('c', None)
@@ -136,26 +136,58 @@ class SectionPlotter:
         
         return ax
     
+    
+    
+def _getPatchWithHole(xyOutside, xyInside):
+    """
+    See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
+    """
+
+    Nverts = len(xyOutside)
+    lineCode = mpath.Path.LINETO
+    codes = np.ones(Nverts, dtype=mpath.Path.code_type) * lineCode
+    codes[0] = mpath.Path.MOVETO
+
+    vertices = np.concatenate((xyOutside[::],
+                               xyInside[::-1]))
+    
+    drawingInstructions = np.concatenate((codes, codes))
+    # Create the Path object
+    path = mpath.Path(vertices, drawingInstructions)
+    
+    return path
+
+    
+def _plotSectionWithHole(ax, xy, objectConfig, c, *args, **kwargs):
+    """
+    See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
+    """
+
+
+    # We assume that the two arrays have the same size
+    xyOut, xyIn = np.split(xy, 2)
+    
+    path  = _getPatchWithHole(xyOut, xyIn)
+    patch = mpatches.PathPatch(path, *args, color = c, **kwargs)
+    
+    ax.add_patch(patch)
+    
+    # Add the border line around the object
+    check1 = objectConfig.showOutline
+    check2 = (("linewidth" not in kwargs) or ("lw" not in kwargs))
+    if check1 and check2:
+        ax.plot(xyOut[:,0], xyOut[:,1], 
+                linewidth = objectConfig.lineWidth, 
+                c=objectConfig.cLine)
+        ax.plot(xyIn[:,0], xyIn[:,1], 
+                linewidth = objectConfig.lineWidth, 
+                c=objectConfig.cLine)
+    
+    return ax
+
+
+
 class SectionPlotterWithHole(SectionPlotter):
-    
-    def _getPatchWithHole(self, xyOutside, xyInside):
-        """
-        See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
-        """
-    
-        Nverts = len(xyOutside)
-        lineCode = mpath.Path.LINETO
-        codes = np.ones(Nverts, dtype=mpath.Path.code_type) * lineCode
-        codes[0] = mpath.Path.MOVETO
-    
-        vertices = np.concatenate((xyOutside[::],
-                                   xyInside[::-1]))
-        
-        drawingInstructions = np.concatenate((codes, codes))
-        # Create the Path object
-        path = mpath.Path(vertices, drawingInstructions)
-        
-        return path
     
     def plot(self, ax, xy, objectConfig, *args, **kwargs):
         """
@@ -164,24 +196,26 @@ class SectionPlotterWithHole(SectionPlotter):
         one array, xy. This array will '
         """
         
-        # We assume that the two arrays have the same size
-        xyOut, xyIn = np.split(xy, 2)
+        c     = self._getFillColour(objectConfig, kwargs)        
+        ax = _plotSectionWithHole(ax, xy, objectConfig, c, *args, **kwargs)
+        # # We assume that the two arrays have the same size
+        # xyOut, xyIn = np.split(xy, 2)
         
-        c = self._getFillColour(objectConfig, kwargs)        
-        path  = self._getPatchWithHole(xyOut, xyIn)
-                
-        patch = mpatches.PathPatch(path, *args, color = c, **kwargs)
-
-        ax.add_patch(patch)
+        # path  = _getPatchWithHole(xyOut, xyIn)
+        # patch = mpatches.PathPatch(path, *args, color = c, **kwargs)
         
-        # Add the border line around the object
-        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
-            ax.plot(xyOut[:,0], xyOut[:,1], 
-                    linewidth = objectConfig.lineWidth, 
-                    c=objectConfig.cLine)
-            ax.plot(xyIn[:,0], xyIn[:,1], 
-                    linewidth = objectConfig.lineWidth, 
-                    c=objectConfig.cLine)
+        # ax.add_patch(patch)
+        
+        # # Add the border line around the object
+        # check1 = objectConfig.showOutline
+        # check2 = (("linewidth" not in kwargs) or ("lw" not in kwargs))
+        # if check1 and check2:
+        #     ax.plot(xyOut[:,0], xyOut[:,1], 
+        #             linewidth = objectConfig.lineWidth, 
+        #             c=objectConfig.cLine)
+        #     ax.plot(xyIn[:,0], xyIn[:,1], 
+        #             linewidth = objectConfig.lineWidth, 
+        #             c=objectConfig.cLine)
         
         return ax
 
@@ -247,22 +281,20 @@ def _plotGeomFactory(section: SectionAbstract,
         b, layers = section.w, section.sLayers
         xy        = _getPlotOrigin(originLocation, b, layers.d, xy0)
         geom      = md.GeomModelClt(layers, b, *xy)
-    
     elif isinstance(section, SectionConcrete):
         b, d  = section.concrete.b, section.concrete.d        
         xy    = _getPlotOrigin(originLocation, b, d, xy0)
         if section.rebar:
             xyRebar = section.rebar.coordsFlat
+            radii  = [d/2 for d in section.rebar.getAttr('d',True)]
         else:
             xyRebar = None
-        radii  = [d/2 for d in section.rebar.getAttr('d',True)]
+            radii = None
         geom  = md.GeomModelConcrete(b, d, xyRebar, radii, *xy)    
     else:
         raise Exception(f'Section of type {section} is not supported.')
         
     return geom
-
-
 
 def _plotterFactory(section: SectionAbstract, 
                     geom: md.GeomModel,
@@ -279,7 +311,6 @@ def _plotterFactory(section: SectionAbstract,
     else:
         return SectionPlotter(geom, canvasConfig)
         
-
 def _plotFactorySteel(section:SectionSteel, *args):
     enum = section.typeEnum
     if SteelSectionTypes.w == enum:
@@ -309,28 +340,21 @@ def _plotFactorySteel(section:SectionSteel, *args):
     
     return geom
 
-
-# def _setupSummaryDict(listIn, ):
-#     pass
-
-
-def _plotfillLines(ax, geom, objectConfig:PlotConfigObject):
+def _plotfillLines(ax, geom, objectConfig: PlotConfigObject):
     linex, liney = geom.getFillVerticies()
     lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
     lines = LineCollection(lverts, colors = objectConfig.cFillLines,
                            linewidth = 0.5)
     ax.add_collection(lines)
 
-def _plotfillPatches(ax, geom, objectConfig:PlotConfigObject):
-    
+def _plotfillPatches(ax, geom, objectConfig: PlotConfigObject):
     
     if   objectConfig.patchType == 1:
         linex, liney = geom.getFillAreaVerticies()
         lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
         p = PatchCollection([Polygon(vert) for vert in lverts], 
                             color = objectConfig.cFillPatch)
-    
-    # for rebar
+    # for rebar patches
     elif objectConfig.patchType == 2:
         
         # If there is no rebar set, don't plot anything.
@@ -340,18 +364,42 @@ def _plotfillPatches(ax, geom, objectConfig:PlotConfigObject):
         x, y = geom.getFillAreaVerticies()
         lverts = np.column_stack((x,y))
         p = PatchCollection([Circle(vert, r) for vert, r in zip(lverts, radii)], 
-                            color = objectConfig.cFillPatch)        
+                            color = objectConfig.cFillPatch,
+                            edgecolor = objectConfig.cFillLines,
+                            linewidth = 0.5)        
         
     ax.add_collection(p)
 
-
-# def _plotfillPatchesCircles(ax, geom, objectConfig):
-#     linex, liney = geom.getFillAreas()
-#     lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+def _plotfillPatchesWithHole(ax, geom, objectConfig: PlotConfigObject):
     
-#     p = PatchCollection([Polygon(vert) for vert in lverts], color = objectConfig.cFillPatch)
-#     ax.add_collection(p)
+    linex, liney = geom.getFillAreaVerticies()
+    lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    _plotSectionWithHole(ax, lverts, objectConfig)
+    
+    
+    # p = PatchCollection([Polygon(vert) for vert in lverts], 
+    #                     color = objectConfig.cFillPatch)
+        
+        # # If there is no rebar set, don't plot anything.
+        # if geom.xyRebar is None:
+        #     return 
+        # radii  = geom.getFillRadii()
+        # x, y = geom.getFillAreaVerticies()
+        # lverts = np.column_stack((x,y))
+        # p = PatchCollection([Circle(vert, r) for vert, r in zip(lverts, radii)], 
+        #                     color = objectConfig.cFillPatch,
+        #                     edgecolor = objectConfig.cFillLines,
+        #                     linewidth = 0.5)        
+        
+    # ax.add_collection(p)
 
+
+
+
+
+_poltOptions = {'getFillVerticies':_plotfillLines, 
+                'getFillAreaVerticies':_plotfillPatches,
+                'getFillPatchWithHole':None }
 
 def plotSection(section:SectionAbstract, 
                 xy0: list[float,float] = None, 
@@ -374,7 +422,8 @@ def plotSection(section:SectionAbstract,
     
     Where additional arguemts passed to args and kwargs confict with arguments
     passed in the config object, the arg/kwargs will overwrite the config 
-    objects.
+    objects. For example, if color is ste in the object config and kwargs, the
+    color used in kwargs will be the final output that shows.
 
     Parameters
     ----------
@@ -429,12 +478,15 @@ def plotSection(section:SectionAbstract,
     
     plotter.plot(ax, xyVerts, objectConfig, *args, **kwargs)
 
-    if hasattr(geom, 'getFillVerticies'):
-        _plotfillLines(ax, geom, objectConfig)
-    if hasattr(geom, 'getFillAreaVerticies'):
-        _plotfillPatches(ax, geom, objectConfig)
+    for option in _poltOptions:
+        if hasattr(geom, option):
+            func = _poltOptions[option]
+            func(ax, geom, objectConfig)
+    # if hasattr(geom, 'getFillAreaVerticies'):
+    #     _plotfillPatches(ax, geom, objectConfig)
 
     ax.plot()
+
 
     return fig, ax
 

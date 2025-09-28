@@ -99,8 +99,4 @@ if __name__ == '__main__':
     test_max_stirrup_spacing()
     test_min_stirrup_spacing()
     test_min_stirrup_spacing_for_Vrs()
-    # test_element_rho()
-    # test_element_Mr_top()
-    # test_element_Mr_right()
-    # test_element_Mr_left()
-    # test_element_Mr_over_reinforced()
+

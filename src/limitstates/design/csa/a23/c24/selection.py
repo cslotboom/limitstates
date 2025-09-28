@@ -429,6 +429,10 @@ class StirrupDesigner:
                            self.posForce, dvEstimate = dvEst)
 
 
+    def _roundSmin(self, sminTrial):
+        return floor( sminTrial / self.ds) * self.ds
+
+
     def runTrial(self, VsReq, NlegTrial, sMaxGeom, dvEst):
         
         smin = self.smin       
@@ -445,12 +449,45 @@ class StirrupDesigner:
         if sminTrial > sMax:
             sminTrial = sMax
 
-        sBar = floor( sminTrial / self.ds) * self.ds
+        sBar = self._roundSmin(sminTrial)
         
         if smin < sBar:
             return sBar, True
         else:
             return sBar, False
+
+    def runDesignIteration(self, VsReq, dvEst, SMaxgeom):
+        
+
+        NlegTrial = 2
+        solution = False
+        while not solution and (NlegTrial <= self.NlegMax):           
+            spacing, solution = self.runTrial(VsReq, NlegTrial, SMaxgeom, dvEst)
+            if not solution:
+                NlegTrial += 2
+                
+        return spacing, solution, NlegTrial
+
+
+    # def runDesignCleanup(self, s, Nleg, dvEst, Vrmax):
+    #     stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
+    #     self.designSection.stirrups = stirrups
+
+    #     VrOut = getElementVr(self.element, self.sectionInd, 
+    #                          self.yForce, self.posForce, dvEst)
+    
+    #     # If we are now greater than Vmax/2, the maximum spacing has changed.
+    #     # TODO: add iteration if greater than new smax
+    #     SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
+    #                                   self.yForce, self.posForce, 
+    #                                   dvEst, VrOut, Vrmax)
+
+        # SMaxgeom < s:
+            
+        # if sBar = self._roundSmin(sminTrial)
+
+
+
 
     def design(self) -> (float, ShearResultEnum):
         designProps = self.element.designProps
@@ -475,50 +512,47 @@ class StirrupDesigner:
             return Vc, ShearResultEnum.noSolutionPossible
 
         # Case 3: Try to find a spacing / Nleg pairing.
-        
         # TODO: update so this is not tied to a section,
         designProps = self.element.designProps
         designProps.shearReinforcementType = ShearConfigurations.MinTransverse
         Vc    = self.VcCalc(dvEst)
-        VsReq = Vr - Vc
         
+        VsReq = Vr - Vc
         SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
                                         self.yForce, self.posForce, 
                                         dvEst, Vr, Vrmax)
 
-        NlegTrial = 2
-        solution = False
-        while not solution and (NlegTrial <= self.NlegMax):           
-            spacing, solution = self.runTrial(VsReq, NlegTrial, SMaxgeom, dvEst)
-            
-            if not solution:
-                NlegTrial += 2  
-        
+        s, isSol, Nleg = self.runDesignIteration(VsReq, dvEst, SMaxgeom)
         
         # Set the solution and do some final clean up
-        stirrups = ls.StirrupGroup(self.rebar, spacing,NlegTrial, 'mm')
-        self.designSection.stirrups = stirrups
+        if isSol:
+            stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
+            self.designSection.stirrups = stirrups
 
-        VrOut = getElementVr(self.element, self.sectionInd, 
-                             self.yForce, self.posForce, dvEst)
+            VrOut = getElementVr(self.element, self.sectionInd, 
+                                 self.yForce, self.posForce, dvEst)
         
-        # If we are now greater than Vmax/2, the maximum spacing has changed.
-        # TODO: add iteration if greater than new smax
-        asdfasf
-        SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
-                                        self.yForce, self.posForce, 
-                                        dvEst, Vr, Vrmax)
+            # If we are now greater than Vmax/2, the maximum spacing has changed.
+            # TODO: add iteration if greater than new smax
+            SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
+                                          self.yForce, self.posForce, 
+                                          dvEst, Vr, Vrmax)
+            
+        if SMaxgeom < s:
+            s, isSol, Nleg = self.runDesignIteration(VsReq, dvEst, SMaxgeom)
+            stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
+            self.designSection.stirrups = stirrups
+            
+
+            VrOut = getElementVr(self.element, self.sectionInd, 
+                                 self.yForce, self.posForce, dvEst)
         
-        # if spacing > smax:
-        #     NlegTrial = 2
-        #     workingSolution = False
-        #     while not workingSolution or (NlegTrial <= self.NlegMax):
-        #         spacing, workingSolution = self.runTrial(VsReq, NlegTrial, smax)
-        #         NlegTrial += 2
+            # If we are now greater than Vmax/2, the maximum spacing has changed.
+            SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
+                                          self.yForce, self.posForce, 
+                                          dvEst, Vr, Vrmax)
         
-        
-        
-        if not solution:
+        if not isSol:
             self.log(f'The maximum capacity found is less than the design ,\
                   shear, with VrReq = {round(Vr)} > VrOut = {round(VrOut)}')
             return VrOut, ShearResultEnum.designFailed

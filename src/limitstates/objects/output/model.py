@@ -47,7 +47,15 @@ class GeomModelConcrete(GeomModel):
     dx0:float = 0
     dy0:float = 0
     
-            
+    # Nstirrup:float = None
+    # cover:float    = None
+    # rStirrup:float = None
+    # rCorner:float = None
+    
+    
+    # def __post_init__(self):
+    #     strirrupGeom = GeomModelStirrup(self.b, self.h, self.dstirrp)
+    
     def getVerticies(self) -> (list[float], list[float]):
         
         h = self.h
@@ -55,11 +63,11 @@ class GeomModelConcrete(GeomModel):
         dx0 = self.dx0
         dy0 = self.dy0
         
-        bmin = -b/2  + dx0
-        bmax = b/2 + dx0
+        bmin = -b/2 + dx0
+        bmax =  b/2 + dx0
                 
-        hmin = -h/2  + dy0
-        hmax = h/2 + dy0
+        hmin = -h/2 + dy0
+        hmax =  h/2 + dy0
         
         x = [bmin, bmin , bmax, bmax, bmin]
         y = [hmin, hmax , hmax, hmin, hmin]        
@@ -69,15 +77,12 @@ class GeomModelConcrete(GeomModel):
         return list(x), list(y)
 
     def getFillAreaVerticies(self) -> (list[float], list[float]):
-        """
-        Note, rebar is measured from the top of the section!
-        """
         
         dx0 = self.dx0
         dy0 = self.dy0
         
         x = self.xyRebar[:,0] + dx0 - self.b/2 
-        y = self.xyRebar[:,1] + dy0  -self.h/2
+        y = self.xyRebar[:,1] + dy0 - self.h/2
         return list(x), list(y)
       
     def getFillRadii(self) -> list[float]:
@@ -362,8 +367,7 @@ class GeomModelIbeamRounded(GeomModel):
         
         return list(np.array(x) + dx0), list(np.array(y) + dy0)
 
-@dataclass
-class GeomModelHss(GeomModel):
+class GeomModelRoundedTube(GeomModel):
     d:float
     b:float
     t:float
@@ -440,3 +444,33 @@ class GeomModelHss(GeomModel):
         
         return xy[0,:], xy[1,:]
 
+
+
+@dataclass
+class GeomModelHss(GeomModelRoundedTube):
+    d:float
+    b:float
+    t:float
+    ro:float
+    ri:float
+
+    dx0:float = 0
+    dy0:float = 0
+    NradiusPoints:int = 6
+
+@dataclass
+class GeomModelStirrup(GeomModelRoundedTube):
+    d:float
+    b:float
+    t:float
+    ro:float
+
+    dx0:float = 0
+    dy0:float = 0
+    NradiusPoints:int = 6
+
+    
+    def __post_init__(self):
+        self.ri = self.r - self.t/2
+        self.ro = self.r + self.t/2
+    

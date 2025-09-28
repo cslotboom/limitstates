@@ -244,7 +244,18 @@ class SectionConcrete:
         
         return sum(depths * areas) / sum(areas)
 
+    def setStirrups(self, stirrups: StirrupGroup):
+        """
+        Adds stirrups to the section. Existing stirrups will be replaced
 
+        Parameters
+        ----------
+        stirrups : StirrupGroup
+            The stirrup group to be added.
+
+        """
+        self.stirrups = stirrups
+        
 
 
 

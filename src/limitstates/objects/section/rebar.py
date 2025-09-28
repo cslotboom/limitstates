@@ -76,7 +76,6 @@ class Rebar(SectionMonolithic):
     def setMat(self, mat: MaterialElastic):
         self.mat = mat
         
-
 class RebarGroup(collections.UserList):
     def __init__(self, iterable: Iterable[Rebar], ID: str = None):
         """
@@ -201,12 +200,6 @@ class RebarGroup(collections.UserList):
         for bar in self:
             bar.convertUnits(lUnit)
 
-
-
-
-
-
-
 class RebarLayer(RebarGroup):
     
     _orientationSet = False
@@ -279,9 +272,6 @@ class RebarLayer(RebarGroup):
         lUnit = bar._validateLunit(lUnit)
         lfactor = bar.lConvert(lUnit)     
         return bar.xy[0] * lfactor
-
-
-
 
 class RebarCollection:
     
@@ -454,8 +444,6 @@ class RebarCollection:
             area += sum(aGroup)
         return area
 
-
-
 class RebarFactory:
     
     def __init__(self, mat: MaterialElastic, dbConfig: DBConfig, lUnit: str):
@@ -565,6 +553,10 @@ class RebarFactory:
         self.lUnit = lUnit
 
 
+# class Stirrup(Rebar):
+
+
+
 class StirrupGroup:
     rebar:Rebar
     rStirrup:float
@@ -575,12 +567,8 @@ class StirrupGroup:
         self.rebar = rebar
         self.spacing = spacing
         self.Nlegs = Nlegs
-
         self._initUnits(lUnit)
-        
-
-
-        
+                
     def _initUnits(self, lUnit: str = None):
         """
         Initiates units of the cross sections. Cross sections have length units
