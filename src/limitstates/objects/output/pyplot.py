@@ -136,8 +136,7 @@ class SectionPlotter:
         
         return ax
     
-    
-    
+      
 def _getPatchWithHole(xyOutside, xyInside):
     """
     See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
@@ -186,7 +185,6 @@ def _plotSectionWithHole(ax, xy, objectConfig, c, *args, **kwargs):
     return ax
 
 
-
 class SectionPlotterWithHole(SectionPlotter):
     
     def plot(self, ax, xy, objectConfig, *args, **kwargs):
@@ -218,6 +216,7 @@ class SectionPlotterWithHole(SectionPlotter):
         #             c=objectConfig.cLine)
         
         return ax
+
 
 def _getPlotOrigin(option, b, d,  xy0):
     if option == PlotOriginPositionEnum.centered:
@@ -284,17 +283,15 @@ def _plotGeomFactory(section: SectionAbstract,
     elif isinstance(section, SectionConcrete):
         b, d  = section.concrete.b, section.concrete.d        
         xy    = _getPlotOrigin(originLocation, b, d, xy0)
-        if section.rebar:
-            xyRebar = section.rebar.coordsFlat
-            radii  = [d/2 for d in section.rebar.getAttr('d',True)]
-        else:
-            xyRebar = None
-            radii = None
+        xyRebar, radii = _getConcreteInputs(section)
         geom  = md.GeomModelConcrete(b, d, xyRebar, radii, *xy)    
     else:
         raise Exception(f'Section of type {section} is not supported.')
         
     return geom
+
+
+
 
 def _plotterFactory(section: SectionAbstract, 
                     geom: md.GeomModel,
@@ -482,13 +479,11 @@ def plotSection(section:SectionAbstract,
         if hasattr(geom, option):
             func = _poltOptions[option]
             func(ax, geom, objectConfig)
-    # if hasattr(geom, 'getFillAreaVerticies'):
-    #     _plotfillPatches(ax, geom, objectConfig)
 
     ax.plot()
 
-
     return fig, ax
+
 
 def _getFireSectionPositonGL(burnDims):
     """
@@ -521,7 +516,18 @@ def _getFireSectionPositonCLT(burnDims):
     
     
     return dx, dy
+
     
+def _getConcreteInputs(section):
+    if section.rebar:
+        xyRebar = section.rebar.coordsFlat
+        radii  = [d/2 for d in section.rebar.getAttr('d',True)]
+    else:
+        xyRebar = None
+        radii = None
+    return xyRebar, radii
+
+
 def _hasFireSection(dispProps):
     return (hasattr(dispProps, 'sectionFire') and dispProps.sectionFire)
 
@@ -552,9 +558,8 @@ def _plotFactory(dispProps, ax=None):
         return _plotCLT(dispProps, ax)
     elif _isGlulamSection(dispProps):
         return _plotGlulam(dispProps, ax)
-    # elif _isConcreteSection(dispProps):
-    #     return _plotConcrete(dispProps, ax)
-        
+    elif _isConcreteSection(dispProps):
+        return _plotConcrete(dispProps, ax)
     else:
         return _plotBasic(dispProps, ax)
 
@@ -608,10 +613,7 @@ def _plotGlulam(dispProps, ax = None):
     
     # Plot the fire section.
     if hasFireSection:
-        sFire  = dispProps.sectionFire
-        
-        
-        
+        sFire  = dispProps.sectionFire        
         dx, dy       = _getFireSectionPositonGL(dispProps.burnDimensions)
         dh           = dispProps.displayLamHeight
         geom         = md.GeomModelGlulam(sFire.b, sFire.d, dh, dx + dx0, dy + dy0)
@@ -622,7 +624,8 @@ def _plotGlulam(dispProps, ax = None):
     _plotfillLines(ax, geom, canvasObjConfig)
     return fig, ax
 
-def _plotConcreteRectangle(dispProps, ax = None):
+
+def _plotConcrete(dispProps, ax = None):
     """
     Plots a concrete section, including the rebar.
     
@@ -637,19 +640,20 @@ def _plotConcreteRectangle(dispProps, ax = None):
     b, d = section.b, section.d
     dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])
 
-    # Get the geometry and initilziet the plot for the base section
-    geom    = md.GeomModelRectangle(b, d, dx0 = dx0, dy0 = dy0)
+    # Get the geometry and initialize the plot for the base section
+    xyRebar, radii = _getConcreteInputs(dispProps.section)
+    geom    = md.GeomModelConcrete(b, d, xyRebar, radii, dx0 = dx0, dy0 = dy0)
     plotter = SectionPlotter(geom, cPlotConfig)
     fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
     
-
     
     # Plot the internal fill lines
-    _plotfillLines(ax, geom, canvasObjConfig)
+    _plotfillPatches(ax, geom, canvasObjConfig)
     return fig, ax
+
 
 def _plotCLT(dispProps, ax = None):
     
@@ -689,6 +693,7 @@ def _plotCLT(dispProps, ax = None):
     _plotfillPatches(ax, geom, canvasObjConfig)
     
     return fig, ax
+
 
 def _getPlotLayers(sFire):
     """
@@ -740,7 +745,7 @@ def plotElementSection(element:BeamColumn,
 
     dispProps = element.eleDisplayProps
     
-    # Use the display section if it is set.
+    # Use the display section if it is not set.
     if not dispProps.section:
         dispProps.section = element.section
             

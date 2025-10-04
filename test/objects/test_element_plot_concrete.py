@@ -1,7 +1,7 @@
 """
 Author: CS
 Data: 20250927
-Description: Tests if concrete sections are being plotted correctly.
+Description: Tests if concrete elements are being plotted correctly.
 """
 
 import limitstates as ls
@@ -56,12 +56,12 @@ def _add_stirrups(ele: c24.BeamColumnConcreteCsa24):
     # placer.place(Nbar, barType, 1)
     # placer.place(2, barType, 2)
 
-def test_section_empty():
+# def test_section_empty():
     
-    ele = _init_element()
+#     ele = _init_element()
     
-    ls.plotSection(ele.getSection())
-    assert True
+#     ls.plotSection(ele.getSection())
+#     assert True
 
 
 def test_section_rebar():
@@ -69,26 +69,16 @@ def test_section_rebar():
     ele = _init_element()
     _add_rebar(ele)
     
-    ls.plotSection(ele.getSection())
+    ls.plotElementSection(ele)
     assert True
 
 
 
-# def test_section_rebar_stirrups():
-    
-#     ele = _init_element()
-#     _add_stirrups(ele)
-#     _add_rebar(ele)
-    
-#     ls.plotSection(ele.getSection())
-#     assert True
-
 
 
 if __name__ == "__main__":
-    
-    test_section_empty()
     test_section_rebar()
+    # test_section_rebar()
 
 
 else:

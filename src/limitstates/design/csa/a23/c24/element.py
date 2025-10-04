@@ -79,65 +79,51 @@ class DesignPropsConcrete24:
     sectionRegions:list[list[float]] = None
     
     
-    lateralSupport:Union[bool,list[bool]] = True
+    # lateralSupport:Union[bool,list[bool]] = True
     
-    Lx:Union[float,list[float]] = None
-    Ly:Union[float,list[float]] = None
+    # Lx:Union[float,list[float]] = None
+    # Ly:Union[float,list[float]] = None
     
-    kexB:Union[float,list[float]] = None
-    kexC:float = None
-    keyC:float = None
+    # kexB:Union[float,list[float]] = None
+    # kexC:float = None
+    # keyC:float = None
     
-    def setkexB(self, kexB):
-        self.kexB  = kexB
-        self.Lexb = self.Lx * self.kexB 
+    # def setkexB(self, kexB):
+    #     self.kexB  = kexB
+    #     self.Lexb = self.Lx * self.kexB 
         
-    def setkexC(self, kexC):
-        self.kexC  = kexC
-        self.LexC = self.Lx * self.kexC 
+    # def setkexC(self, kexC):
+    #     self.kexC  = kexC
+    #     self.LexC = self.Lx * self.kexC 
         
-    def setkeyC(self, keyC):
-        self.keyC  = keyC
-        self.LeyC = self.Ly * self.keyC
+    # def setkeyC(self, keyC):
+    #     self.keyC  = keyC
+    #     self.LeyC = self.Ly * self.keyC
         
 
 @dataclass
 class EleDisplayPropsConcrete24(EleDisplayProps):
     """
+    The plot indicie is only needed if no section is provided. A provided
+    section will overwrite the 
     """
 
-    fillColorLines: str = MATCOLOURS['glulamBurnt']
-    configObjectBurnt: PlotConfigObject = None
+    fillColorLines: str = MATCOLOURS['steel']
+    sectionInd: int = 0
+    cover: float = 0
             
     def __post_init__(self):
         if self.configCanvas == None:
             self.configCanvas = PlotConfigCanvas()
  
         if self.configObject == None:
-            self.configObject = PlotConfigObject(MATCOLOURS['glulam'],
-                                                 cFillLines = MATCOLOURS['black'])
- 
-        if self.configObjectBurnt == None:
-            self.configObjectBurnt = PlotConfigObject(MATCOLOURS['glulamBurnt'],
-                                                 cFillLines = MATCOLOURS['black'])
-            
-    def setPlotOrigin(self, newOriginLocation:Union[int, PlotOriginPositionEnum]):
-        """
-        Updates the plot 
+            self.configObject = PlotConfigObject(MATCOLOURS['concrete'],
+                                                 cFillLines = MATCOLOURS['black'],
+                                                 cFillPatch = MATCOLOURS['steel'],
+                                                 patchType = 2)
+    
 
-        Parameters
-        ----------
-        newOriginLocation : int,PlotOriginPosition
-            DESCRIPTION.
 
-        Returns
-        -------
-        None.
-
-        """
-        self.configObject.originLocation = newOriginLocation
-        self.configObjectBurnt.originLocation = newOriginLocation
-        
         
 class BeamColumnConcreteCsa24(BeamColumn):
     """
@@ -150,6 +136,9 @@ class BeamColumnConcreteCsa24(BeamColumn):
     Multi-span members with compression loads are not supported.
     
     For multi-span beams, Lx and Ly need to be set.
+    
+    When setting plot displays, the section.
+    If a section is manually set, the index is ignored.
 
 
     Parameters
@@ -181,7 +170,7 @@ class BeamColumnConcreteCsa24(BeamColumn):
                  section: Union[SectionConcrete, list[SectionConcrete]],
                  designProps: DesignPropsConcrete24 = None, 
                  userProps: dataclass = None,
-                 eleDisplayProps: dataclass = None):
+                 eleDisplayProps: EleDisplayPropsConcrete24 = None):
 
         if isinstance(section, list):
             raise Exception('MultiSection Elements are not supported yet.')
@@ -194,10 +183,7 @@ class BeamColumnConcreteCsa24(BeamColumn):
         if designProps is None:
             designProps = DesignPropsConcrete24()
 
-        # Initialize the design propreties if none are given.        
-        if eleDisplayProps is None:
-            eleDisplayProps = EleDisplayPropsConcrete24(self.section, 
-                                                        self.member)
+        eleDisplayProps = self._initDispProps(eleDisplayProps, designProps)
 
         self._initProps(designProps, userProps, eleDisplayProps)
         
@@ -213,9 +199,41 @@ class BeamColumnConcreteCsa24(BeamColumn):
         else:
             return self.section
 
+    def _initDispProps(self, eleDisplayProps: EleDisplayPropsConcrete24,
+                       designProps: DesignPropsConcrete24):
 
+        # Extract cover        
+        cover = designProps.cover
 
+        
+        # Nothing is provided, use default propreties.
+        if eleDisplayProps is None:
+            ind = 0
+            plotSection = self.getSection(ind)
+            plotMember  = self.member
+            return EleDisplayPropsConcrete24(plotSection, 
+                                             plotMember,
+                                             sectionInd = ind,
+                                             cover = cover)
+        
+        if not eleDisplayProps.cover:
+            eleDisplayProps.cover = cover
 
+        # Initialize the design propreties if none are given.
+        if eleDisplayProps.section:
+            pass
+        elif (eleDisplayProps.sectionInd):
+            eleDisplayProps.section = self.getSection(eleDisplayProps.sectionInd)    
+        else:
+            ind = 0
+            eleDisplayProps.sectionInd = ind
+            eleDisplayProps.section = self.getSection(ind)    
+
+        # Initialize the design propreties if none are given.
+        if not eleDisplayProps.member:
+           eleDisplayProps.member  = self.member
+        
+        return eleDisplayProps
 
 class SectionNASolverCsa24:
     pass

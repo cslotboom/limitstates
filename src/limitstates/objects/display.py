@@ -126,8 +126,8 @@ class EleDisplayProps:
         i.e. colour linestyle etc. 
     """
     
-    section:Optional[SectionAbstract] = None
-    member:Optional[Member] = None
+    section: Optional[SectionAbstract] = None
+    member: Optional[Member] = None
     
     configObject: Optional[PlotConfigObject] = None
     configCanvas: Optional[PlotConfigCanvas] = None

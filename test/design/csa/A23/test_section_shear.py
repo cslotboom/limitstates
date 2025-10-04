@@ -6,7 +6,6 @@ Description:
 """
 
 import limitstates.design.csa.a23.c24 as c24
-from limitstates.objects.read import DBConfig
 import limitstates as ls
 import pytest
     
