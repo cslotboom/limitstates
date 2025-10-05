@@ -391,6 +391,8 @@ class StirrupDesigner:
         
         self.barType = barType
         # self.matRebar = matRebar
+        # TODO: All stirrups share a bar type with this scheme.
+        # Consider making them unique
         self.rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
         # if matRebar:
         #     self.rebar.setMat(matRebar)
@@ -486,8 +488,11 @@ class StirrupDesigner:
             
         # if sBar = self._roundSmin(sminTrial)
 
-
-
+    def _getStirrups(self, Nstirrups, s):
+        stirrups = [None]*Nstirrups
+        for ii in range(Nstirrups):
+            stirrups[ii] = ls.Stirrup(self.rebar, ls.StirrupTypeEnum.Closed, 2, s, 'mm')
+        return ls.StirrupGroup(stirrups)
 
     def design(self) -> (float, ShearResultEnum):
         designProps = self.element.designProps
@@ -526,8 +531,13 @@ class StirrupDesigner:
         
         # Set the solution and do some final clean up
         if isSol:
-            stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
-            self.designSection.stirrups = stirrups
+            Nstirrup = int(Nleg / 2)
+            
+            # stirrup  = ls.Stirrup(self.rebar, ls.StirrupTypeEnum.closed, 2, s)
+            # stirrups = ls.StirrupGroup([stirrup]*Nstirrup)
+            
+            
+            self.designSection.stirrups = self._getStirrups(Nstirrup, s)
 
             VrOut = getElementVr(self.element, self.sectionInd, 
                                  self.yForce, self.posForce, dvEst)
@@ -540,9 +550,15 @@ class StirrupDesigner:
             
         if SMaxgeom < s:
             s, isSol, Nleg = self.runDesignIteration(VsReq, dvEst, SMaxgeom)
-            stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
-            self.designSection.stirrups = stirrups
+            Nstirrup = int(Nleg / 2)
+
+            # stirrup  = ls.Stirrup(self.rebar, ls.StirrupTypeEnum.closed, 2, s)
+            # stirrups = ls.StirrupGroup([stirrup]*Nstirrup)            
             
+            # stirrups = ls.StirrupGroup(self.rebar, s, Nleg, 'mm')
+            # self.designSection.stirrups = stirrups
+            self.designSection.stirrups = self._getStirrups(Nstirrup, s)
+
 
             VrOut = getElementVr(self.element, self.sectionInd, 
                                  self.yForce, self.posForce, dvEst)

@@ -20,13 +20,13 @@ def _init_element() -> c24.BeamColumnConcreteCsa24:
     c = 30
 
     mat         = c24.MaterialConcreteCSA24(fc)
-    section     = ls.SectionRectangle(mat, b, h)
-    stirrupBar  = c24.getStandardRebar('10M')
-    concreteSection = ls.SectionConcrete(section, stirrups = ls.StirrupGroup(stirrupBar))
+    section     = ls.SectionRectangle(mat, b, h)    
+    stirrups = c24.getStandardStirrupGroup('10M', spacing = 250)
+
+    concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
     designProps = c24.DesignPropsConcrete24(cover= c)
     
     member = ls.initSimplySupportedMember(5, 'm')
-    
     return c24.BeamColumnConcreteCsa24(member, concreteSection, designProps)
 
 

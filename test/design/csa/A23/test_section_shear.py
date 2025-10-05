@@ -19,8 +19,9 @@ def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
 
     mat         = c24.MaterialConcreteCSA24(fc)
     section     = ls.SectionRectangle(mat, b, h)
-    # stirrupBar  = 
-    stirrups    = ls.StirrupGroup(c24.getStandardRebar('10M'), spacing = 250)
+    stirrups    = c24.getStandardStirrupGroup('10M', spacing = 250)
+    
+    
     concreteSection = ls.SectionConcrete(section, stirrups=stirrups)
     designProps = c24.DesignPropsConcrete24(cover= c)
     

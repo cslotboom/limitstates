@@ -120,7 +120,7 @@ def getSectionSr(section: SectionConcrete, NAlocation: float,
     strains = getSteelStrains(h, coords, NAlocation, eConc)  
     
     # Check to make sure that the correct input has been provided.
-    if len(strains) != rebar.Nbars:
+    if len(strains) != rebar.Nbar:
         raise Exception('A strain value must be given for each rebar.')
     
     ey = rebar.mat.ey

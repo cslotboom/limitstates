@@ -19,8 +19,8 @@ def _init_placer():
 
     mat      = c24.MaterialConcreteCSA24(fc)
     section  = ls.SectionRectangle(mat, b, h)
-    stirrupBar = c24.getStandardRebar('10M')
-    concreteSection = ls.SectionConcrete(section, stirrups = ls.StirrupGroup(stirrupBar))
+    stirrups    = c24.getStandardStirrupGroup('10M')
+    concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
     designProps = c24.DesignPropsConcrete24(cover= c)
     
     return c24.RebarPlacerRowCSA24(concreteSection, designProps)
@@ -34,8 +34,8 @@ def _init_element():
 
     mat         = c24.MaterialConcreteCSA24(fc)
     section     = ls.SectionRectangle(mat, b, h)
-    stirrupBar  = c24.getStandardRebar('10M')
-    concreteSection = ls.SectionConcrete(section, stirrups = ls.StirrupGroup(stirrupBar))
+    stirrups    = c24.getStandardStirrupGroup('10M')
+    concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
     designProps = c24.DesignPropsConcrete24(cover = c)
     
     member = ls.initSimplySupportedMember(5, 'm')
@@ -69,7 +69,7 @@ def test_placement_bottom():
     section = placer.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     coords = section.rebar.getCoords(flatten=True)
     sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
@@ -93,7 +93,7 @@ def test_placement_top():
     section = placer.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     coords = section.rebar.getCoords(flatten=True)
     sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
@@ -118,7 +118,7 @@ def test_placement_side():
     section = placer.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     coords = section.rebar.getCoords(flatten=True)
     sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
@@ -139,7 +139,7 @@ def test_placement_side():
     section = placer.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     coords = section.rebar.getCoords(flatten=True)
     sActual = (placer.bRow - dbar) / (placer.NbarsMax-1) - dbar
@@ -163,7 +163,7 @@ def test_element_placement_bottom():
     section = element.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     dbar = 30
     coords = section.rebar.getCoords(flatten=True)
@@ -187,7 +187,7 @@ def test_element_placement_top():
     section = element.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     dbar = 30
     coords = section.rebar.getCoords(flatten=True)
@@ -214,7 +214,7 @@ def test_element_placement_side():
     section = element.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     dbar = 30
     coords = section.rebar.getCoords(flatten=True)
@@ -237,7 +237,7 @@ def test_element_placement_side():
     section = element.section
     
     assert len(section.rebar) == 2
-    assert section.rebar.Nbars == Nbar
+    assert section.rebar.Nbar == Nbar
 
     coords = section.rebar.getCoords(flatten=True)
     sActual = 48

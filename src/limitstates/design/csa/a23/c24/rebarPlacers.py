@@ -52,7 +52,7 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
         
         # TODO: guarentee this is in mm
         if self.section.stirrups:
-            dstirrup = self.section.stirrups.rebar.d
+            dstirrup = self.section.stirrups[0].rebar.d
         else:
             dstirrup = 0
             

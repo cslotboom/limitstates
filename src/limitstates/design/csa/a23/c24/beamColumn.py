@@ -358,9 +358,14 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     section = element.getSection(sectionInd)
     theta   = element.designProps.theta
 
-    fy = section.stirrups.rebar.mat.fy
-    Av = section.stirrups.Nlegs * section.stirrups.rebar.A
-    s  = section.stirrups.spacing
+    mat = section.stirrups.mat
+    sConvert = mat.sConvert('MPa')    
+    fy       = mat.fy * sConvert
+    
+    
+    
+    Av = section.stirrups.getAvNet()
+    s  = section.stirrups.getSpacing()
 
     dveff = getSectiondveff(section, yForce, posForce)
    
@@ -536,11 +541,11 @@ def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     scConvert = section.concrete.mat.sConvert('MPa')
     fc = section.concrete.mat.fc * scConvert    
     
-    srConvert = section.stirrups.rebar.mat.sConvert('MPa')
-    fy = section.stirrups.rebar.mat.fy * srConvert
+    srConvert = section.stirrups.mat.sConvert('MPa')
+    fy = section.stirrups.mat.fy * srConvert
     
-    Av = section.stirrups.Nlegs * section.stirrups.rebar.A
-    s  = section.stirrups.spacing
+    Av = section.stirrups.getAvNet()
+    s  = section.stirrups.getSpacing()
 
     bw = section.getWidth(yForce)
     dveff = getSectiondveff(section, yForce, posForce, dvEstimate)

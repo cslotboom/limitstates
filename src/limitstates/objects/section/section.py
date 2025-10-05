@@ -145,17 +145,7 @@ class SectionAbstract(ABC):
 
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
     
-        
-    def _validateLunit(self, lUnit):
-        """
-        returns the sections default unit if no units are given.
-        """
-        if lUnit:
-            return lUnit
-        else:
-            return self.lUnit
-    
-    
+          
 class SectionMonolithic(SectionAbstract):
     """
     The Monolithic section should not be used directly, it defines interfaces
