@@ -26,7 +26,7 @@ def _init_placer():
     return c24.RebarPlacerRowCSA24(concreteSection, designProps)
 
     
-def _init_element():
+def _init_element(Nstirrups = 1):
     h = 500
     b = 400
     fc = 25
@@ -34,7 +34,7 @@ def _init_element():
 
     mat         = c24.MaterialConcreteCSA24(fc)
     section     = ls.SectionRectangle(mat, b, h)
-    stirrups    = c24.getStandardStirrupGroup('10M')
+    stirrups    = c24.getStandardStirrupGroup('10M', Nstirrups = Nstirrups)
     concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
     designProps = c24.DesignPropsConcrete24(cover = c)
     
@@ -47,7 +47,7 @@ def test_placement_init():
     barType = '30M'
     placer  = _init_placer()
     
-    config  = placer.getSpacingRules(barType)
+    config  = c24.getSectionSpacingRules(placer._getBar(barType), placer.section, placer.c)
     assert config.clearSpacing == 1.4*30
     
     placer.setSpacingConfig(config)
@@ -200,6 +200,8 @@ def test_element_placement_top():
     assert coords[-1,1] == section.concrete.d - (40 + dbar/2 + dbar + dbar*1.4)
 
 
+
+
 def test_element_placement_side():
     barType = '30M'
     Nbar = 7
@@ -249,7 +251,14 @@ def test_element_placement_side():
     assert coords[1,1]  == 40 + dbar/2 + dbar + sActual
     
 
+def test_element_placement_stirrups():
+    
+    element = _init_element(Nstirrups = 2)
+    
+    c24.setStirrupPosition(element)
+    
 
+    
 if __name__ == '__main__':
     # pass
     test_placement_init()

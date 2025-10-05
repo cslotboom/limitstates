@@ -18,7 +18,7 @@ def test_stirrup_init():
     sType = ls.StirrupTypeEnum.Closed
     
     rebar10M = factory.getRebar('10M')
-    stirrup = ls.Stirrup(rebar10M, sType, 2)
+    stirrup  = ls.Stirrup(rebar10M, sType, 2)
     
     assert stirrup.rebar.d == 10
     assert stirrup.rebar.A == 100

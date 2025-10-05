@@ -5,14 +5,14 @@ Contains functions for managing sections specific to CSAo86-19
 from typing import Union
 
 from limitstates.objects.section import SectionConcrete, RebarLocationEnum
-from limitstates.objects import (RebarPlacerRow, RebarSpacingConfig, 
-                                 RebarPlacementStrategyEnum,
-                                    SectionConcrete, RebarLocationEnum)
+from limitstates.objects import (RebarPlacerRow, RebarPlacementStrategyEnum, 
+                                 Rebar)
 from .material import MaterialRebarCSA24
 
-from .beamColumn import getSmin
+from .beamColumn import getSectionSpacingRules
 from .section import REBARFACTORY
 from .element import BeamColumnConcreteCsa24, DesignPropsConcrete24
+
 
 class RebarPlacerRowCSA24(RebarPlacerRow):
         
@@ -31,42 +31,18 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
             rebarFactory.setMaterial(rebarMat)
         
         self.c = designProps.cover
-
-        
         super().__init__(section, rebarFactory)
         
-    
-    def getSpacingRules(self, 
-                        barType: str, 
-                        includeRadius = False) -> RebarSpacingConfig:
+    def _getBar(self, barType):
+        return self.factory.getRebar(barType, lUnit='mm')
+               
         
-        archetypeBar = self.factory.getRebar(barType, lUnit='mm')
-        d = archetypeBar.d
-
-        # TODO review this material
-        lFactor = self.section.concrete.mat.lConvert('mm')
-        amax    = self.section.concrete.mat.amax * lFactor
+    def place(self, Nbars: int, barType: str, 
+              location: RebarLocationEnum, depthOverwrite: float = None): 
         
-        s = getSmin(d, amax)
-        c = self.c
-        
-        # TODO: guarentee this is in mm
-        if self.section.stirrups:
-            dstirrup = self.section.stirrups[0].rebar.d
-        else:
-            dstirrup = 0
-            
-        if self.section.stirrups and includeRadius:
-            rcurve = archetypeBar.rcurve
-        else:
-            rcurve = 0
-        
-        return RebarSpacingConfig(s, c, dstirrup, rcurve)
-        
-        
-    def place(self, Nbars: int, barType: str, location: RebarLocationEnum, depthOverwrite: float = None): 
-        
-        config = self.getSpacingRules(barType)
+        # config = self.getSpacingRules(barType)
+        bar = self._getBar(barType)
+        config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
         self.setSpacingConfig(config)
 
         self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
@@ -82,32 +58,43 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         rebarMat: Union[MaterialRebarCSA24, None] = None, 
                         lUnit: str = 'mm'):
     """
+    Places lognditudinal rebar in a concerete Element according to a strategy.
+    The number and type of bars is placed in the section specified by 
+    sectionInd, according to the strategy used.
     
-    
+    Currently only one strategy is supported, RebarPlacementStrategyEnum = 1.
+    See RebarPlacementStrategyEnum for a more detailed review of what each 
+    strategy reqires
+
 
     Parameters
     ----------
     element : BeamColumnConcreteCsa24
-        DESCRIPTION.
+        The element to place rebar in.
     Nbars : int
-        DESCRIPTION.
+        The number of bars to place, e.g. 10M.
     barType : str
-        DESCRIPTION.
+        The type of bar to place.
     sectionInd : TYPE, optional
-        DESCRIPTION. The default is 0.
+        The index of the section used to place rebar in. The default is 0, 
+        which is the first section / only section if there is just one section.
     placementStrategy : RebarPlacementStrategyEnum, optional
-        DESCRIPTION. The default is 1.
+        The placement strategy to use.
+            - strategy 1: Face. Rebar is placed in rows along one of the faces 
+            of the concrete element.
+                - Kwargs requries a "RebarLocationEnum" enumeration
+            - strategy 2: Face with Radius. Rebar is placed in rows along one 
+            of the faces of the concrete element, and rebar will respect the
+            radius of the stirrups
+            - strategy 3: Perimeter. Rebar is placed evenly around the 
+            perimeter of the section.
     placementKwargs : dict, optional
-        DESCRIPTION. The default is None.
+        Additional keyword arguments required for each stategy. 
+        The default is None.
+    rebarMat : Union[MaterialRebarCSA24, None], optional
+        The rebar material to use, if specified this will overwrite the default
+        material specified.
 
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
 
     """
     if placementStrategy != 1:
@@ -121,59 +108,12 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
     section = element.section
     
     if placementStrategy == 1:
-        placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
+        placer   = RebarPlacerRowCSA24(section, element.designProps, 
+                                       rebarMat, lUnit)
         location = placementKwargs['location']
         placer.place(Nbars, barType, location)
 
-    
-# def placeRebarInSection(section: SectionConcrete,
-#                         Nbars: int, barType: str,
-#                         placementStrategy: RebarPlacementStrategyEnum = 1,
-#                         placementKwargs: dict = None,
-#                         rebarMat: Union[MaterialRebarCSA24, None] = None, 
-#                         lUnit: str = 'mm'):
-#     """
-    
-    
 
-#     Parameters
-#     ----------
-#     element : BeamColumnConcreteCsa24
-#         DESCRIPTION.
-#     Nbars : int
-#         DESCRIPTION.
-#     barType : str
-#         DESCRIPTION.
-#     sectionInd : TYPE, optional
-#         DESCRIPTION. The default is 0.
-#     placementStrategy : RebarPlacementStrategyEnum, optional
-#         DESCRIPTION. The default is 1.
-#     placementKwargs : dict, optional
-#         DESCRIPTION. The default is None.
-
-#     Raises
-#     ------
-#     Exception
-#         DESCRIPTION.
-
-#     Returns
-#     -------
-#     None.
-
-#     """
-#     if placementStrategy != 1:
-#         raise Exception('Unsupported placement strategy used. Only strategies [1] are currently supported')
-        
-#     if placementStrategy != 1:
-#         raise Exception('Unsupported placement strategy used.')
-
-    
-#     if placementStrategy == 1:
-#         placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
-#         location = placementKwargs['location']
-#         placer.place(Nbars, barType, location)
-        
-    
 def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
                             Nbars: int, barType: str,
                             sectionInd: int = 0,
@@ -181,32 +121,26 @@ def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
                             lUnit: str = 'mm'):
     """
-    
-    
+    Places lognditudinal rebar in a concerete Element by row. The number and 
+    type of bars is placed in the section in rows, until the row is filled up.
 
     Parameters
     ----------
     element : BeamColumnConcreteCsa24
-        DESCRIPTION.
+        The element to place rebar in.
     Nbars : int
-        DESCRIPTION.
+        The number of bars to place.
     barType : str
-        DESCRIPTION.
+        The type of bar to place, e.g. 10M.
     sectionInd : TYPE, optional
-        DESCRIPTION. The default is 0.
-    placementStrategy : RebarPlacementStrategyEnum, optional
-        DESCRIPTION. The default is 1.
-    placementKwargs : dict, optional
-        DESCRIPTION. The default is None.
-
-    Raises
-    ------
-    Exception
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
+        The index of the section used to place rebar in. The default is 0, 
+        which is the first section / only section if there is just one section.
+    location : RebarLocationEnum, optional
+        The face to place the rebar on: Bottom = 1, Top = 2, Left = 3, 
+        Right = 4
+    rebarMat : Union[MaterialRebarCSA24, None], optional
+        The rebar material to use, if specified this will overwrite the default
+        material specified.
 
     """
 

@@ -9,7 +9,7 @@ from .element import BeamColumnConcreteCsa24, ShearConfigurations, phiC, phiS
 from .section import REBARFACTORY
 
 from .nasolver import getSectionCr
-from limitstates import DesignDiagram, SectionConcrete
+from limitstates import SectionConcrete, Rebar, RebarSpacingConfig
 
    
 def getBalancedNA(deff: float, eyConc: float = 0.0035,
@@ -145,7 +145,12 @@ def getSectionBalancedAnet(section: SectionConcrete, deff: float = None,
 def getCompressionDepth(Tr, alpha, fc, b):
     
     return Tr / (alpha * phiC * fc * b)
-      
+
+    
+# =============================================================================
+# Spacing
+# =============================================================================
+
 def getSmin(db:float, amax:float):
     """
     Returns minimum spacing for a given rebar with a given aggregate.
@@ -165,6 +170,57 @@ def getSmin(db:float, amax:float):
     """
     return np.max((1.4*db, 1.4*amax, 30))
    
+    
+   
+    
+def getSectionSpacingRules(rebar: Rebar, section: SectionConcrete,
+                            cover:float = 25, includeRadius = False,
+                            lUnit = 'mm') -> RebarSpacingConfig:
+    
+    rlFactor = rebar.lConvert(lUnit)
+    d = rebar.d * rlFactor
+
+    # TODO amax location this material
+    lFactor = section.concrete.mat.lConvert(lUnit)
+    amax    = section.concrete.mat.amax * lFactor
+    
+    s = getSmin(d, amax)
+    c = cover
+    
+    if section.stirrups:
+        stirrup  = section.stirrups[0]
+        lFactor = stirrup.rebar.lConvert(lUnit)
+        dstirrup = stirrup.rebar.d * lFactor
+    else:
+        dstirrup = 0
+        
+    if section.stirrups and includeRadius:
+        rcurve = rebar.rcurve * lFactor
+    else:
+        rcurve = 0
+    
+    return RebarSpacingConfig(s, c, dstirrup, rcurve, lUnit)
+        
+    
+def getElementSpacingRules(rebar: Rebar, element: BeamColumnConcreteCsa24, 
+                           sectionInd: int = 0, includeRadius = False, 
+                           lUnit = 'mm') -> RebarSpacingConfig:
+    
+    section = element.getSection(sectionInd)
+    cover   = element.designProps.cover
+        
+    return getSectionSpacingRules(rebar, section, cover, includeRadius, lUnit)
+
+        
+
+   
+    
+   
+# =============================================================================
+# 
+# =============================================================================
+   
+    
 def getAsmin(fc: float, fy: float, bt: float, h: float):
     """
     CSA A23.3 Cl.10.5.1.2

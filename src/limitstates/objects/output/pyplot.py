@@ -652,6 +652,10 @@ def _plotConcrete(dispProps, ax = None):
     
     # Plot the internal fill lines
     _plotfillPatches(ax, geom, canvasObjConfig)
+    
+    # plot the stirrups
+    
+    
     return fig, ax
 
 
