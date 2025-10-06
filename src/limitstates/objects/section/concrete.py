@@ -12,7 +12,8 @@ import math
 import numpy as np
 
 from .section import SectionRectangle
-from .rebar import RebarFactory, RebarCollection, StirrupGroup, Rebar, RebarLayer
+from .rebar import (RebarFactory, RebarCollection, StirrupGroup, RebarLayer, 
+                    StirrupPositionBox)
 
 
 class SectionConcrete:
@@ -256,8 +257,6 @@ class SectionConcrete:
         """
         self.stirrups = stirrups
         
-
-
 # =============================================================================
 # 
 # =============================================================================
@@ -425,20 +424,14 @@ def solveForNA(section: SectionConcrete,
 
     return naSolver.calcNA()
 
-
 # =============================================================================
 # 
 # =============================================================================
-
-
 
 class RebarPlacementStrategyEnum(IntEnum):
     Face = 1
     FaceWithRadius = 2
     Perimeter = 3
-
-class StirrupPlacementStrategyEnum(IntEnum):
-    Face = 1
 
 class RebarLocationEnum(IntEnum):
     Bottom = 1
@@ -446,7 +439,7 @@ class RebarLocationEnum(IntEnum):
     Left = 3
     Right = 4
     
-    
+
 placementDict = {(True,  True):  RebarLocationEnum.Bottom, 
                  (True,  False): RebarLocationEnum.Top, 
                  (False, True):  RebarLocationEnum.Left, 
@@ -472,7 +465,9 @@ def getRebarLocationEnum(yForce:bool = True,
     """
     return placementDict[(yForce, posForce)]
 
-
+# =============================================================================
+# 
+# =============================================================================
 
 @dataclass
 class   RebarSpacingConfig:
@@ -510,11 +505,11 @@ class RebarPlacerManual():
     def __init__(self, factory:RebarFactory):
         self.factory = factory
         
-    def getRebarLayer(self, Nbar: int, barType: str, 
+    def getRebarLayer(self, Nbars: int, barType: str, 
                      position: float, width: float, offset:float = 0, 
                      yDirection: bool = True) -> RebarLayer:
         """
-        Evenly distributes Nbar of the given type within a row width wide, 
+        Evenly distributes Nbars of the given type within a row width wide, 
         and centered around "position".
         
         "position" is measured from the bottom of the section for the rebar 
@@ -523,7 +518,7 @@ class RebarPlacerManual():
 
         Parameters
         ----------
-        Nbar : int
+        Nbars : int
             DESCRIPTION.
         barType : str
             DESCRIPTION.
@@ -544,24 +539,24 @@ class RebarPlacerManual():
         """
 
         if yDirection:
-            positions = self._getBarPositon(Nbar, width, offset)
+            positions = self._getBarPositon(Nbars, width, offset)
             xyOut = [(x, position) for x in positions]
         else:
-            positions = self._getBarPositon(Nbar, width)
+            positions = self._getBarPositon(Nbars, width)
             xyOut = [(position, y) for y in positions]
         
         bars = []
-        for ii in range(Nbar):
+        for ii in range(Nbars):
             bars.append(self.factory.getRebar(barType, xyOut[ii]))
             
         return  RebarLayer(bars)
             
-    def _getBarPositon(self, Nbar:int, width:float, offset:float):
+    def _getBarPositon(self, Nbars:int, width:float, offset:float):
         
-        if Nbar == 1:
+        if Nbars == 1:
             return [(width - offset)/2]
         else:
-            return list(np.linspace(offset, width + offset, Nbar))
+            return list(np.linspace(offset, width + offset, Nbars))
         
     # def place(self, Nbar:int, barType:str, deff:float, width:float, 
     #           offset:float = 0, direction:str='x'):
@@ -595,15 +590,15 @@ class RebarPlacerRow(RebarPlacer):
        
     def getMaxBarsInRow(self):
         
-        Nbar = (self.bRow - self.dbar - 2*self.rcurve)/(self.dbar + self.s)
+        Nbars = (self.bRow - self.dbar - 2*self.rcurve)/(self.dbar + self.s)
         
-        return math.ceil(Nbar)
+        return math.ceil(Nbars)
      
-    def _getBarPositon(self, Nbar:int, width:float, cover):
-        if Nbar == 1:
+    def _getBarPositon(self, Nbars:int, width:float, cover):
+        if Nbars == 1:
             return [width/2 + cover]
         else:
-            return list(np.linspace(0,1, Nbar)*width + cover)
+            return list(np.linspace(0,1, Nbars)*width + cover)
 
 
     def _initPlacement(self, barType:str, location:RebarLocationEnum):
@@ -649,15 +644,6 @@ class RebarPlacerRow(RebarPlacer):
                 deff = (dbase + dRow)
             else:
                 deff = self.h - (dbase + dRow)
-                
-            
-            # if depthOverwrite:
-            #     deff = depthOverwrite + dRow
-            # # else:
-            # elif location==1 or location==3:
-            #     deff = (self.clearCover + dbar/2 + dRow)
-            # else:
-            #     deff = self.h - (self.clearCover + dbar/2 + dRow)
                 
             positions = self._getBarPositon(NBarRow, 
                                             self.bRow - dbar, 
@@ -715,9 +701,248 @@ def RebarPlacerFactory(placementStrategy: RebarPlacementStrategyEnum) -> RebarPl
 
 
 
+class StirrupPlacementStrategyEnum(IntEnum):
+    Nested = 1
+    ColumnTypical = 2
+    
 
-class StirrupPlacement:
-    pass
+     
+def _getBarPositon(self, Nbars:int, width:float, cover):
+    if Nbars == 1:
+        return [width/2 + cover]
+    else:
+        return list(np.linspace(0,1, Nbars)*width + cover)
+
+
+
+# def setStirrupLocation(section: SectionConcrete,
+#                        spacingConfig: RebarSpacingConfig = None,
+#                        yForce = True):
+#     """
+#     Given a stirrup group, finds the location of stirrups in the section.
+#     Stirrups must all have the same type of bar.
+
+#     Parameters
+#     ----------
+#     section : SectionConcrete
+#         DESCRIPTION.
+#     spacingConfig : RebarSpacingConfig, optional
+#         DESCRIPTION. The default is None.
+
+#     Returns
+#     -------
+#     None.
+
+#     """
+    
+#     if not section.stirrups:
+#         raise Exception('Not stirrup group has been assigned.')
+        
+#     b = section.getDepth(yForce)
+#     d = section.getDepth(yForce)
+    
+#     Nstirrup = len(section.stirrups)
+    
+#     if section.stirrups[0].stirrupType != 2:
+#         raise Exception('Recieved Stirrup Type 2')
+#     Nbar = 
+
+
+class StirrupPlacer:
+    
+    def __init__(self, section, spacingConfig:RebarSpacingConfig = None):
+        self.section = section         
+        if spacingConfig:
+            self.setSpacingConfig(spacingConfig)
+
+    @abstractmethod
+    def place(self, Nbars:int, barType:str):
+        pass
+    
+    def setSpacingConfig(self, spacingConfig: RebarSpacingConfig):
+        self.c = spacingConfig.cover
+        self.s = spacingConfig.clearSpacing
+        self.dstir = spacingConfig.dstirrup
+        self.rcurve = spacingConfig.stirrupCurveRadius
+
+
+
+
+    
+class StirrupPlacerRow(RebarPlacer):
+    
+    def __init__(self, section: SectionConcrete, 
+                         placementConfig:RebarSpacingConfig = None,
+                         rebarFactory: RebarFactory = None):
+        super().__init__(section, rebarFactory, placementConfig)
+    
+    def _setDimensions(self, yForce):
+        if yForce:
+            self.h = self.section.concrete.d
+            self.b = self.section.concrete.b
+        else:
+            self.h = self.section.concrete.b
+            self.b = self.section.concrete.d   
+
+    def _setClearCover(self):
+        self.clCover = self.c + self.dstir / 2
+        self.bRow = self.b - self.clCover*2 
+        self.hRow = self.h - self.clCover*2
+
+    def _initPlacement(self, yForce):
+        
+        # try:
+        #     self.dbar = self.factory.dbDict[barType]['d']
+        # except:
+        #     raise Exception('The input bar type could not be found in the database.')
+        
+        self._setDimensions(yForce)
+        self._setClearCover()
+ 
+    def _set(self, yForce: bool) -> list[StirrupPositionBox]:
+        section = self.section
+        
+        Nstirrup = len(section.stirrups)
+        self._initPlacement(yForce)
+        # self._setClearCover()
+        
+        # !!! Assumes that all stirrup have two legs.
+        Nrows = (2*Nstirrup - 1)
+        positions = []
+        for ii in range(Nstirrup):
+            
+            if yForce:
+                dB = self.bRow / Nrows
+                hStirrup = self.hRow
+                bStirrup = dB * (2*ii + 1)
+                xy0 = (self.clCover + (Nstirrup - ii - 1) * dB, self.clCover)
+                
+            else:
+                dh = self.hRow / Nrows
+                hStirrup = dh * (2*ii + 1)
+                bStirrup = self.bRow
+                xy0 = (self.clCover, self.clCover + (Nstirrup - ii - 1) * dh)
+            positions.append(StirrupPositionBox(hStirrup, bStirrup, xy0))
+                
+        return positions
+       
+    def setPosition(self, yForce: bool = True):      
+        """
+        Sets the position of stirrups.
+        
+        Parameters
+        ----------
+        Nbars : int
+            The number of bars to place.
+        barType : str
+            The type of bar to place.
+        location : RebarLocationEnum
+            The location bars are placed. 1 for bottom, 2 for top, 3 for left,
+            and 4 for right.
+
+        """
+        positions = self._set(yForce)
+        for pos, stirrup in zip(positions, self.section.stirrups):
+            stirrup.setPosition(pos)
+            
+            
+        # self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
+        
+        
+    # def _place(self, NStirrups: int, barType: str, location: RebarLocationEnum):
+    
+        
+    #     self._initPlacement(barType, location)
+        
+    #     NrowRequired  = math.ceil(Nbars / self.NbarsMax)
+    #     barsRemaining = Nbars 
+        
+    #     layers = []
+    #     # bars   = RebarLayer()
+        
+    #     dbar = self.dbar
+        
+    #     for ii in range(NrowRequired):
+    #         if barsRemaining > self.NbarsMax:
+    #             NBarRow = self.NbarsMax
+    #         else:
+    #             NBarRow = barsRemaining                
+            
+    #         dRow = (dbar + self.s)*ii
+            
+    #         if depthOverwrite:
+    #             dbase = depthOverwrite
+    #         else:
+    #             dbase = self.clearCover + dbar/2
+    #         # else:
+    #         if location==1 or location==3:
+    #             deff = (dbase + dRow)
+    #         else:
+    #             deff = self.h - (dbase + dRow)
+                
+    #         positions = self._getBarPositon(NBarRow, 
+    #                                         self.bRow - dbar, 
+    #                                         self.clearCover + dbar/2)
+            
+    #         if location==1 or location==2:
+    #             xyOut = [(x, deff) for x in positions]            
+    #         else:
+    #             xyOut = [(deff, y) for y in positions]
+                
+    #         bars = [self.factory.getRebar(barType, xy) for xy in xyOut]            
+    #         layers.append(RebarLayer(bars))
+    #         barsRemaining -= self.NbarsMax
+    
+    #     return RebarCollection(layers)
+       
+    def place(self, Nbars:int, barType:str, location:RebarLocationEnum = 1,
+              depthOverwrite = None):      
+        """
+        Place Nbars of the type "barType" within the rebar section. The location
+        enumeration is used to specify where the section the bars are placed,
+        i.e. at the bottom, top, left or right. By default the bars are placed
+        in the bottom layer.
+
+        Parameters
+        ----------
+        Nbars : int
+            The number of bars to place.
+        barType : str
+            The type of bar to place.
+        location : RebarLocationEnum
+            The location bars are placed. 1 for bottom, 2 for top, 3 for left,
+            and 4 for right.
+
+        """
+        
+        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
+     
+    
+
+     
+    
+
+# class StirrupPlacement:
+    
+#     def __init__(self, section: SectionConcrete, 
+#                  rebarFactory:  RebarFactory,
+#                  spacingConfig: RebarSpacingConfig = None):
+
+#         self.section      = section 
+#         self.factory = rebarFactory
+        
+#         if spacingConfig:
+#             self.setSpacingConfig(spacingConfig)
+
+#     @abstractmethod
+#     def place(self):
+#         pass
+    
+#     def setSpacingConfig(self, spacingConfig: RebarSpacingConfig):
+#         self.c = spacingConfig.cover
+#         self.s = spacingConfig.clearSpacing
+#         self.dstir = spacingConfig.dstirrup
+#         self.rcurve = spacingConfig.stirrupCurveRadius
 
 
 

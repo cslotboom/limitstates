@@ -1,8 +1,8 @@
 """
 Author: CS
-Date: 202050803
+Date: 20250803
 Description:
-    Checks if rebar is palced correctly.
+    Checks if rebar is placed correctly.
 """
 
 import limitstates.design.csa.a23.c24 as c24

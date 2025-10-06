@@ -10,6 +10,7 @@ For example, a csao86 CLT section will store it's information.
 
 import collections
 from abc import ABC
+from dataclasses import dataclass
 from typing import Iterable, Union
 from enum import IntEnum
 
@@ -99,10 +100,10 @@ class RebarGroup(collections.UserList):
         """
         super().__init__(item for item in iterable)
         self.ID = ID
-        self.Nbar = len(self)
+        self.Nbars = len(self)
 
     def __repr__(self):
-        return f"<limitstates rebar group with {self.Nbar} bars.>"
+        return f"<limitstates rebar group with {self.Nbars} bars.>"
         
     @property
     def mat(self):
@@ -280,7 +281,7 @@ class RebarCollection:
     def __init__(self, groups:list[RebarGroup]):
         self.groups = groups
         self._updateSelfOnBarChange()
-        # self.Nbar = sum([len(group) for group in self.groups])
+        # self.Nbars = sum([len(group) for group in self.groups])
     
     # TODO: DOCUMENT, rename?
     def addBars(self, groups:list[RebarGroup]):
@@ -303,7 +304,7 @@ class RebarCollection:
         self._updateSelfOnBarChange()
     
     def _updateSelfOnBarChange(self):
-        self.Nbar = sum([len(group) for group in self.groups])
+        self.Nbars = sum([len(group) for group in self.groups])
 
         
     def getBarByID(self, ID:str) -> RebarGroup|None:
@@ -565,9 +566,43 @@ class StirrupTypeEnum(IntEnum):
     Closed = 2
        
 
+class StirrupPosition:
+    xy0: tuple[float, float] = None
+    xy: tuple[list, list] = None
+        
+    
+@dataclass
+class StirrupPositionLine(StirrupPosition):
+    h: float
+    yForce: bool
+    xy0: tuple[float, float] = None
+    xy: tuple[list, list] = None
+
+    def setPosition():
+        pass
+
+@dataclass
+class StirrupPositionBox(StirrupPosition):
+    h:float
+    b:float
+    xy0: tuple[float, float]
+    xy: tuple[list, list] = None
+
+    
+    def setPosition():
+        pass
+    
+    
+def stirrupPositionFactory(stirrupType: StirrupTypeEnum):
+    if stirrupType == 1:
+        return StirrupPositionLine
+    else:
+        return StirrupPositionBox
+            
+
 class Stirrup:
-    def __init__(self, rebar: Rebar, stirrupType: StirrupTypeEnum, Nleg: int,
-                 spacing:float = 200, xy: tuple[list, list] = None, 
+    def __init__(self, rebar: Rebar, stirrupType: StirrupTypeEnum = 2, Nleg: int = 2,
+                 spacing:float = 200, position: StirrupPosition = None, 
                  lUnit: str = 'mm'):
         """
         If a length unit is provided, the rebar length units will be 
@@ -601,9 +636,10 @@ class Stirrup:
         self.stirrupType = stirrupType
         self.Nleg = Nleg
         self.spacing = spacing
-        self.xy = xy
                
         self._initUnits(lUnit)
+        
+        # self._initPosition(stirrupType)
                
     # def _initUnits(self, lUnit):
     #     """Initiates the length unit used for the layer"""
@@ -685,7 +721,9 @@ class Stirrup:
     
     def __repr__(self):
         return f'<limitstates {self._getRepString()}>'
-        
+    
+    def setPosition(self, position: StirrupPosition):
+        self.position = position
     
     # class StirrupGroup:
 #     rebar: Rebar
@@ -734,10 +772,10 @@ class StirrupGroup(collections.UserList):
         self._validateInputs(iterable)
         super().__init__(item for item in iterable)
         self.ID = ID
-        self.Nbar = len(self)
+        self.Nbars = len(self)
 
     def __repr__(self):
-        return f"<limitstates stirrup group with {self.Nbar} stirrups.>"
+        return f"<limitstates stirrup group with {self.Nbars} stirrups.>"
 
     def _validateInputs(self, iterable: Iterable[Stirrup]):
         d = iterable[0].d
@@ -756,7 +794,6 @@ class StirrupGroup(collections.UserList):
     def mat(self):
         return self[0].mat
     
-        
     @property
     def spacing(self):
         return self[0].spacing
