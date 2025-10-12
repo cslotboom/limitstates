@@ -639,6 +639,8 @@ class Stirrup:
                
         self._initUnits(lUnit)
         
+        self.position = position
+        
         # self._initPosition(stirrupType)
                
     # def _initUnits(self, lUnit):

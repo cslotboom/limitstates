@@ -6,13 +6,28 @@ from typing import Union
 
 from limitstates.objects.section import SectionConcrete, RebarLocationEnum
 from limitstates.objects import (RebarPlacerRow, RebarPlacementStrategyEnum, 
-                                 Rebar)
+                                 Rebar, StirrupPlacerRow, Stirrup, 
+                                 RebarFactory, StirrupGroup)
 from .material import MaterialRebarCSA24
 
 from .beamColumn import getSectionSpacingRules
 from .section import REBARFACTORY
 from .element import BeamColumnConcreteCsa24, DesignPropsConcrete24
 
+
+
+def _initRebarFactory(rebarMat, lUnit) -> RebarFactory:
+    rebarFactory = REBARFACTORY
+    
+    if lUnit != None:
+        rebarFactory.setLunit(lUnit)
+    
+    if rebarMat is None:
+        pass
+    else:
+        rebarFactory.setMaterial(rebarMat)
+    
+    return  rebarFactory
 
 class RebarPlacerRowCSA24(RebarPlacerRow):
         
@@ -21,14 +36,7 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
                  rebarMat: Union[MaterialRebarCSA24, None] = None, 
                  lUnit: str = None):
         
-        rebarFactory = REBARFACTORY
-        if lUnit != None:
-            rebarFactory.setLunit(lUnit)
-        
-        if rebarMat is None:
-            pass
-        else:
-            rebarFactory.setMaterial(rebarMat)
+        rebarFactory =  _initRebarFactory(rebarMat, lUnit)
         
         self.c = designProps.cover
         super().__init__(section, rebarFactory)
@@ -144,7 +152,7 @@ def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
 
     """
 
-    if isinstance(element.section, list):
+    if sectionInd != 0:
         raise Exception('Multiple sections in a concrete element is not supported.')
     section = element.section
     
@@ -152,3 +160,132 @@ def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
 
     placer.place(Nbars, barType, location)
         
+
+
+
+
+class StirrupPlacerRowCSA24(StirrupPlacerRow):
+        
+    def __init__(self, section: SectionConcrete, 
+                 designProps: DesignPropsConcrete24, 
+                 rebarMat: Union[MaterialRebarCSA24, None] = None, 
+                 lUnit: str = None):
+        
+        self.c = designProps.cover
+        rebarFactory =  _initRebarFactory(rebarMat, lUnit)
+        
+        super().__init__(section, rebarFactory = rebarFactory)
+        
+        
+    def _getBar(self, barType):
+        return self.factory.getRebar(barType, lUnit='mm')
+               
+    
+            
+    def _place(self, NStirrups: int, barType: str, 
+               yForce: bool, spacing:float, Nleg: int) -> StirrupGroup:   
+    
+        self._initPlacement(barType, yForce)
+        positions = self._getStirrupPositions(NStirrups, yForce)
+
+        stirrups = []
+        for ii in range(NStirrups):
+            rebar = self.factory.getRebar(barType)
+            stirrup = Stirrup(rebar, Nleg = Nleg, spacing = spacing, 
+                              position = positions[ii])
+            stirrups.append(stirrup)
+        return stirrups
+       
+    
+    
+    
+    def place(self,  NStirrups:int, barType:str, yForce: bool = True,
+              Nleg = 2, spacing = 200): 
+                
+        if not self.factory:
+            raise Exception('A rebar Factor has to be set to place rebar.')
+        
+        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing)
+        self.section.setStirrups(stirrups)
+        
+        # bar = self._getBar(barType)
+        # config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
+        # self.setSpacingConfig(config)    
+        
+        # self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
+    
+     
+    def _initPlacement(self, barType, yForce:bool):
+        try:
+            # self.dbar = self.factory.dbDict[barType]['d']
+            self.dstir = self.factory.dbDict[barType]['d']
+
+        except:
+            raise Exception('The input bar type could not be found in the database.')
+        
+        self._setDimensions(yForce)
+        self._setClearCover()
+    
+    
+    def setPosition(self,  yForce: bool = True): 
+        
+        # bar = self._getBar(barType)
+        # config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
+        # self.setSpacingConfig(config)    
+        
+        # self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
+
+        # super().__init__(section, rebarFactory)
+        barType  = self.section.stirrups[0].rebar.name
+        self._initPlacement(barType, yForce)
+        
+        positions = self._set(yForce)
+        for pos, stirrup in zip(positions, self.section.stirrups):
+            stirrup.setPosition(pos)
+            
+            
+            
+            
+   
+def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
+                            NStirrups: int, barType: str,
+                            sectionInd: int = 0,
+                            yForce: bool = True,
+                            Nleg: int = 2, spacing: float = 200,
+                            rebarMat: Union[MaterialRebarCSA24, None] = None, 
+                            lUnit: str = 'mm'):
+    """
+    Places lognditudinal rebar in a concerete Element by row. The number and 
+    type of bars is placed in the section in rows, until the row is filled up.
+
+    Parameters
+    ----------
+    element : BeamColumnConcreteCsa24
+        The element to place rebar in.
+    Nbars : int
+        The number of bars to place.
+    barType : str
+        The type of bar to place, e.g. 10M.
+    sectionInd : TYPE, optional
+        The index of the section used to place rebar in. The default is 0, 
+        which is the first section / only section if there is just one section.
+    location : RebarLocationEnum, optional
+        The face to place the rebar on: Bottom = 1, Top = 2, Left = 3, 
+        Right = 4
+    rebarMat : Union[MaterialRebarCSA24, None], optional
+        The rebar material to use, if specified this will overwrite the default
+        material specified.
+
+    """
+
+    if sectionInd != 0:
+        raise Exception('Multiple sections in a concrete element is not supported.')
+    
+    section = element.getSection(sectionInd)
+    
+    placer = StirrupPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
+
+    placer.place(NStirrups, barType, yForce, Nleg, spacing)
+                 
+            
+            

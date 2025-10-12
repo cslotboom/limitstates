@@ -49,6 +49,9 @@ def _add_stirrups(ele: c24.BeamColumnConcreteCsa24):
     # designProps = ele.designProps
     stirrups    = ls.StirrupGroup(c24.getStandardRebar('10M'), spacing = 250)
     section.setStirrups(stirrups)
+    
+    # placer = c24.RebarPlacerRowCSA24(section, designProps)
+
     # barType = '15M'
     # Nbar = 4
     # # rebar = c24.

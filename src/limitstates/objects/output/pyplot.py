@@ -537,7 +537,6 @@ def _isCLTSection(dispProps):
 def _isGlulamSection(dispProps):
     return hasattr(dispProps, 'sectionFire')
 
-
 def _isConcreteSection(dispProps):
     return isinstance(dispProps.section, SectionConcrete)
 
@@ -649,8 +648,7 @@ def _plotConcrete(dispProps, ax = None):
     # Plot the base object
     plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
     
-    
-    # Plot the internal fill lines
+    # Plot the rebar
     _plotfillPatches(ax, geom, canvasObjConfig)
     
     # plot the stirrups
