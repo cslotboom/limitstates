@@ -120,6 +120,7 @@ class EleDisplayPropsConcrete24(EleDisplayProps):
             self.configObject = PlotConfigObject(MATCOLOURS['concrete'],
                                                  cFillLines = MATCOLOURS['black'],
                                                  cFillPatch = MATCOLOURS['steel'],
+                                                 originLocation = 2,
                                                  patchType = 2)
     
 
@@ -204,7 +205,6 @@ class BeamColumnConcreteCsa24(BeamColumn):
 
         # Extract cover        
         cover = designProps.cover
-
         
         # Nothing is provided, use default propreties.
         if eleDisplayProps is None:

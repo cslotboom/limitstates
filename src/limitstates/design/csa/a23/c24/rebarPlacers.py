@@ -46,14 +46,15 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
                
         
     def place(self, Nbars: int, barType: str, 
-              location: RebarLocationEnum, depthOverwrite: float = None): 
+              location: RebarLocationEnum, depthOverwrite: float = None,
+              dstirrup = None, includeRadius:bool = True): 
         
-        # config = self.getSpacingRules(barType)
         bar = self._getBar(barType)
-        config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
+        config = getSectionSpacingRules(bar, self.section, self.c, includeRadius,
+                                        lUnit = 'mm')
         self.setSpacingConfig(config)
 
-        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
+        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite, dstirrup))
          
         
     
@@ -183,10 +184,11 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
     
             
     def _place(self, NStirrups: int, barType: str, 
-               yForce: bool, spacing:float, Nleg: int) -> StirrupGroup:   
+               yForce: bool, spacing:float, Nleg: int,
+               dlong) -> StirrupGroup:   
     
         self._initPlacement(barType, yForce)
-        positions = self._getStirrupPositions(NStirrups, yForce)
+        positions = self._getStirrupPositions(NStirrups, yForce, dlong)
 
         stirrups = []
         for ii in range(NStirrups):
@@ -195,31 +197,21 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
                               position = positions[ii])
             stirrups.append(stirrup)
         return stirrups
-       
-    
-    
-    
+
+
     def place(self,  NStirrups:int, barType:str, yForce: bool = True,
-              Nleg = 2, spacing = 200): 
+              Nleg: int = 2, spacing: float = 200, dlong:float = None): 
                 
         if not self.factory:
             raise Exception('A rebar Factor has to be set to place rebar.')
         
-        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing)
+        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dlong)
         self.section.setStirrups(stirrups)
-        
-        # bar = self._getBar(barType)
-        # config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
-        # self.setSpacingConfig(config)    
-        
-        # self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
-    
+       
      
     def _initPlacement(self, barType, yForce:bool):
         try:
-            # self.dbar = self.factory.dbDict[barType]['d']
             self.dstir = self.factory.dbDict[barType]['d']
-
         except:
             raise Exception('The input bar type could not be found in the database.')
         
@@ -227,19 +219,12 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
         self._setClearCover()
     
     
-    def setPosition(self,  yForce: bool = True): 
+    def setPosition(self,  yForce: bool = True, dlong:float = None): 
         
-        # bar = self._getBar(barType)
-        # config = getSectionSpacingRules(bar, self.section, self.c, lUnit = 'mm')
-        # self.setSpacingConfig(config)    
-        
-        # self.section.addBars(self._place(Nbars, barType, location, depthOverwrite))
-
-        # super().__init__(section, rebarFactory)
         barType  = self.section.stirrups[0].rebar.name
         self._initPlacement(barType, yForce)
         
-        positions = self._set(yForce)
+        positions = self._set(yForce, dlong)
         for pos, stirrup in zip(positions, self.section.stirrups):
             stirrup.setPosition(pos)
             
@@ -252,6 +237,7 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
                             sectionInd: int = 0,
                             yForce: bool = True,
                             Nleg: int = 2, spacing: float = 200,
+                            dlong:float = None,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
                             lUnit: str = 'mm'):
     """
@@ -285,7 +271,7 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
     
     placer = StirrupPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
 
-    placer.place(NStirrups, barType, yForce, Nleg, spacing)
+    placer.place(NStirrups, barType, yForce, Nleg, spacing, dlong)
                  
             
             

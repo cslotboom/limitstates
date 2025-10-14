@@ -6,6 +6,7 @@ Description: Tests if concrete elements are being plotted correctly.
 
 import limitstates as ls
 import matplotlib.pyplot as plt
+from matplotlib.ticker import (AutoMinorLocator, MultipleLocator)
 import numpy as np
 import pytest
 
@@ -31,7 +32,8 @@ def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
     
     member = ls.initSimplySupportedMember(5, 'm')
 
-    ele = c24.BeamColumnConcreteCsa24(member, concreteSection, designProps)    
+    ele = c24.BeamColumnConcreteCsa24(member, concreteSection, designProps) 
+    ele.eleDisplayProps.setPlotOrigin(3)
     return ele
    
 def _add_rebar(ele: c24.BeamColumnConcreteCsa24):
@@ -39,32 +41,14 @@ def _add_rebar(ele: c24.BeamColumnConcreteCsa24):
     designProps = ele.designProps
 
     barType = '25M'
-    Nbar = 4
+    Nbar = 6
     placer = c24.RebarPlacerRowCSA24(section, designProps)
-    placer.place(Nbar, barType, 1)
+    placer.place(Nbar, barType, 1, includeRadius=False)
     placer.place(2, barType, 2)
    
 def _add_stirrups(ele: c24.BeamColumnConcreteCsa24):
-    section = ele.getSection()
-    # designProps = ele.designProps
-    stirrups    = ls.StirrupGroup(c24.getStandardRebar('10M'), spacing = 250)
-    section.setStirrups(stirrups)
-    
-    # placer = c24.RebarPlacerRowCSA24(section, designProps)
-
-    # barType = '15M'
-    # Nbar = 4
-    # # rebar = c24.
-    # placer = ls.StirrupGroup()
-    # placer.place(Nbar, barType, 1)
-    # placer.place(2, barType, 2)
-
-# def test_section_empty():
-    
-#     ele = _init_element()
-    
-#     ls.plotSection(ele.getSection())
-#     assert True
+    # c24.placeStirrupRowInElement(ele, 2, '10M', dlong = 25)
+    c24.placeStirrupRowInElement(ele, 2, '15M', dlong = 25)
 
 
 def test_section_rebar():
@@ -76,12 +60,34 @@ def test_section_rebar():
     assert True
 
 
+def test_section_stirrups():
+    
+    ele = _init_element()
+    _add_stirrups(ele)
+    _add_rebar(ele)
+
+    # position = ele.getSection().stirrups[0].position
+    fig, ax = ls.plotElementSection(ele)
+    # ax.set(xlim=(0, 500), ylim=(0, 100))
+    # ax.grid(visible=True, color='r', linestyle='--')
+    # ax.grid(visible=True, which='minor', linestyle='--')
+   
+    
+    # ax.xaxis.set(minor_locator=MultipleLocator(20))
+    # ax.yaxis.set(minor_locator=MultipleLocator(20))
+    
+    
+    ax.minorticks_on()
+    assert True
+
+
 
 
 
 if __name__ == "__main__":
-    test_section_rebar()
     # test_section_rebar()
+    test_section_stirrups()
+
 
 
 else:

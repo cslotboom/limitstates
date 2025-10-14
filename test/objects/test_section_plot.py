@@ -176,7 +176,8 @@ def test_plot_hss_cisc():
 
     children = ax.get_children()
     
-    lines = children[1]
+    # lines = children[1]
+    lines = children[0]
     lineVerts =   lines.get_path()
     yMax = max(lineVerts._vertices[:,1])
     yMin = min(lineVerts._vertices[:,1])
@@ -191,13 +192,15 @@ def test_plot_hss_cisc():
     assert section.b/2 == pytest.approx(xMax)
     assert -section.b/2 == pytest.approx(xMin)
     
-    lines = children[2]
+    lines = children[0]
     lineVerts =   lines.get_path()
-    yMax = max(lineVerts._vertices[:,1])
-    yMin = min(lineVerts._vertices[:,1])
+    Nitem = len(lineVerts)
+    halfwayInd = Nitem//2
+    yMax = max(lineVerts._vertices[halfwayInd:,1])
+    yMin = min(lineVerts._vertices[halfwayInd:,1])
     
-    xMax = max(lineVerts._vertices[:,0])
-    xMin = min(lineVerts._vertices[:,0])   
+    xMax = max(lineVerts._vertices[halfwayInd:,0])
+    xMin = min(lineVerts._vertices[halfwayInd:,0])   
 
     assert section.d/2 - section.t == pytest.approx(yMax)
     assert -section.d/2+ section.t == pytest.approx(yMin)   

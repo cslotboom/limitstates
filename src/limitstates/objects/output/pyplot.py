@@ -125,14 +125,32 @@ class SectionPlotter:
         """
         
         c = self._getFillColour(objectConfig, kwargs)        
-        objectPatch = Polygon(xy, *args, color = c, **kwargs)
+        # objectPatch = Polygon(xy, *args, color = c, **kwargs)
+        objectPatch = Polygon(xy, *args, facecolor = c, 
+                              linewidth = objectConfig.lineWidth, 
+                              edgecolor='black',**kwargs)
         ax.add_patch(objectPatch)
         
+        # if (check1 and check2):
+        #     patch = mpatches.PathPatch(path, *args, facecolor = c, 
+        #                                linewidth = objectConfig.lineWidth, edgecolor='black', **kwargs)
+        # else:
+        #     patch = mpatches.PathPatch(path, *args, facecolor = c, **kwargs)
+            
+        # ax.add_patch(patch)
+        
+        
+        
         # Add the border line around the object
-        if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
-            ax.plot(xy[:,0], xy[:,1], 
-                    linewidth = objectConfig.lineWidth, 
-                    c=objectConfig.cLine)
+        # if objectConfig.showOutline and (("linewidth" not in kwargs) or ("lw" not in kwargs)):
+        #     ax.plot(xy[:,0], xy[:,1], 
+        #             linewidth = objectConfig.lineWidth, 
+        #             c=objectConfig.cLine)
+        
+        
+        
+        
+        
         
         return ax
     
@@ -161,26 +179,35 @@ def _plotSectionWithHole(ax, xy, objectConfig, c, *args, **kwargs):
     """
     See https://matplotlib.org/stable/gallery/shapes_and_collections/donut.html
     """
+    
+    # TODO: sort out the priorities of styling
+    # manual overrite in kwargs
+    # object config
+    # default
 
 
     # We assume that the two arrays have the same size
     xyOut, xyIn = np.split(xy, 2)
-    
     path  = _getPatchWithHole(xyOut, xyIn)
-    patch = mpatches.PathPatch(path, *args, color = c, **kwargs)
-    
-    ax.add_patch(patch)
     
     # Add the border line around the object
     check1 = objectConfig.showOutline
-    check2 = (("linewidth" not in kwargs) or ("lw" not in kwargs))
-    if check1 and check2:
-        ax.plot(xyOut[:,0], xyOut[:,1], 
-                linewidth = objectConfig.lineWidth, 
-                c=objectConfig.cLine)
-        ax.plot(xyIn[:,0], xyIn[:,1], 
-                linewidth = objectConfig.lineWidth, 
-                c=objectConfig.cLine)
+    check2 = (("linewidth" not in kwargs) or ("lw" not in kwargs) or ("edgecolor" not in kwargs))
+    if (check1 and check2):
+        patch = mpatches.PathPatch(path, *args, facecolor = c, 
+                                   linewidth = objectConfig.lineWidth, edgecolor='black', **kwargs)
+    else:
+        patch = mpatches.PathPatch(path, *args, facecolor = c, **kwargs)
+        
+    ax.add_patch(patch)
+    
+
+    #     ax.plot(xyOut[:,0], xyOut[:,1], 
+    #             linewidth = objectConfig.lineWidth, 
+    #             c=objectConfig.cLine)
+    #     ax.plot(xyIn[:,0], xyIn[:,1], 
+    #             linewidth = objectConfig.lineWidth, 
+    #             c=objectConfig.cLine)
     
     return ax
 
@@ -289,9 +316,6 @@ def _plotGeomFactory(section: SectionAbstract,
         raise Exception(f'Section of type {section} is not supported.')
         
     return geom
-
-
-
 
 def _plotterFactory(section: SectionAbstract, 
                     geom: md.GeomModel,
@@ -624,6 +648,22 @@ def _plotGlulam(dispProps, ax = None):
     return fig, ax
 
 
+def _plotStirrup(ax, stirrup, dx0, dy0, cPlotConfig, cObjConfig):
+    dstir = stirrup.rebar.d
+    bstir = stirrup.position.b
+    hstir = stirrup.position.h
+    rCurve = stirrup.rebar.rcurve
+    x0, y0 = stirrup.position.xy0
+    
+    # geom    = md.GeomModelStirrup(hstir, bstir, dstir, rCurve, x0, y0)
+    geom    = md.GeomModelStirrup(hstir, bstir, dstir, rCurve, dx0, dy0)
+    # plotter = SectionPlotterWithHole(geom, cPlotConfig)
+    plotter = SectionPlotter(geom, cPlotConfig)
+    xy = np.column_stack(geom.getVerticies())
+    # print(xy)
+    plotter.plot(ax, xy, cObjConfig, c = MATCOLOURS['steel'])
+    
+    
 def _plotConcrete(dispProps, ax = None):
     """
     Plots a concrete section, including the rebar.
@@ -633,11 +673,11 @@ def _plotConcrete(dispProps, ax = None):
     
     cPlotConfig = dispProps.configCanvas
     section     = dispProps.section.concrete
-    canvasObjConfig     = dispProps.configObject
+    cObjConfig  = dispProps.configObject
     
     # Find the offset for the base section
     b, d = section.b, section.d
-    dx0, dy0 = _getPlotOrigin(canvasObjConfig.originLocation, b, d, [0,0])
+    dx0, dy0 = _getPlotOrigin(cObjConfig.originLocation, b, d, [0,0])
 
     # Get the geometry and initialize the plot for the base section
     xyRebar, radii = _getConcreteInputs(dispProps.section)
@@ -646,14 +686,16 @@ def _plotConcrete(dispProps, ax = None):
     fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
-    plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
+    plotter.plot(ax, np.column_stack(geom.getVerticies()), cObjConfig)
     
     # Plot the rebar
-    _plotfillPatches(ax, geom, canvasObjConfig)
+    _plotfillPatches(ax, geom, cObjConfig)
     
     # plot the stirrups
-    
-    
+    if dispProps.section.stirrups:
+        for stirrup in dispProps.section.stirrups:
+            _plotStirrup(ax, stirrup, dx0, dy0, cPlotConfig, cObjConfig)
+
     return fig, ax
 
 
@@ -683,7 +725,7 @@ def _plotCLT(dispProps, ax = None):
     
     if hasFireSection:
         sFire  = dispProps.sectionFire
-        # plotLayers = _getPlotLayers(sFire)
+
         plotLayers = sFire.layers
         dx, dy       = _getFireSectionPositonCLT(dispProps.burnDimensions)
         geom         = md.GeomModelClt(plotLayers, b, dx + dx0, dy + dy0)
@@ -701,7 +743,7 @@ def _getPlotLayers(sFire):
     """
     Return the biggest between the strong/weak axis layer group
     """
-    layersOut = [layer for layer in sFire.sLayers]
+    # layersOut = [layer for layer in sFire.sLayers]
     if len(sFire.sLayers) == len(sFire.wLayers):
         return sFire.wLayers
     else:

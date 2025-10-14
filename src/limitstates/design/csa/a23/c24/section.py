@@ -16,7 +16,9 @@ def loadRebarFactory(matRebar:MaterialRebarCSA24,
     Reads the standard CSA A23. rebar, i.e. One of 10M, 15M, 20M, 25M, 30M, 
     35M, 45M, 55M.
 
-    Rebar bends are based on ACI tables 25.3.1
+    Rebar bends are based on ACI tables 25.3.1. Note that radius is the
+    inner radius of bars. See also:
+    https://www.irebar.com/Canada_StandardBarHooks.html
 
     Parameters
     ----------

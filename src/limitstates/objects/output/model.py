@@ -378,7 +378,7 @@ class GeomModelRoundedTube(GeomModel):
     dy0:float = 0
     NradiusPoints:int = 6
         
-    def _getcornerVerticies(self, x0, y0, r, dx0 = 1, dy0 = 1):
+    def _getcornerVerticies(self, x0, y0, r, dx0 = 1, dy0 = 1, a = np.pi/2):
         """
         dx /  dy are direction terms which are either 1 or negative 1
         
@@ -387,8 +387,8 @@ class GeomModelRoundedTube(GeomModel):
         
         """
         
-        x = np.sin(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dx0*r + x0
-        y = np.cos(np.linspace(0,1,self.NradiusPoints)*np.pi/2)*dy0*r + y0
+        x = np.sin(np.linspace(0,1,self.NradiusPoints)*a)*dx0*r + x0
+        y = np.cos(np.linspace(0,1,self.NradiusPoints)*a)*dy0*r + y0
         
         return list(x), list(y)
     
@@ -401,13 +401,14 @@ class GeomModelRoundedTube(GeomModel):
         tLeg_y = [ h/2]
         
         # Top right flange
-        xCorner = w/2   - r 
+        xCorner = w/2 - r 
         yCorner = h/2 - r 
         tr_x, tr_y = self._getcornerVerticies(xCorner, yCorner, r, 1, 1)
 
-        xCorner =  w/2  - r 
-        yCorner = -h/2 +r
-        br_x, br_y = self._getcornerVerticies(xCorner, yCorner, r, 1, -1)        
+        xCorner =  w/2 - r 
+        yCorner = -h/2 + r
+        br_x, br_y = self._getcornerVerticies(xCorner, yCorner, r, 1, -1)
+        
         br_x = br_x[::-1]
         br_y = br_y[::-1]
         
@@ -418,7 +419,8 @@ class GeomModelRoundedTube(GeomModel):
         
         xCorner = -w/2  + r 
         yCorner =  h/2 - r
-        tl_x, tl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1)            
+        tl_x, tl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1)
+          
         tl_x = tl_x[::-1]
         tl_y = tl_y[::-1]
     
@@ -460,10 +462,15 @@ class GeomModelHss(GeomModelRoundedTube):
 
 @dataclass
 class GeomModelStirrup(GeomModelRoundedTube):
+    """
+    Rebar bends are based on ACI tables 25.3.1. Note that radius is the
+    inner radius of bars. See also:
+    https://www.irebar.com/Canada_StandardBarHooks.html
+    """
     d:float
     b:float
     t:float
-    ro:float
+    r:float
 
     dx0:float = 0
     dy0:float = 0
@@ -471,6 +478,99 @@ class GeomModelStirrup(GeomModelRoundedTube):
 
     
     def __post_init__(self):
-        self.ri = self.r - self.t/2
-        self.ro = self.r + self.t/2
+        self.ri = self.r 
+        self.ro = self.r + self.t
     
+        
+    def _getVerticiesRoundedRectangle(self, h, w, r):
+        dx0  = self.dx0
+        dy0  = self.dy0
+        
+        # Start at the top left corner
+        xStart = -w/2 + r        
+        yStart =  h/2 - r      
+
+        # draw a quarter circle to the left
+        tls1_x, tls1_y = self._getcornerVerticies(xStart, yStart, r, -1, 1, 3*np.pi / 4)
+        tls1_x = tls1_x[::-1]
+        tls1_y = tls1_y[::-1]
+
+        # Draw a eighth circle to the left
+        # xCorner = tls1_x[0] 
+        # yCorner = tls1_y[0] 
+        # tls2_x, tls2_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1, np.pi / 4)
+        # tls2_x = tls2_x[::-1]
+        # tls2_y = tls2_y[::-1]
+        
+        # The lower extension. this is the real start point
+        start_x = [tls1_x[0] + self.t * 4 / 2**0.5]
+        start_y = [tls1_y[0] - self.t * 4 / 2**0.5]
+
+
+
+        # The top of the curve
+        xStart = -w/2 + r        
+        yStart =  h/2        
+        tLeg_x = [xStart]
+        tLeg_y = [yStart]
+        
+        
+        # Top right flange
+        xCorner = w/2 - r 
+        yCorner = h/2 - r 
+        tr_x, tr_y = self._getcornerVerticies(xCorner, yCorner, r, 1, 1)
+
+        xCorner =  w/2 - r 
+        yCorner = -h/2 + r
+        br_x, br_y = self._getcornerVerticies(xCorner, yCorner, r, 1, -1)
+        
+        br_x = br_x[::-1]
+        br_y = br_y[::-1]
+        
+        # Botom left corner
+        xCorner = -w/2 + r
+        yCorner = -h/2 + r
+        bl_x, bl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, -1)        
+        
+        # top left corner
+        xCorner = -w/2 + r 
+        yCorner =  h/2 - r
+        tl_x, tl_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1)
+          
+        tl_x = tl_x[::-1]
+        tl_y = tl_y[::-1]
+    
+         
+        xCorner = -w/2 + r 
+        yCorner =  h/2 - r
+        tle_x, tle_y = self._getcornerVerticies(xCorner, yCorner, r, 1, 1, np.pi / 4)
+          
+        end_x = [tle_x[-1] + self.t * 4 / 2**0.5]
+        end_y = [tle_y[-1] - self.t * 4 / 2**0.5]
+        # tll_x = tll_x[::-1]
+        # tll_y = tll_y[::-1]    
+    
+    
+        xloop = (tLeg_x + tr_x + br_x + bl_x + tl_x)
+        yloop = (tLeg_y + tr_y + br_y + bl_y + tl_y)
+        x = start_x  + tls1_x + xloop + tle_x + end_x
+        y = start_y  + tls1_y + yloop + tle_y + end_y
+        
+        return list(np.array(x) + dx0), list(np.array(y) + dy0)    
+
+    
+    def getVerticies(self):
+        """ Gets the a list of (x, y) verticies in clockwise order"""
+        h   = self.d 
+        w   = self.b
+        t   = self.t 
+
+        ro:float = self.ro
+        ri:float = self.ri
+
+        xyOutter = self._getVerticiesRoundedRectangle(h, w, ro)  
+        xyInner  = self._getVerticiesRoundedRectangle(h - 2*t, w- 2*t, ri)
+        xyInner  = [xyInner[0][::-1], xyInner[1][::-1]]
+        xy = np.column_stack((xyOutter, xyInner))
+        
+        return xy[0,:], xy[1,:]

@@ -9,7 +9,7 @@ import limitstates.design.csa.a23.c24 as c24
 import limitstates as ls
 
 
-
+cover = 30
 
 
 # def test_beam_underReinforced():
@@ -46,7 +46,7 @@ def _ManuallySetRebar(concreteSection, rebarFactory):
     
 def _initRebarPlacer(section):
     
-    designProps = c24.DesignPropsConcrete24(cover = 30)
+    designProps = c24.DesignPropsConcrete24(cover = cover)
         
     return c24.StirrupPlacerRowCSA24(section, designProps)
 
@@ -57,18 +57,38 @@ def _standardChecks(section):
     stirrup1 = section.stirrups[0]
     
     assert stirrup1.position
-    assert stirrup1.position.h == (500 - 10 - 60)
-    assert stirrup1.position.b == (400 - 10 - 60) / 3
-    assert stirrup1.position.xy0[0] == 35 + (400 - 10 - 60) / 3
+    assert stirrup1.position.h == (500 - 10 - cover*2)
+    assert stirrup1.position.b == (400 - 10 - cover*2) / 3
+    assert stirrup1.position.xy0[0] == cover + 5 + (400 - 10 - cover*2) / 3
+    assert stirrup1.position.xy0[1] == cover + 5
+
+    stirrup2 = section.stirrups[1]
+    
+    assert stirrup2.position
+    assert stirrup2.position.h == 500 - 10 - cover*2
+    assert stirrup2.position.b == (400 - 10 - cover*2)
+    assert stirrup2.position.xy0[0] == (cover + 5)
+    assert stirrup2.position.xy0[1] == (cover + 5)
+
+
+def _dlong_checks(section,dlong):
+
+    stirrup1 = section.stirrups[0]
+    
+    assert stirrup1.position
+    assert stirrup1.position.h == (500 - 10 - cover*2)
+    assert stirrup1.position.b == (400 - 10 - cover*2) / 3 + dlong
+    assert stirrup1.position.xy0[0] == 35 + (400 - 10 - cover*2) / 3
     assert stirrup1.position.xy0[1] == 35
 
     stirrup2 = section.stirrups[1]
     
     assert stirrup2.position
-    assert stirrup2.position.h == 500 - 10 - 60
-    assert stirrup2.position.b == (400 - 10 - 60)
+    assert stirrup2.position.h == 500 - 10 - cover*2
+    assert stirrup2.position.b == (400 - 10 - cover*2)
     assert stirrup2.position.xy0[0] == (35)
     assert stirrup2.position.xy0[1] == (35)
+
 
 
 def test_placement_init():
@@ -143,7 +163,7 @@ def test_place_function():
 
     section = _initSection()
     member = ls.initSimplySupportedMember(5, 'm')
-    designProps = c24.DesignPropsConcrete24(cover = 30)
+    designProps = c24.DesignPropsConcrete24(cover = cover)
     ele = c24.BeamColumnConcreteCsa24(member, section, designProps = designProps)
     c24.placeStirrupRowInElement(ele, 2, '10M')
     
@@ -153,8 +173,37 @@ def test_place_function():
     section = ele.getSection()
         
     _standardChecks(section)
-
     
+
+def test_place_dlong():
+    """
+    Confirms that the dlong kwarg can he used to modify stirrup placement.
+    """
+    dlong  =30
+    section = _initSection()
+    placer = _initRebarPlacer(section)
+    
+    placer.place(2, '10M', dlong = dlong)
+    
+    section = placer.section    
+    _dlong_checks(section, dlong)
+
+
+def test_place_function_dlong():
+    """
+    Confirms that the dlong kwarg can he used to modify stirrup placement.
+    """
+    dlong  = 30
+
+    section = _initSection()
+    member = ls.initSimplySupportedMember(5, 'm')
+    designProps = c24.DesignPropsConcrete24(cover = cover)
+    
+    ele = c24.BeamColumnConcreteCsa24(member, section, designProps = designProps)
+    c24.placeStirrupRowInElement(ele, 2, '10M', dlong = dlong)    
+    
+    _dlong_checks(section, dlong)
+
 
 
 if __name__ == '__main__':
@@ -164,4 +213,7 @@ if __name__ == '__main__':
     
     test_place()
     test_place_function()
+    
+    test_place_dlong()
+    test_place_function_dlong()
 
