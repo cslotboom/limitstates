@@ -731,7 +731,8 @@ class StirrupPlacer:
         self.dstir = spacingConfig.dstirrup
         self.rcurve = spacingConfig.stirrupCurveRadius
 
-    
+
+# TODO: rename into box?
 class StirrupPlacerRow(RebarPlacer):
     
     def __init__(self, section: SectionConcrete, 
@@ -750,18 +751,22 @@ class StirrupPlacerRow(RebarPlacer):
     def _setClearCover(self):
         self.clCover = self.c
         # self.clCover = self.c + self.dstir / 2
-        self.bRow = self.b - self.clCover*2 
-        self.hRow = self.h - self.clCover*2
+        self.bRow = self.b - self.clCover*2 - self.dstir
+        self.hRow = self.h - self.clCover*2 - self.dstir
     
  
     def _initPlacement(self, yForce:bool):        
         self._setDimensions(yForce)
         self._setClearCover()
    
-    def _getStirrupPositions(self, Nstirrup, yForce, dlong = None):
+    def _getStirrupPositions(self, Nstirrup, yForce, dshift = None):
+        """
+        The stirrup position is to the C.L. of a rectangle
+
+        """
         
-        if not dlong:
-            dlong = 0
+        if not dshift:
+            dshift = 0
         
         # !!! Assumes that all stirrup have two legs.
         Nrows = (2*Nstirrup - 1)
@@ -773,29 +778,29 @@ class StirrupPlacerRow(RebarPlacer):
                 dB = self.bRow / Nrows
                 hStirrup = self.hRow
                 # Expand all interior except for the outside
-                bStirrup = dB * (2*ii + 1) + bool(Nstirrup - ii - 1) * dlong
+                bStirrup = dB * (2*ii + 1) + bool(Nstirrup - ii - 1) * dshift
                 xy0 = (self.clCover + (Nstirrup - ii - 1) * dB, self.clCover)
                 
             else:
                 dh = self.hRow / Nrows
-                hStirrup = dh * (2*ii + 1) + bool(Nstirrup - ii - 1)*dlong
+                hStirrup = dh * (2*ii + 1) + bool(Nstirrup - ii - 1)*dshift
                 bStirrup = self.bRow
                 xy0 = (self.clCover, self.clCover + (Nstirrup - ii - 1) * dh)
             positions.append(StirrupPositionBox(hStirrup, bStirrup, xy0))
                 
         return positions
     
-    def _set(self, yForce: bool, dlong) -> list[StirrupPositionBox]:
+    def _set(self, yForce: bool, dshift) -> list[StirrupPositionBox]:
         section = self.section
         
-        if not dlong:
-            dlong = 0
+        if not dshift:
+            dshift = 0
         
         Nstirrup = len(section.stirrups)
                     
-        return self._getStirrupPositions(Nstirrup, yForce, dlong)
+        return self._getStirrupPositions(Nstirrup, yForce, dshift)
        
-    def setPosition(self, yForce: bool = True, dlong = None):      
+    def setPosition(self, yForce: bool = True, dshift = None):      
         """
         Sets the position of stirrups.
         
@@ -820,10 +825,10 @@ class StirrupPlacerRow(RebarPlacer):
         
     def _place(self, NStirrups: int, barType: str, 
                yForce: bool, spacing:float, Nleg: int,
-               dlong: float) -> StirrupGroup:   
+               dshift: float) -> StirrupGroup:   
     
         self._initPlacement(yForce)
-        positions = self._getStirrupPositions(NStirrups, yForce, dlong)
+        positions = self._getStirrupPositions(NStirrups, yForce, dshift)
 
         stirrups = []
         for ii in range(NStirrups):
@@ -836,14 +841,14 @@ class StirrupPlacerRow(RebarPlacer):
         return stirrups
        
     def place(self, NStirrups:int, barType:str, yForce: bool = True,
-              Nleg = 2, spacing = 200, dlong = None):      
+              Nleg = 2, spacing = 200, dshift = None):      
         """
         Place Nbars of the type "barType" within the rebar section. The location
         enumeration is used to specify where the section the bars are placed,
         i.e. at the bottom, top, left or right. By default the bars are placed
         in the bottom layer.
         
-        dlong must be manually set for the stirrups - it won't figure out the
+        dshift must be manually set for the stirrups - it won't figure out the
         bar placement.
 
         Parameters
@@ -861,7 +866,7 @@ class StirrupPlacerRow(RebarPlacer):
         if not self.factory:
             raise Exception('A rebar Factor has to be set to place rebar.')
         
-        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dlong)
+        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dshift)
         self.section.setStirrups(stirrups)
      
     

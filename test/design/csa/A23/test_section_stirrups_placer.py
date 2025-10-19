@@ -10,7 +10,8 @@ import limitstates as ls
 
 
 cover = 30
-
+dstir = 10 
+clCover = cover + dstir / 2 
 
 # def test_beam_underReinforced():
 
@@ -39,7 +40,7 @@ def _ManuallySetRebar(concreteSection, rebarFactory):
     for bar in range(Nstirrup):
         rebar = rebarFactory.getRebar('10M')
         stirrups.append(ls.Stirrup(rebar))
-    # stirrup  = ls.st
+
     stirrups = ls.StirrupGroup(stirrups)
     
     concreteSection.setStirrups(stirrups)
@@ -57,27 +58,27 @@ def _standardChecks(section):
     stirrup1 = section.stirrups[0]
     
     assert stirrup1.position
-    assert stirrup1.position.h == (500 - 10 - cover*2)
-    assert stirrup1.position.b == (400 - 10 - cover*2) / 3
-    assert stirrup1.position.xy0[0] == cover + 5 + (400 - 10 - cover*2) / 3
-    assert stirrup1.position.xy0[1] == cover + 5
+    assert stirrup1.position.h == (500 - clCover*2)
+    assert stirrup1.position.b == (400 - clCover*2) / 3
+    assert stirrup1.position.xy0[0] == clCover + (400 - clCover*2) / 3
+    assert stirrup1.position.xy0[1] == clCover
 
     stirrup2 = section.stirrups[1]
     
     assert stirrup2.position
-    assert stirrup2.position.h == 500 - 10 - cover*2
-    assert stirrup2.position.b == (400 - 10 - cover*2)
-    assert stirrup2.position.xy0[0] == (cover + 5)
-    assert stirrup2.position.xy0[1] == (cover + 5)
+    assert stirrup2.position.h == 500 - clCover*2
+    assert stirrup2.position.b == (400 - clCover*2)
+    assert stirrup2.position.xy0[0] == (clCover)
+    assert stirrup2.position.xy0[1] == (clCover)
 
 
-def _dlong_checks(section,dlong):
+def _dshift_checks(section, dshift):
 
     stirrup1 = section.stirrups[0]
     
     assert stirrup1.position
-    assert stirrup1.position.h == (500 - 10 - cover*2)
-    assert stirrup1.position.b == (400 - 10 - cover*2) / 3 + dlong
+    assert stirrup1.position.h == (500 - clCover*2)
+    assert stirrup1.position.b == (400 - clCover*2) / 3 + dshift
     assert stirrup1.position.xy0[0] == 35 + (400 - 10 - cover*2) / 3
     assert stirrup1.position.xy0[1] == 35
 
@@ -101,13 +102,14 @@ def test_placement_init():
     
     
     placer._initPlacement(barType, True)
-    assert placer.clCover == 35    
+    assert placer.clCover == cover    
+    # assert placer.clCover == 30
 
 def test_set_position():
     section = _initSection()
     factory   = _initRebarFactory()
-
     _ManuallySetRebar(section, factory)
+
     placer = _initRebarPlacer(section)
     placer.setPosition()
     
@@ -175,34 +177,35 @@ def test_place_function():
     _standardChecks(section)
     
 
-def test_place_dlong():
+def test_place_dshift():
     """
-    Confirms that the dlong kwarg can he used to modify stirrup placement.
+    Confirms that the dshift kwarg can he used to modify stirrup placement.
+    This will shift the locations of to avoid possible clashes
     """
-    dlong  =30
+    dshift  = 30
     section = _initSection()
     placer = _initRebarPlacer(section)
     
-    placer.place(2, '10M', dlong = dlong)
+    placer.place(2, '10M', dshift = dshift)
     
     section = placer.section    
-    _dlong_checks(section, dlong)
+    _dshift_checks(section, dshift)
 
 
-def test_place_function_dlong():
+def test_place_function_dshift():
     """
-    Confirms that the dlong kwarg can he used to modify stirrup placement.
+    Confirms that the dshift kwarg can he used to modify stirrup placement.
     """
-    dlong  = 30
+    dshift  = 30
 
     section = _initSection()
     member = ls.initSimplySupportedMember(5, 'm')
     designProps = c24.DesignPropsConcrete24(cover = cover)
     
     ele = c24.BeamColumnConcreteCsa24(member, section, designProps = designProps)
-    c24.placeStirrupRowInElement(ele, 2, '10M', dlong = dlong)    
+    c24.placeStirrupRowInElement(ele, 2, '10M', dshift = dshift)    
     
-    _dlong_checks(section, dlong)
+    _dshift_checks(section, dshift)
 
 
 
@@ -214,6 +217,6 @@ if __name__ == '__main__':
     test_place()
     test_place_function()
     
-    test_place_dlong()
-    test_place_function_dlong()
+    test_place_dshift()
+    test_place_function_dshift()
 

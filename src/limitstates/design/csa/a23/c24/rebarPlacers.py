@@ -185,10 +185,10 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
             
     def _place(self, NStirrups: int, barType: str, 
                yForce: bool, spacing:float, Nleg: int,
-               dlong) -> StirrupGroup:   
+               dshift) -> StirrupGroup:   
     
         self._initPlacement(barType, yForce)
-        positions = self._getStirrupPositions(NStirrups, yForce, dlong)
+        positions = self._getStirrupPositions(NStirrups, yForce, dshift)
 
         stirrups = []
         for ii in range(NStirrups):
@@ -200,12 +200,12 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
 
 
     def place(self,  NStirrups:int, barType:str, yForce: bool = True,
-              Nleg: int = 2, spacing: float = 200, dlong:float = None): 
+              Nleg: int = 2, spacing: float = 200, dshift:float = None): 
                 
         if not self.factory:
             raise Exception('A rebar Factor has to be set to place rebar.')
         
-        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dlong)
+        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dshift)
         self.section.setStirrups(stirrups)
        
      
@@ -219,12 +219,12 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
         self._setClearCover()
     
     
-    def setPosition(self,  yForce: bool = True, dlong:float = None): 
+    def setPosition(self,  yForce: bool = True, dshift:float = None): 
         
         barType  = self.section.stirrups[0].rebar.name
         self._initPlacement(barType, yForce)
         
-        positions = self._set(yForce, dlong)
+        positions = self._set(yForce, dshift)
         for pos, stirrup in zip(positions, self.section.stirrups):
             stirrup.setPosition(pos)
             
@@ -237,7 +237,7 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
                             sectionInd: int = 0,
                             yForce: bool = True,
                             Nleg: int = 2, spacing: float = 200,
-                            dlong:float = None,
+                            dshift:float = None,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
                             lUnit: str = 'mm'):
     """
@@ -271,7 +271,7 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
     
     placer = StirrupPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
 
-    placer.place(NStirrups, barType, yForce, Nleg, spacing, dlong)
+    placer.place(NStirrups, barType, yForce, Nleg, spacing, dshift)
                  
             
             

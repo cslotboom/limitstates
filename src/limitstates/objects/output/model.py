@@ -568,8 +568,8 @@ class GeomModelStirrup(GeomModelRoundedTube):
         ro:float = self.ro
         ri:float = self.ri
 
-        xyOutter = self._getVerticiesRoundedRectangle(h, w, ro)  
-        xyInner  = self._getVerticiesRoundedRectangle(h - 2*t, w- 2*t, ri)
+        xyOutter = self._getVerticiesRoundedRectangle(h + t, w + t, ro)  
+        xyInner  = self._getVerticiesRoundedRectangle(h - t, w - t, ri)
         xyInner  = [xyInner[0][::-1], xyInner[1][::-1]]
         xy = np.column_stack((xyOutter, xyInner))
         

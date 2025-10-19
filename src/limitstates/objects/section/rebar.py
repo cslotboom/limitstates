@@ -607,6 +607,8 @@ class Stirrup:
         """
         If a length unit is provided, the rebar length units will be 
         overwritten.
+        
+        Rebar is fully contained by the position variable
 
         Parameters
         ----------
