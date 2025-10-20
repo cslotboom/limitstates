@@ -126,9 +126,14 @@ class SectionPlotter:
         
         c = self._getFillColour(objectConfig, kwargs)        
         # objectPatch = Polygon(xy, *args, color = c, **kwargs)
+        if 'edgecolor' not in kwargs:
+            kwargs['edgecolor'] = 'black'
+        # if 'facecolor' not in kwargs:
+        #     kwargs['edgecolor'] = 'black'
         objectPatch = Polygon(xy, *args, facecolor = c, 
-                              linewidth = objectConfig.lineWidth, 
-                              edgecolor='black',**kwargs)
+                              linewidth = objectConfig.lineWidth, **kwargs)
+        
+        
         ax.add_patch(objectPatch)
         
         # if (check1 and check2):
@@ -655,13 +660,23 @@ def _plotStirrup(ax, stirrup, dx0, dy0, cPlotConfig, cObjConfig):
     rCurve = stirrup.rebar.rcurve
     x0, y0 = stirrup.position.xy0
     
-    # geom    = md.GeomModelStirrup(hstir, bstir, dstir, rCurve, x0, y0)
+    
     geom    = md.GeomModelStirrup(hstir, bstir, dstir, rCurve, dx0, dy0)
-    # plotter = SectionPlotterWithHole(geom, cPlotConfig)
-    plotter = SectionPlotter(geom, cPlotConfig)
+        
+    basePlotter = SectionPlotterWithHole(geom, cPlotConfig)
+    extensionPlotter = SectionPlotter(geom, cPlotConfig)
+
+    xy = np.column_stack(geom.getStartVerticies())
+    extensionPlotter.plot(ax, xy, cObjConfig, c = MATCOLOURS['steel'])
+
     xy = np.column_stack(geom.getVerticies())
-    # print(xy)
-    plotter.plot(ax, xy, cObjConfig, c = MATCOLOURS['steel'])
+    basePlotter.plot(ax, xy, cObjConfig, c = MATCOLOURS['steel'])
+
+    xy = np.column_stack(geom.getEndVerticies())
+    extensionPlotter.plot(ax, xy, cObjConfig, 
+                          c = MATCOLOURS['steel'], **{'closed':False})
+    # ax.plot(xy[:,0], xy[:,1], linewidth = cObjConfig.lineWidth, c = 'black' )
+    
     
     
 def _plotConcrete(dispProps, ax = None):
@@ -766,7 +781,7 @@ def plotElementSection(element:BeamColumn,
     Parameters
     ----------
     element : BeamColumn
-        The sectin to be plotted.
+        The section to be plotted.
     ax : Axes, optional
         An overwrite that allows plots to be created on a specific figure. 
         The default is None, which creates a new plot.

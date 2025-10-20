@@ -64,7 +64,7 @@ def test_placement_bottom():
     dbar = 30
 
     placer = _init_placer()
-    placer.place(Nbar, barType, locationEnum)
+    placer.place(Nbar, barType, locationEnum, includeRadius = False)
     
     section = placer.section
     
@@ -88,7 +88,7 @@ def test_placement_top():
     dbar = 30
 
     placer = _init_placer()
-    placer.place(Nbar, barType, locationEnum)
+    placer.place(Nbar, barType, locationEnum, includeRadius = False)
     
     section = placer.section
     
@@ -113,7 +113,7 @@ def test_placement_side():
     dbar = 30
 
     placer = _init_placer()
-    placer.place(Nbar, barType, locationEnum)
+    placer.place(Nbar, barType, locationEnum, includeRadius = False)
     
     section = placer.section
     
@@ -134,7 +134,7 @@ def test_placement_side():
     dbar = 30
 
     placer = _init_placer()
-    placer.place(Nbar, barType, locationEnum)
+    placer.place(Nbar, barType, locationEnum, includeRadius = False)
     
     section = placer.section
     
@@ -158,7 +158,8 @@ def test_element_placement_bottom():
     
     element = _init_element()
     c24.placeRebarInElement(element, Nbar, barType, 
-                            placementKwargs = {'location':locationEnum})
+                            placementKwargs = {'location':locationEnum},
+                            includeRadius = False)
     
     section = element.section
     
@@ -182,7 +183,8 @@ def test_element_placement_top():
     
     element = _init_element()
     c24.placeRebarInElement(element, Nbar, barType, 
-                            placementKwargs = {'location':locationEnum})
+                            placementKwargs = {'location':locationEnum},
+                            includeRadius = False)
     
     section = element.section
     
@@ -211,7 +213,8 @@ def test_element_placement_side():
 
     element = _init_element()
     c24.placeRebarInElement(element, Nbar, barType, 
-                            placementKwargs = {'location':locationEnum})
+                            placementKwargs = {'location':locationEnum},
+                            includeRadius = False)
         
     section = element.section
     
@@ -234,7 +237,8 @@ def test_element_placement_side():
 
     element = _init_element()
     c24.placeRebarInElement(element, Nbar, barType, 
-                            placementKwargs = {'location':locationEnum})
+                            placementKwargs = {'location':locationEnum},
+                            includeRadius = False)
         
     section = element.section
     

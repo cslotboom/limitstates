@@ -102,7 +102,7 @@ def test_placement_init():
     
     
     placer._initPlacement(barType, True)
-    assert placer.clCover == cover    
+    assert placer.clCover == clCover    
     # assert placer.clCover == 30
 
 def test_set_position():

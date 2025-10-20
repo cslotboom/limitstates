@@ -30,8 +30,8 @@ def _init_placer():
     
     c = 30
     s = 1.4*30
-    dstirrup = 10
-    configPlacement = ls.RebarSpacingConfig(s, c, dstirrup)
+    dstir = 10
+    configPlacement = ls.RebarSpacingConfig(s, c, dstir)
     
     return ls.RebarPlacerRow(concreteSection, rebarFactory, configPlacement)
 

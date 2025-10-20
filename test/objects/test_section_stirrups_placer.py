@@ -38,8 +38,8 @@ def _init_placer():
     
     c = 30
     s = 1.4*30
-    dstirrup = 10
-    configPlacement = ls.RebarSpacingConfig(s, c, dstirrup)
+    dstir = 10
+    configPlacement = ls.RebarSpacingConfig(s, c, dstir)
     
     return ls.StirrupPlacerRow(concreteSection, configPlacement)
     
@@ -60,8 +60,8 @@ def _init_placer_no_stirrup():
     
     c = 30
     s = 1.4*30
-    dstirrup = 10
-    configPlacement = ls.RebarSpacingConfig(s, c, dstirrup)
+    dstir = 10
+    configPlacement = ls.RebarSpacingConfig(s, c, dstir)
     
     return ls.StirrupPlacerRow(concreteSection, configPlacement, rebarFactory)
 

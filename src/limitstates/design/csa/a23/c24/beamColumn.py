@@ -175,7 +175,7 @@ def getSmin(db:float, amax:float):
     
 def getSectionSpacingRules(rebar: Rebar, section: SectionConcrete,
                             cover:float = 25, includeRadius = False, 
-                            dstirrup = None, lUnit = 'mm') -> RebarSpacingConfig:
+                            dstir = None, lUnit = 'mm') -> RebarSpacingConfig:
     
     rlFactor = rebar.lConvert(lUnit)
     d = rebar.d * rlFactor
@@ -187,21 +187,21 @@ def getSectionSpacingRules(rebar: Rebar, section: SectionConcrete,
     s = getSmin(d, amax)
     c = cover
     
-    if dstirrup:
-        dstirrup = dstirrup
+    if dstir:
+        dstir = dstir
     elif section.stirrups:
         stirrup  = section.stirrups[0]
         lFactor = stirrup.rebar.lConvert(lUnit)
-        dstirrup = stirrup.rebar.d * lFactor
+        dstir = stirrup.rebar.d * lFactor
     else:
-        dstirrup = 0
+        dstir = 0
         
     if section.stirrups and includeRadius:
         rcurve = section.stirrups[0].rebar.rcurve * lFactor
     else:
         rcurve = 0
     
-    return RebarSpacingConfig(s, c, dstirrup, rcurve, lUnit)
+    return RebarSpacingConfig(s, c, dstir, rcurve, lUnit)
         
     
 def getElementSpacingRules(rebar: Rebar, element: BeamColumnConcreteCsa24, 

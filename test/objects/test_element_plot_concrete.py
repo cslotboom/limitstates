@@ -48,8 +48,8 @@ def _add_rebar(ele: c24.BeamColumnConcreteCsa24):
     placer.place(2, barType, 2, includeRadius=includeRadius)
    
 def _add_stirrups(ele: c24.BeamColumnConcreteCsa24):
-    # c24.placeStirrupRowInElement(ele, 2, '10M', dshift = 25)
-    c24.placeStirrupRowInElement(ele, 1, '15M', dshift = 25)
+    # c24.placeStirrupRowInElement(ele, 2, '15M', dshift = 40)
+    c24.placeStirrupRowInElement(ele, 1, '15M')
 
 
 def test_section_rebar():
@@ -80,7 +80,7 @@ def test_section_stirrups():
     
     ax.minorticks_on()
     assert True
-
+    
 
 
 

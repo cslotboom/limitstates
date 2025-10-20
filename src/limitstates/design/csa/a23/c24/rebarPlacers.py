@@ -47,14 +47,15 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
         
     def place(self, Nbars: int, barType: str, 
               location: RebarLocationEnum, depthOverwrite: float = None,
-              dstirrup = None, includeRadius:bool = True): 
+              dstirOverwrite:float = None, includeRadius:bool = True): 
         
         bar = self._getBar(barType)
         config = getSectionSpacingRules(bar, self.section, self.c, includeRadius,
                                         lUnit = 'mm')
         self.setSpacingConfig(config)
 
-        self.section.addBars(self._place(Nbars, barType, location, depthOverwrite, dstirrup))
+        self.section.addBars(self._place(Nbars, barType, location, 
+                                         depthOverwrite, dstirOverwrite))
          
         
     
@@ -63,6 +64,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         Nbars: int, barType: str,
                         sectionInd: int = 0,
                         placementStrategy: RebarPlacementStrategyEnum = 1,
+                        includeRadius:bool = False,
                         placementKwargs: dict = None,
                         rebarMat: Union[MaterialRebarCSA24, None] = None, 
                         lUnit: str = 'mm'):
@@ -120,7 +122,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
         placer   = RebarPlacerRowCSA24(section, element.designProps, 
                                        rebarMat, lUnit)
         location = placementKwargs['location']
-        placer.place(Nbars, barType, location)
+        placer.place(Nbars, barType, location, includeRadius = includeRadius)
 
 
 def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
@@ -216,7 +218,7 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
             raise Exception('The input bar type could not be found in the database.')
         
         self._setDimensions(yForce)
-        self._setClearCover()
+        self._setCenterLineCover()
     
     
     def setPosition(self,  yForce: bool = True, dshift:float = None): 

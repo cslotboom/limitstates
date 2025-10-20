@@ -479,7 +479,7 @@ class GeomModelStirrup(GeomModelRoundedTube):
     
     def __post_init__(self):
         self.ri = self.r 
-        self.ro = self.r + self.t
+        self.ro = self.r + self.t 
     
         
     def _getVerticiesRoundedRectangle(self, h, w, r):
@@ -489,24 +489,6 @@ class GeomModelStirrup(GeomModelRoundedTube):
         # Start at the top left corner
         xStart = -w/2 + r        
         yStart =  h/2 - r      
-
-        # draw a quarter circle to the left
-        tls1_x, tls1_y = self._getcornerVerticies(xStart, yStart, r, -1, 1, 3*np.pi / 4)
-        tls1_x = tls1_x[::-1]
-        tls1_y = tls1_y[::-1]
-
-        # Draw a eighth circle to the left
-        # xCorner = tls1_x[0] 
-        # yCorner = tls1_y[0] 
-        # tls2_x, tls2_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1, np.pi / 4)
-        # tls2_x = tls2_x[::-1]
-        # tls2_y = tls2_y[::-1]
-        
-        # The lower extension. this is the real start point
-        start_x = [tls1_x[0] + self.t * 4 / 2**0.5]
-        start_y = [tls1_y[0] - self.t * 4 / 2**0.5]
-
-
 
         # The top of the curve
         xStart = -w/2 + r        
@@ -539,25 +521,62 @@ class GeomModelStirrup(GeomModelRoundedTube):
           
         tl_x = tl_x[::-1]
         tl_y = tl_y[::-1]
+  
     
-         
+        xloop = (tLeg_x + tr_x + br_x + bl_x + tl_x)
+        yloop = (tLeg_y + tr_y + br_y + bl_y + tl_y)
+        # x = xloop + tle_x + end_x
+        # y = yloop + tle_y + end_y
+        x = xloop
+        y = yloop
+        
+        return list(np.array(x) + dx0), list(np.array(y) + dy0)    
+    
+    def _getStartExtension(self, h, w, r):
+        dx0  = self.dx0
+        dy0  = self.dy0
+        
+        # Start at the top left corner
+        xStart = -w/2 + r        
+        yStart =  h/2 - r      
+        
+        # Draw a eighth circle to the left
+        # xCorner = tls1_x[0] 
+        # yCorner = tls1_y[0] 
+        # tls2_x, tls2_y = self._getcornerVerticies(xCorner, yCorner, r, -1, 1, np.pi / 4)
+        # tls2_x = tls2_x[::-1]
+        # tls2_y = tls2_y[::-1]
+        
+        # draw a quarter circle to the left
+        tls1_x, tls1_y = self._getcornerVerticies(xStart, yStart, r, -1, 1, 3*np.pi / 4)
+        tls1_x = tls1_x[::-1]
+        tls1_y = tls1_y[::-1]
+        
+        # The lower extension. this is the real start point
+        start_x = [tls1_x[0] + self.t * 4 / 2**0.5]
+        start_y = [tls1_y[0] - self.t * 4 / 2**0.5]
+        
+        x = start_x  + tls1_x
+        y = start_y  + tls1_y
+        
+        return list(np.array(x) + dx0), list(np.array(y) + dy0)    
+    
+    def _getEndExtension(self, h, w, r):
+        dx0  = self.dx0
+        dy0  = self.dy0
+        
+        # end loop
         xCorner = -w/2 + r 
         yCorner =  h/2 - r
         tle_x, tle_y = self._getcornerVerticies(xCorner, yCorner, r, 1, 1, np.pi / 4)
           
         end_x = [tle_x[-1] + self.t * 4 / 2**0.5]
         end_y = [tle_y[-1] - self.t * 4 / 2**0.5]
-        # tll_x = tll_x[::-1]
-        # tll_y = tll_y[::-1]    
-    
-    
-        xloop = (tLeg_x + tr_x + br_x + bl_x + tl_x)
-        yloop = (tLeg_y + tr_y + br_y + bl_y + tl_y)
-        x = start_x  + tls1_x + xloop + tle_x + end_x
-        y = start_y  + tls1_y + yloop + tle_y + end_y
+        
+        x = tle_x + end_x
+        y = tle_y + end_y
         
         return list(np.array(x) + dx0), list(np.array(y) + dy0)    
-
     
     def getVerticies(self):
         """ Gets the a list of (x, y) verticies in clockwise order"""
@@ -567,9 +586,45 @@ class GeomModelStirrup(GeomModelRoundedTube):
 
         ro:float = self.ro
         ri:float = self.ri
-
+        
+        # Note, the outter rectangle will bw 
         xyOutter = self._getVerticiesRoundedRectangle(h + t, w + t, ro)  
         xyInner  = self._getVerticiesRoundedRectangle(h - t, w - t, ri)
+        xyInner  = [xyInner[0], xyInner[1]]
+        # xyInner  = [xyInner[0][::-1], xyInner[1][::-1]]
+        xy = np.column_stack((xyOutter, xyInner))
+        
+        return xy[0,:], xy[1,:]
+    
+    def getStartVerticies(self):
+        """ Gets the a list of (x, y) verticies in clockwise order"""
+        h   = self.d 
+        w   = self.b
+        t   = self.t 
+
+        ro:float = self.ro
+        ri:float = self.ri
+
+        xyOutter = self._getStartExtension(h + t, w + t, ro)  
+        xyInner  = self._getStartExtension(h - t, w - t, ri)
+        # xyInner  = [xyInner[0], xyInner[1]]
+        xyInner  = [xyInner[0][::-1], xyInner[1][::-1]]
+        xy = np.column_stack((xyOutter, xyInner))
+        
+        return xy[0,:], xy[1,:]
+    
+    def getEndVerticies(self):
+        """ Gets the a list of (x, y) verticies in clockwise order"""
+        h   = self.d 
+        w   = self.b
+        t   = self.t 
+
+        ro:float = self.ro
+        ri:float = self.ri
+
+        xyOutter = self._getEndExtension(h + t, w + t, ro)  
+        xyInner  = self._getEndExtension(h - t, w - t, ri)
+        # xyInner  = [xyInner[0], xyInner[1]]
         xyInner  = [xyInner[0][::-1], xyInner[1][::-1]]
         xy = np.column_stack((xyOutter, xyInner))
         
