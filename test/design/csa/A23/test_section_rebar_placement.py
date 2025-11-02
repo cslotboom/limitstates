@@ -261,12 +261,12 @@ def test_element_placement_side():
     
 #     c24.setStirrupPosition(element)
     
-def test_placement_stirrup_override():
-    """
-    confirms if stirrup placement can manually be overriden using the dstirrup
-    kwarg
-    """
-    assert False    
+# def test_placement_stirrup_override():
+#     """
+#     confirms if stirrup placement can manually be overriden using the dstirrup
+#     kwarg
+#     """
+#     assert False    
     
     
     

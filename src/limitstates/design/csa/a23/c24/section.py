@@ -10,7 +10,7 @@ from limitstates.objects.section.rebar import (RebarFactory, Rebar,
 from .material import MaterialRebarCSA24
 
 
-def loadRebarFactory(matRebar:MaterialRebarCSA24,
+def loadRebarFactory(matRebar: MaterialRebarCSA24,
                       db:str = 'rebar', lUnit = 'mm') -> RebarFactory:
     """
     Reads the standard CSA A23. rebar, i.e. One of 10M, 15M, 20M, 25M, 30M, 
@@ -22,13 +22,17 @@ def loadRebarFactory(matRebar:MaterialRebarCSA24,
 
     Parameters
     ----------
-    dbType : str
-        The type of database to read from.
+    matRebar : MaterialRebarCSA24
+        The rebar material to use when creating the rebar.
+    db : str, optional
+        The input database type to read. The default is 'rebar'.
+    lUnit : TYPE, optional
+        The units to use for the database. The default is 'mm'.
 
     Returns
     -------
     rebarFactory : RebarFactory
-        The output rebar factory for the databae.
+        The output rebar factory for the database.
 
     """
     
@@ -47,8 +51,7 @@ def getStandardRebar(barName:str,
                      xy:tuple = None,
                      lUnit:str = 'mm') -> Rebar:
     """
-    Gets a standard CSA rebar.
-    Rebar bends are based on ACI tables 25.3.1
+    Gets a standard CSA rebar. Rebar bends are based on ACI tables 25.3.1
 
     Parameters
     ----------

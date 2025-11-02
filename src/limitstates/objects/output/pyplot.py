@@ -128,11 +128,9 @@ class SectionPlotter:
         # objectPatch = Polygon(xy, *args, color = c, **kwargs)
         if 'edgecolor' not in kwargs:
             kwargs['edgecolor'] = 'black'
-        # if 'facecolor' not in kwargs:
-        #     kwargs['edgecolor'] = 'black'
+
         objectPatch = Polygon(xy, *args, facecolor = c, 
                               linewidth = objectConfig.lineWidth, **kwargs)
-        
         
         ax.add_patch(objectPatch)
         
@@ -151,10 +149,6 @@ class SectionPlotter:
         #     ax.plot(xy[:,0], xy[:,1], 
         #             linewidth = objectConfig.lineWidth, 
         #             c=objectConfig.cLine)
-        
-        
-        
-        
         
         
         return ax
@@ -373,6 +367,17 @@ def _plotfillLines(ax, geom, objectConfig: PlotConfigObject):
                            linewidth = 0.5)
     ax.add_collection(lines)
 
+def _plotPerimeter(ax, geom, objectConfig: PlotConfigObject):
+    
+    linex, liney = geom.getVerticies()
+    ax.plot(linex, liney, 
+            linewidth = objectConfig.lineWidth, 
+            c=objectConfig.cLine)
+    # lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
+    # lines = LineCollection(lverts, colors = objectConfig.cFillLines,
+    #                        linewidth = 0.5)
+    # ax.add_collection(lines)
+
 def _plotfillPatches(ax, geom, objectConfig: PlotConfigObject):
     
     if   objectConfig.patchType == 1:
@@ -402,29 +407,10 @@ def _plotfillPatchesWithHole(ax, geom, objectConfig: PlotConfigObject):
     lverts = [np.column_stack((x,y)) for x, y in zip(linex, liney)]
     _plotSectionWithHole(ax, lverts, objectConfig)
     
-    
-    # p = PatchCollection([Polygon(vert) for vert in lverts], 
-    #                     color = objectConfig.cFillPatch)
-        
-        # # If there is no rebar set, don't plot anything.
-        # if geom.xyRebar is None:
-        #     return 
-        # radii  = geom.getFillRadii()
-        # x, y = geom.getFillAreaVerticies()
-        # lverts = np.column_stack((x,y))
-        # p = PatchCollection([Circle(vert, r) for vert, r in zip(lverts, radii)], 
-        #                     color = objectConfig.cFillPatch,
-        #                     edgecolor = objectConfig.cFillLines,
-        #                     linewidth = 0.5)        
-        
-    # ax.add_collection(p)
-
-
-
-
 
 _poltOptions = {'getFillVerticies':_plotfillLines, 
                 'getFillAreaVerticies':_plotfillPatches,
+                'getPerimeterVerticies':_plotPerimeter,
                 'getFillPatchWithHole':None }
 
 def plotSection(section:SectionAbstract, 
@@ -736,7 +722,8 @@ def _plotCLT(dispProps, ax = None):
     fig, ax = plotter.initPlot(ax)
     
     # Plot the base object
-    plotter.plot(ax, np.column_stack(geom.getVerticies()), canvasObjConfig)
+    verts = np.column_stack(geom.getVerticies())
+    plotter.plot(ax, verts, canvasObjConfig)
     
     if hasFireSection:
         sFire  = dispProps.sectionFire
@@ -750,6 +737,10 @@ def _plotCLT(dispProps, ax = None):
 
     _plotfillLines(ax, geom, canvasObjConfig)
     _plotfillPatches(ax, geom, canvasObjConfig)
+    
+    plt.plot(verts[:,0],verts[:,1], 
+             linewidth = canvasObjConfig.lineWidth,
+             c = canvasObjConfig.cLine)
     
     return fig, ax
 

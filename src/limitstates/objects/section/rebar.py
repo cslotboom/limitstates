@@ -29,6 +29,36 @@ class Rebar(SectionMonolithic):
     def __init__(self, mat: MaterialElastic, name: str, d: float, dnet: float,  
                  A: float, xy: tuple = None, rcurve: float = None, 
                  rhook: float = None, lUnit: str = 'mm'):
+        """
+        Represents rebar, which is typically placed within a concrete section
+        as longditudinal bars or stirrups.
+
+        Parameters
+        ----------
+        mat : MaterialElastic
+            The material to use for the rebar.
+        name : str
+            The name of the bar used for the rebar, i.e. 15M.
+        d : float
+            The nominal diameter of the rebar.
+        dnet : float
+            The net diameter of the reabar.
+        A : float
+            The area of the rebar.
+        xy : tuple, optional
+            The position of the rebar within it's section. The default is None.
+        rcurve : float, optional
+            The radius of the rebar curve. The default is None.
+        rhook : float, optional
+            The radius of the rebar hook curve. The default is None.
+        lUnit : str, optional
+            The units the rebar uses. The default is 'mm'.
+
+        Returns
+        -------
+        None.
+
+        """
         self.mat = mat
         self.name = name
         self.A = A
@@ -41,18 +71,48 @@ class Rebar(SectionMonolithic):
         
         self._initUnits(lUnit)
 
+    def __repr__(self):
+        return f"<limitstates Rebar Group with: {len(self)} bars>" 
+
     def setxy(self, xy:tuple):
         self.xy = xy
         
     def getA(self, lUnit:str = 'mm'):
+        """
+        Used to return the area of the rebar in the input set of units.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units the rebar uses. The default is 'mm'.
+
+        Returns
+        -------
+        float
+            The rebar area.
+
+        """
         lfactor = self.lConvert(lUnit)
         return self.A * lfactor**2
 
     def getd(self, lUnit:str = 'mm'):
-        lfactor = self.lConvert(lUnit)
-        return self.d * lfactor**2
+        """
+        Used to return the diameter of the rebar in the input set of units.
 
-    #TODO: test
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units the rebar uses. The default is 'mm'.
+
+        Returns
+        -------
+        float
+            The rebar diameter.
+
+        """
+        lfactor = self.lConvert(lUnit)
+        return self.d * lfactor
+
     def convertUnits(self, lUnit:str):
         """
         Converts the rebar length units from one set of units to another.
@@ -60,7 +120,7 @@ class Rebar(SectionMonolithic):
         Parameters
         ----------
         lUnit : string
-            Converts the section units.
+            The units to convert the section to.
 
         """
         # Do nothing is no there is no change.
@@ -113,81 +173,168 @@ class RebarGroup(collections.UserList):
     def coords(self):
         return self.getAttr('coords')
     
-    def listAttrs(self):
-        """        Lists the rebar attributes.        """
+    def listAttrs(self) -> list:
+        """
+        Returns list all possible attributes of the rebar could have.
+
+        Returns
+        -------
+        float
+            A list of all possible attributes.
+
+        """
+
         return self[0].__dict__.keys()
     
-    def getAttr(self, attribute):
-        """  Gets outputs from the rebar attributes. """        
+    def getAttr(self, attribute: str) -> np.ndarray:              
+        """
+        Returns an array of the specific input attribute for every bar within
+        the rebar group.
+
+        Parameters
+        ----------
+        attribute : str
+            The attribute to get from each rebar.
+
+        Returns
+        -------
+        float
+            A list of the input rebar for each item in the group.
+
+        """     
         attrs = []
         for bar in self:
             attrs.append(bar.__dict__[attribute])
         return np.array(attrs)    
     
-    def getCoords(self, lUnit: str = 'mm'):
-        """ Returns an array of the rebar coordinants. """
+    def getCoords(self, lUnit: str = 'mm') -> np.ndarray:
+        """
+        Returns an array of the rebar coordinants for each rebar in the group.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+
+        Returns
+        -------
+        np.ndarray
+            The output xy coordinates.
+
+        """
         lfactor = self[0].lConvert(lUnit)
         return self.getAttr('xy') * lfactor
     
     
-    def getyCoords(self, lUnit: str = 'mm'):
-        """ Returns an array of the rebar coordinants. """
+    def getyCoords(self, lUnit: str = 'mm') -> np.ndarray:
+        """
+        Returns an array of the rebar y coordinants for each rebar in the group.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+
+        Returns
+        -------
+        np.ndarray
+            The output y coordinates.
+
+        """
         return self.getCoords(lUnit)[:,1]
         
-    def getxCoords(self, lUnit: str = 'mm'):
-        """ Returns an array of the rebar coordinants. """
+    def getxCoords(self, lUnit: str = 'mm') -> np.ndarray:
+        """
+        Returns an array of the rebar x coordinants for each rebar in the group.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+
+        Returns
+        -------
+        np.ndarray
+            The output x coordinates.
+
+        """
         return self.getCoords(lUnit)[:,0]
     
-    def getyAvg(self, lUnit: str = 'mm'):
+    def getyAvg(self, lUnit: str = 'mm') -> float:
         """
         Calcualtes the effective depth of a rebar group, which
         is the average position of the rebar.
 
         Parameters
         ----------
-
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
 
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the y direction.
 
         """
 
         return np.average(self.getyCoords(lUnit))
 
 
-    def getxAvg(self, lUnit: str = 'mm'):
+    def getxAvg(self, lUnit: str = 'mm') -> float:
         """
         Calcualtes the effective depth of a rebar group, which
         is the average position of the rebar.
 
+
         Parameters
         ----------
-        direction : str, optional
-            The direction to calculate deff in. The default is 'y'.
-        posForce : bool, optional
-            A flag that specifies if moment is positive or negative. Positive
-            moment is defined as moment that creates tension at the "bottom"
-            of the beam. e.g. a simply supported beam has positive bending.
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
             
-            If set to true, then the NA will be measured from the "bottom" of the
-            section, which will be assumed to be in compression.
-            
-            The default is True.
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the x direction.
 
         """
         return np.average(self.getxCoords(lUnit))
         
-    def getNetArea(self, lUnit:str = 'mm'):
+    def getNetArea(self, lUnit:str = 'mm') -> float:
+        """
+        Calcualtes the total area of the rebar group in the specified units.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+            
+        Returns
+        -------
+        float
+            The total area of rebar within the group.
+
+        """
+        
+        
         lfactor = self[0].lConvert(lUnit)        
         return np.sum(self.getAttr('A')) * lfactor**2
             
-    def getAreas(self, lUnit:str = 'mm'):
+    def getAreas(self, lUnit:str = 'mm') -> np.ndarray:
+        """
+        Returns the total area for each bar within the group.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+            
+        Returns
+        -------
+        float
+            The total area of rebar within the group.
+
+        """
+        
         lfactor = self[0].lConvert(lUnit)        
         return self.getAttr('A') * lfactor**2
     
@@ -206,6 +353,21 @@ class RebarGroup(collections.UserList):
             bar.convertUnits(lUnit)
 
 class RebarLayer(RebarGroup):
+    """
+    A represents a group of rebar that is specifically placed in a layer, 
+    i.e., all of the bars share either a x or y coordinate.
+    The group is a list of rebar, which can have an ID, and has methods
+    for returning rebar propreties as a collection.
+
+    Parameters
+    ----------
+    iterable : Iterable
+        A iterable of rebar.
+    ID : str, optional
+        An optional ID for the rebar group. The default is None.
+
+
+    """
     
     _orientationSet = False
     def _setOrientation(self):
@@ -235,18 +397,18 @@ class RebarLayer(RebarGroup):
 
     def getyAvg(self, lUnit: str = 'mm'):
         """
-        Returns the depth of a rebar layer in the input direction.
+        Calcualtes the effective depth of a rebar group in the y direction,
+        which is the average position of the rebar.
 
         Parameters
         ----------
-        yForce : bool, optional
-            A flag that controls the direction deff is calculated in. 
-            The default is 'y'.
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
 
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the y direction.
 
         """
         
@@ -257,18 +419,18 @@ class RebarLayer(RebarGroup):
 
     def getxAvg(self, lUnit: str = 'mm'):
         """
-        Returns the depth of a rebar layer in the input direction.
+        Calcualtes the effective depth of a rebar group in the y direction,
+        which is the average position of the rebar.
 
         Parameters
         ----------
-        yForce : bool, optional
-            A flag that controls the direction deff is calculated in. 
-            The default is 'y'.
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
 
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the y direction.
 
         """
         
@@ -279,12 +441,35 @@ class RebarLayer(RebarGroup):
 class RebarCollection:
     
     def __init__(self, groups:list[RebarGroup]):
+        """
+        A rebar collection is a group of rebar groups. It can be used to 
+        easily delineate between different layers of bars, or top / bottom 
+        bars.
+
+        Parameters
+        ----------
+        groups : list[RebarGroup]
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         self.groups = groups
         self._updateSelfOnBarChange()
         # self.Nbars = sum([len(group) for group in self.groups])
     
-    # TODO: DOCUMENT, rename?
     def addBars(self, groups:list[RebarGroup]):
+        """
+        Adds a group of rebar to the collection.
+
+        Parameters
+        ----------
+        groups : list[RebarGroup]
+            A input list of rebar groups..
+
+        """
         if not self.groups:
             self.groups = groups
         else:
@@ -292,6 +477,21 @@ class RebarCollection:
         self._updateSelfOnBarChange()
 
     def removeGroups(self, inds: Union[int, list[int]]):
+        """
+        Removes the groups at the input indicies from the collection.
+
+
+        Parameters
+        ----------
+        inds : Union[int, list[int]]
+            The index / indicies of rebar groups to remove..
+
+        Returns
+        -------
+        None.
+
+        """
+
         if isinstance(inds, int):
             inds = [inds]
         newGroups = []
@@ -309,6 +509,18 @@ class RebarCollection:
         
     def getBarByID(self, ID:str) -> RebarGroup|None:
         """
+        Returns a rebar group by a given ID from the collection.
+
+        Parameters
+        ----------
+        ID : str
+            The ID used to match the input rebar.
+
+        Returns
+        -------
+        group : RebarGroup
+            The rebar group that that matches the input ID.
+
         """
         
         for group in self.groups:
@@ -337,12 +549,40 @@ class RebarCollection:
     def coordsFlat(self):
         return np.concatenate(self.coords)
         
-    def listAttrs(self):
-        """        Lists the rebar attributes.        """
+    def listAttrs(self) -> list:
+        """
+        Returns list all possible attributes of the rebar could have.
+
+        Returns
+        -------
+        float
+            A list of all possible attributes.
+
+        """
         return list(self.group[0].listAttrs())
         
-    def getAttr(self, attribute:str, flatten=False):
-        """  For each group, return a list of the input attribute. """        
+    def getAttr(self, attribute:str, flatten:bool=False) -> list[np.ndarray]:
+        """
+        For each rebar group, returns an array of the values of the input 
+        attribute. If flatten is specified, a single array is returned the data
+        from all groups combined.
+
+        Parameters
+        ----------
+        attribute : str
+            the attribute.
+        flatten : boolean, optional
+            A flag that specifies if the data should be flattened. 
+            The default is False.
+
+        Returns
+        -------
+        attrs : list[np.ndarray]
+            A list of arrays for each rebar, or a list with a single array for
+            all groups if flatten is true.
+
+        """
+ 
         attrs = []
         if flatten:
             for group in self.groups:
@@ -353,8 +593,27 @@ class RebarCollection:
 
         return attrs  
     
-    def getCoords(self, lUnit = 'mm', flatten=False):
-        """ Returns an array of the rebar coordinants. """
+    def getCoords(self, lUnit = 'mm', flatten=False) -> np.ndarray:
+        """
+        For each rebar group, returns an array of the values of the coordinates 
+        If flatten is specified, a single array is returned the data
+        from all groups combined.
+    
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+        flatten : boolean, optional
+            A flag that specifies if the data should be flattened. 
+            The default is False.
+    
+        Returns
+        -------
+        attrs : list[np.ndarray]
+            The coordinates of each rebar, either grouped by rebar group, or
+            as a single flat array if flatten is true.
+    
+        """
         coords = []        
         for group in self.groups:
             coords.append(group.getCoords(lUnit))
@@ -372,28 +631,66 @@ class RebarCollection:
         else:
             return self.getCoords(lUnit, flatten)[:,:,ind]
     
-    def getyCoords(self,  lUnit = 'mm', flatten=False):
-        """ Returns an array of the rebar coordinants. """
+    def getyCoords(self,  lUnit = 'mm', flatten=False) -> np.ndarray:
+        """
+        For each rebar group, returns an array of the y coordinates 
+        If flatten is specified, a single array is returned the data
+        from all groups combined.
+    
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+        flatten : boolean, optional
+            A flag that specifies if the data should be flattened. 
+            The default is False.
+    
+        Returns
+        -------
+        attrs : list[np.ndarray]
+            The coordinates of each rebar, either grouped by rebar group, or
+            as a single flat array if flatten is true.
+    
+        """
         return self._getDirCoords(1, lUnit, flatten)
         
-    def getxCoords(self, lUnit = 'mm', flatten=False):
-        """ Returns an array of the rebar coordinants. """
+    def getxCoords(self, lUnit = 'mm', flatten=False) -> np.ndarray:
+        """
+        For each rebar group, returns an array of the x coordinates 
+        If flatten is specified, a single array is returned the data
+        from all groups combined.
+    
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+        flatten : boolean, optional
+            A flag that specifies if the data should be flattened. 
+            The default is False.
+    
+        Returns
+        -------
+        attrs : list[np.ndarray]
+            The coordinates of each rebar, either grouped by rebar group, or
+            as a single flat array if flatten is true.
+    
+        """
         return self._getDirCoords(0, lUnit, flatten)
 
-    def getyAvg(self, lUnit: str = 'mm'):
+    def getyAvg(self, lUnit: str = 'mm') -> float:
         """
-        Calculates the effective depth of a rebar group, which
+        Calcualtes the effective depth of a rebar group, which
         is the average position of the rebar.
-        
-        Depth is measured from the top of a rebar section
 
         Parameters
         ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
 
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the y direction.
 
         """
         
@@ -405,20 +702,20 @@ class RebarCollection:
             A  += Atemp
         return dA / A
     
-    def getxAvg(self, lUnit: str = 'mm'):
+    def getxAvg(self, lUnit: str = 'mm') -> float:
         """
-        Calculates the effective depth of a rebar group, which
+        Calcualtes the effective depth of a rebar group, which
         is the average position of the rebar.
-        
-        Depth is measured from the top of a rebar section
 
         Parameters
         ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
 
         Returns
         -------
         float
-            The average depth of the rebar within the group.
+            The average depth of the rebar within the group in the x direction.
 
         """
         
@@ -430,7 +727,24 @@ class RebarCollection:
             A  += Atemp
         return dA / A  
     
-    def getAreas(self, lUnit = 'mm', flatten = False):  
+    def getAreas(self, lUnit = 'mm', flatten = False) -> np.ndarray:
+        """
+        Returns the total area for each bar within the collection.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+        flatten : boolean, optional
+            A flag that specifies if the data should be flattened. 
+            The default is False.
+            
+        Returns
+        -------
+        float
+            The total area of rebar within the group.
+
+        """
         areas = []
         for group in self.groups:
             areas.append(group.getAreas(lUnit))
@@ -440,8 +754,21 @@ class RebarCollection:
         else:
             return areas
         
-    def getNetArea(self, lUnit = 'mm'):
-        
+    def getNetArea(self, lUnit = 'mm') -> float:
+        """
+        Calcualtes the total area of the rebar collection in the specified units.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units to output coordinates in. The default is 'mm'.
+            
+        Returns
+        -------
+        float
+            The total area of rebar within the group.
+
+        """
         areaGroups = self.getAreas(lUnit)
         area = 0
         for aGroup in areaGroups:
@@ -449,8 +776,28 @@ class RebarCollection:
         return area
 
 class RebarFactory:
+    """
+    The rebar factory can be used to create rebar objects, based on some 
+    database. Given the input databae file
+
+    Parameters
+    ----------
+    mat : MaterialElastic
+        The material that the produced rebar will use.
+    dbConfig : DBConfig
+        The database configuration object, which defines which database
+        to use.
+    lUnit : str
+        The units to interpret the database with.
+
+    Returns
+    -------
+    None.
+
+    """
     
     def __init__(self, mat: MaterialElastic, dbConfig: DBConfig, lUnit: str):
+
         self.mat = mat
         self._loadDB(dbConfig)
         self._initUnits(lUnit)
@@ -472,10 +819,10 @@ class RebarFactory:
         self.lUnit      = lUnit
         self.lConverter = ConverterLength()
     
-    def lConvert(self, outputUnit:str):
+    def lConvert(self, outputUnit: str):
         """
         Get the conversion factor from the current unit to the output unit
-        for length units
+        for lengths.
         
         Parameters
         ----------
@@ -492,14 +839,15 @@ class RebarFactory:
 
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
         
-    def _loadDB(self, config:DBConfig):
+    def _loadDB(self, config: DBConfig):
             
         matdb = _loadSectionDBDict(config)   
         tmpDict = matdb.to_dict(orient='index')
         self.dbDict = {tmpDict[key]['name']:tmpDict[key] for key in tmpDict}
         self.barTypes = [tmpDict[key]['name'] for key in tmpDict]
 
-    def getRebar(self, barType:str, xy:tuple = None, lUnit = None) -> Rebar:
+    def getRebar(self, barType: str, xy: tuple = None, 
+                 lUnit: str = None) -> Rebar:
         """
         Gets a rebar of the input bar type, with propreties from the rebar
         database.
@@ -513,7 +861,7 @@ class RebarFactory:
         xy : tuple, optional
             The location of the rebar from the bottom left point in the secton. 
             The default is None.
-        lUnit : TYPE, optional
+        lUnit : str, optional
             The output units desired for the rebar. The default is None.
             Units in the database will be overwritten by the specified unit
             if they are different.
@@ -522,7 +870,7 @@ class RebarFactory:
         Returns
         -------
         Rebar
-            DESCRIPTION.
+            An output rebar object.
 
         """
         
@@ -534,7 +882,6 @@ class RebarFactory:
         cFactor = self.dbcFactor
         if lUnit and self.lUnit != lUnit:
             cFactor *= self.lConverter.getConversionFactor(self.lUnit, lUnit)
-            # cFactor *= self.cFactor
             
         rebar = Rebar(self.mat, 
                         barParams['name'], 
@@ -542,7 +889,6 @@ class RebarFactory:
                         barParams['dnet'] * cFactor, 
                         barParams['A'] * cFactor**2,
                         rcurve = barParams['rcurve'] * cFactor,
-                        # barParams['A'] * cFactor**2,
                         lUnit = self.lUnit)
      
         if xy:
@@ -559,22 +905,28 @@ class RebarFactory:
 
 class StirrupTypeEnum(IntEnum):
     """
-    Closed stirrups will have at least two legs, open stirrups will have only
-    onle leg.
+    An enumeration that represents stirrup types. Closed stirrups will have at 
+    least two legs, open stirrups will have only one.
     """
     Open = 1
     Closed = 2
        
 
 class StirrupPosition:
+    """
+    A class representing the position of the stirrup.
+    """
     xy0: tuple[float, float] = None
     xy: tuple[list, list] = None
         
     
 @dataclass
 class StirrupPositionLine(StirrupPosition):
+    """
+    Represents the position of a open stirrup using a line.
+    """
     h: float
-    yForce: bool
+    yDir: bool
     xy0: tuple[float, float] = None
     xy: tuple[list, list] = None
 
@@ -583,6 +935,9 @@ class StirrupPositionLine(StirrupPosition):
 
 @dataclass
 class StirrupPositionBox(StirrupPosition):
+    """
+    Represents the position of a closed stirrup using a box.
+    """
     h:float
     b:float
     xy0: tuple[float, float]
@@ -601,29 +956,35 @@ def stirrupPositionFactory(stirrupType: StirrupTypeEnum):
             
 
 class Stirrup:
-    def __init__(self, rebar: Rebar, stirrupType: StirrupTypeEnum = 2, Nleg: int = 2,
-                 spacing:float = 200, position: StirrupPosition = None, 
+    def __init__(self, rebar: Rebar, 
+                 stirrupType: StirrupTypeEnum = 2,
+                 Nleg: int = 2,
+                 spacing:float = 200, 
+                 position: StirrupPosition = None, 
                  lUnit: str = 'mm'):
         """
-        If a length unit is provided, the rebar length units will be 
-        overwritten.
+        Representa a stirrup.  If a length unit is provided, the rebar length 
+        units will be overwritten.
         
-        Rebar is fully contained by the position variable
+        Rebar is fully contained by the position variable.
 
         Parameters
         ----------
         rebar : Rebar
-            DESCRIPTION.
+            The rebar to be used for the stirrup.
         stirrupType : StirrupTypeEnum
-            DESCRIPTION.
+            An ennumeration that specifies the type fo stirrup used..
         Nleg : int
-            DESCRIPTION.
-        spacing : TYPE, optional
-            DESCRIPTION. The default is 200.
-        xy : tuple[list, list], optional
-            DESCRIPTION. The default is None.
-        lUnit : TYPE, optional
-            DESCRIPTION. The default is 'mm'.
+            The number of legs the stirrup has in the direction of interst, 
+            typically 2 or 1.
+        spacing : float, optional
+            The spacing for the stirrup along the section. The default is 200.
+        position : StirrupPosition, optional
+            A object that represents the stirrup position, depending on the
+            stirrup type given. Closed stirrups are represented by a box, while
+            open stirrups are represented with a line. The default is None.
+        lUnit : str, optional
+            The length units for the stirrup. The default is 'mm'.
 
         Returns
         -------
@@ -642,13 +1003,6 @@ class Stirrup:
         self._initUnits(lUnit)
         
         self.position = position
-        
-        # self._initPosition(stirrupType)
-               
-    # def _initUnits(self, lUnit):
-    #     """Initiates the length unit used for the layer"""
-    #     self.lUnit = lUnit
-    #     self.lConverter = ConverterLength()   
     
     def _initUnits(self, lUnit: str = 'mm'):
         """
@@ -728,51 +1082,24 @@ class Stirrup:
     
     def setPosition(self, position: StirrupPosition):
         self.position = position
-    
-    # class StirrupGroup:
-#     rebar: Rebar
-#     rStirrup: float
-#     dstirrup: float
-#     lUnit: str
-
-#     def __init__(self, rebar, spacing: float = 100, Nlegs: int = 2, lUnit:str = 'mm'):
-#         self.rebar = rebar
-#         self.spacing = spacing
-#         self.Nlegs = Nlegs
-#         self._initUnits(lUnit)
-                
-#     def _initUnits(self, lUnit: str = None):
-#         """
-#         Initiates units of the cross sections. Cross sections have length units
-#         only.
-
-#         Parameters
-#         ----------
-#         lUnit : str, optional
-#             The length unit to use. The default is 'mm'.
-#         """
-#         if not lUnit:
-#             lUnit = 'mm'
-#         self.lUnit      = lUnit
-#         self.lConverter = ConverterLength()
-        
-         
+          
 class StirrupGroup(collections.UserList):
+    """
+    A rebar group is a list of rebar, which can have an ID, and has methods
+    for returning rebar propreties as a collection.
+    
+    Rebar are assumed to have the same spacing for all bars.
+
+    Parameters
+    ----------
+    iterable : Iterable
+        A iterable of rebar.
+    ID : str, optional
+        An optional ID for the rebar group. The default is None.
+
+    """
     def __init__(self, iterable: Iterable[Stirrup], ID: str = None):
-        """
-        A rebar group is a list of rebar, which can have an ID, and has methods
-        for returning rebar propreties as a collection.
-        
-        Rebar are assumed to have the same spacing for all bars.
 
-        Parameters
-        ----------
-        iterable : Iterable
-            A iterable of rebar.
-        ID : str, optional
-            An optional ID for the rebar group. The default is None.
-
-        """
         self._validateInputs(iterable)
         super().__init__(item for item in iterable)
         self.ID = ID
@@ -842,15 +1169,40 @@ class StirrupGroup(collections.UserList):
         for bar in self:
             bar.convertUnits(lUnit)
         
-    def getCoords(self, lUnit: str = 'mm'):
-        """ Returns an array of the rebar coordinants. """
+    def getCoords(self, lUnit: str = 'mm') -> np.ndarray:
+        """
+        Returns an array of the rebar coordinants.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units for the outputs. The default is 'mm'.
+
+        Returns
+        -------
+        list[list[float]]
+            The output xy coordinates as a nd.array.
+
+        """
         lfactor = self[0].lConvert(lUnit)
         return self.getAttr('xy') * lfactor
     
-    def getAvNet(self, lUnit: str = 'mm'):
+    def getAvNet(self, lUnit: str = 'mm') -> float:
         """
         Returns the sum of all Av in the stirrup group.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units for the outputs. The default is 'mm'.
+
+        Returns
+        -------
+        float
+            The summ of all rebar area within the group in the output units.
+
         """
+ 
         Anet = 0
         for stirrup in self:
             Anet += stirrup.getAv(lUnit)
@@ -858,7 +1210,19 @@ class StirrupGroup(collections.UserList):
     
     def getSpacing(self, lUnit: str = 'mm'):
         """
-        Returns the sum of all Av in the stirrup group.
+        Gets the spacing of the rebar in the group. All stirrups are assumed
+        to have the same spacing.
+
+        Parameters
+        ----------
+        lUnit : str, optional
+            The units for the outputs. The default is 'mm'.
+
+        Returns
+        -------
+        float
+            The summ of all rebar area within the group in the output units.
+
         """
         lfactor = self[0].lConvert(lUnit)
         return self[0].spacing * lfactor

@@ -45,8 +45,6 @@ class DBConfig:
         The name of the database to use. Typically this is in the form 
         supplier_year_qualifier, e.g. prg320_2019, or supplier_year_qualifier,
         e.g. 
-    units : dict
-        A place for units of the database to be tracked in the database.
         
     """
     code:str

@@ -21,14 +21,6 @@ member   = ls.initSimplySupportedMember(6, 'm')
 beamColumn = o86.BeamColumnCltCsa19(member, sections[11])
     
 
-# myMat = ls.MaterialElastic(200*1000)
-
-# sections = ls.getSteelSections(myMat, 'csa', 'cisc_12', 'W')
-# section = sections[0]
-
-# canvasConfig = ls.objects.display.PlotConfigCanvas(6)
-# fig, ax     = ls.plotSection(section, canvasConfig = canvasConfig, xy0 = (0, 0))
-
 def PolyArea(x,y):
     """
     Shamelessly copied from github:
@@ -153,16 +145,24 @@ def test_plot_CLT():
     
     children = ax.get_children()
     
-    lines = children[2]
+    lines = children[1]
     lineVerts =     lines.get_paths()
     assert len(lineVerts) == 21 
-    
+        
     assert lineVerts[0]._vertices[0][1] == 140
     assert lineVerts[3]._vertices[1][1] == 105
     assert lineVerts[3]._vertices[0][1] == 140
     
-    patches = children[3]
-    assert len(patches.get_paths()) == 2 
+    
+    lines = children[2]
+    patches =     lines.get_paths()
+    assert len(patches) == 2 
+        
+    assert patches[0]._vertices[0][1] == 105
+    assert patches[0]._vertices[2][1] == 140
+    assert patches[1]._vertices[1][1] == 35
+    assert patches[1]._vertices[2][1] == 70
+    
     
 
 

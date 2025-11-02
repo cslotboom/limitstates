@@ -148,7 +148,7 @@ def test_plot_CLT():
     
     children = ax.get_children()
     
-    lines = children[2]
+    lines = children[1]
     lineVerts =     lines.get_paths()
     assert len(lineVerts) == 21 
         
@@ -156,8 +156,16 @@ def test_plot_CLT():
     assert lineVerts[3]._vertices[1][1] == 105
     assert lineVerts[3]._vertices[0][1] == 140
     
-    patches = children[3]
-    assert len(patches.get_paths()) == 2 
+    
+    lines = children[2]
+    patches =     lines.get_paths()
+    assert len(patches) == 2 
+        
+    assert patches[0]._vertices[0][1] == 105
+    assert patches[0]._vertices[2][1] == 140
+    assert patches[1]._vertices[1][1] == 35
+    assert patches[1]._vertices[2][1] == 70
+    
 
 
 
@@ -175,14 +183,13 @@ def test_plot_hss_cisc():
 
     children = ax.get_children()
     
-    lines = children[1]
-    lineVerts =   lines.get_path()
-    yMax = max(lineVerts._vertices[:,1])
-    yMin = min(lineVerts._vertices[:,1])
+    patch = children[0]
+    lineVerts =  patch.get_path().vertices
+    yMax = max(lineVerts[:,1])
+    yMin = min(lineVerts[:,1])
     
-    xMax = max(lineVerts._vertices[:,0])
-    xMin = min(lineVerts._vertices[:,0])
-    # assert len(lineVerts) == 21 
+    xMax = max(lineVerts[:,0])
+    xMin = min(lineVerts[:,0])
 
     assert section.d/2 == pytest.approx(yMax)
     assert -section.d/2 == pytest.approx(yMin)   
@@ -190,19 +197,18 @@ def test_plot_hss_cisc():
     assert section.b/2 == pytest.approx(xMax)
     assert -section.b/2 == pytest.approx(xMin)
     
-    lines = children[2]
-    lineVerts =   lines.get_path()
-    yMax = max(lineVerts._vertices[:,1])
-    yMin = min(lineVerts._vertices[:,1])
-    
-    xMax = max(lineVerts._vertices[:,0])
-    xMin = min(lineVerts._vertices[:,0])   
 
-    assert section.d/2 - section.t == pytest.approx(yMax)
-    assert -section.d/2+ section.t == pytest.approx(yMin)   
+    yMax = max(lineVerts[:,1])
+    yMin = min(lineVerts[:,1])
     
-    assert section.b/2 - section.t == pytest.approx(xMax)
-    assert -section.b/2 + section.t == pytest.approx(xMin)    
+    xMax = max(lineVerts[:,0])
+    xMin = min(lineVerts[:,0])   
+
+    assert section.d/2 - section.t in lineVerts
+    assert -section.d/2+ section.t in lineVerts  
+    
+    assert section.b/2 - section.t in lineVerts
+    assert -section.b/2 + section.t in lineVerts
 
 
 

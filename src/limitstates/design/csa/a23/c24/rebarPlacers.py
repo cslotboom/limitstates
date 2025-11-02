@@ -83,9 +83,9 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
     element : BeamColumnConcreteCsa24
         The element to place rebar in.
     Nbars : int
-        The number of bars to place, e.g. 10M.
+        The number of bars to place,in the section.
     barType : str
-        The type of bar to place.
+        The type of bar to place e.g. 10M..
     sectionInd : TYPE, optional
         The index of the section used to place rebar in. The default is 0, 
         which is the first section / only section if there is just one section.
@@ -99,6 +99,9 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
             radius of the stirrups
             - strategy 3: Perimeter. Rebar is placed evenly around the 
             perimeter of the section.
+    includeRadius : bool
+        A flag that specifies whether or not the curve diameter of the stirrup
+        rebar should be considered when placing the row.
     placementKwargs : dict, optional
         Additional keyword arguments required for each stategy. 
         The default is None.
@@ -128,6 +131,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
 def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
                             Nbars: int, barType: str,
                             sectionInd: int = 0,
+                            includeRadius:bool = False,
                             location: RebarLocationEnum = 1,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
                             lUnit: str = 'mm'):
@@ -143,9 +147,12 @@ def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
         The number of bars to place.
     barType : str
         The type of bar to place, e.g. 10M.
-    sectionInd : TYPE, optional
+    sectionInd : int, optional
         The index of the section used to place rebar in. The default is 0, 
         which is the first section / only section if there is just one section.
+    includeRadius : bool
+        A flag that specifies whether or not the curve diameter of the stirrup
+        rebar should be considered when placing the row.
     location : RebarLocationEnum, optional
         The face to place the rebar on: Bottom = 1, Top = 2, Left = 3, 
         Right = 4
@@ -161,7 +168,7 @@ def placeRebarRowInElement(element: BeamColumnConcreteCsa24,
     
     placer = RebarPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
 
-    placer.place(Nbars, barType, location)
+    placer.place(Nbars, barType, location, includeRadius = includeRadius)
         
 
 
@@ -186,11 +193,11 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
     
             
     def _place(self, NStirrups: int, barType: str, 
-               yForce: bool, spacing:float, Nleg: int,
+               yDir: bool, spacing:float, Nleg: int,
                dshift) -> StirrupGroup:   
     
-        self._initPlacement(barType, yForce)
-        positions = self._getStirrupPositions(NStirrups, yForce, dshift)
+        self._initPlacement(barType, yDir)
+        positions = self._getStirrupPositions(NStirrups, yDir, dshift)
 
         stirrups = []
         for ii in range(NStirrups):
@@ -201,32 +208,32 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
         return stirrups
 
 
-    def place(self,  NStirrups:int, barType:str, yForce: bool = True,
+    def place(self,  NStirrups:int, barType:str, yDir: bool = True,
               Nleg: int = 2, spacing: float = 200, dshift:float = None): 
                 
         if not self.factory:
             raise Exception('A rebar Factor has to be set to place rebar.')
         
-        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dshift)
+        stirrups= self._place(NStirrups, barType, yDir, Nleg, spacing, dshift)
         self.section.setStirrups(stirrups)
        
      
-    def _initPlacement(self, barType, yForce:bool):
+    def _initPlacement(self, barType, yDir:bool):
         try:
             self.dstir = self.factory.dbDict[barType]['d']
         except:
             raise Exception('The input bar type could not be found in the database.')
         
-        self._setDimensions(yForce)
+        self._setDimensions(yDir)
         self._setCenterLineCover()
     
     
-    def setPosition(self,  yForce: bool = True, dshift:float = None): 
+    def setPosition(self,  yDir: bool = True, dshift:float = None): 
         
         barType  = self.section.stirrups[0].rebar.name
-        self._initPlacement(barType, yForce)
+        self._initPlacement(barType, yDir)
         
-        positions = self._set(yForce, dshift)
+        positions = self._set(yDir, dshift)
         for pos, stirrup in zip(positions, self.section.stirrups):
             stirrup.setPosition(pos)
             
@@ -237,7 +244,7 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
 def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
                             NStirrups: int, barType: str,
                             sectionInd: int = 0,
-                            yForce: bool = True,
+                            yDir: bool = True,
                             Nleg: int = 2, spacing: float = 200,
                             dshift:float = None,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
@@ -273,7 +280,7 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
     
     placer = StirrupPlacerRowCSA24(section, element.designProps, rebarMat, lUnit)
 
-    placer.place(NStirrups, barType, yForce, Nleg, spacing, dshift)
+    placer.place(NStirrups, barType, yDir, Nleg, spacing, dshift)
                  
             
             

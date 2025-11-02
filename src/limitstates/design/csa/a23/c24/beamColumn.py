@@ -31,27 +31,35 @@ def getRhoBalanced(alpha: float, beta: float, fc: float, fy: float,
     return rho
 
 def getSectionBalancedNA(section: SectionConcrete, deff: float = None,
-                        eySteel: float = 0.002, yForce: bool = True, 
-                        posForce: bool = True):
+                        eySteel: float = 0.002, yDir: bool = True, 
+                        posDir: bool = True):
     """
     Estimates the balanced NA position for a section. If no deff is provided,
     then the depth will be estimated as 80% of the section height.
     
     This check is typically used before steel has been palced in the section.
-    It is assumed that the steel has not yet been placed in the section
+    It is assumed that the steel has not yet been placed in the section.
+    
+    Input units are assumed to be in mm.
 
     Parameters
     ----------
     section : SectionConcrete
-        DESCRIPTION.
+        The section to search.
     deff : float, optional
-        DESCRIPTION. The default is None.
-    yForce : bool, optional
-        DESCRIPTION. The default is True.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+        The effective depth for the rebar in section. Used to calculate a NA
+        position. The default is None.
+    eySteel: float
+        The strain in the steel at yield. Taken as 0.2% by default.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -69,7 +77,7 @@ def getSectionBalancedNA(section: SectionConcrete, deff: float = None,
     
     if not deff :
         print('No depth provided. Depth is estimated as 80% of h')
-        deff = section.getDepth(yForce, posForce, lunit)*0.8
+        deff = section.getDepth(yDir, posDir, lunit)*0.8
         # deff  =
     
     eyConc = section.concrete.mat.ey
@@ -97,7 +105,7 @@ def getSectionBalancedRho(section: SectionConcrete,
     
 def getSectionBalancedAnet(section: SectionConcrete, deff: float = None,
                         eySteel: float = 0.002, fySteel: float = 400,
-                        yForce: bool = True, posForce: bool = True):
+                        yDir: bool = True, posDir: bool = True):
     """
     Estimates the balanced NA position for a section. If no deff is provided,
     then the depth will be estimated as 80% of the section height.
@@ -110,12 +118,15 @@ def getSectionBalancedAnet(section: SectionConcrete, deff: float = None,
         DESCRIPTION.
     deff : float, optional
         DESCRIPTION. The default is None.
-    yForce : bool, optional
-        DESCRIPTION. The default is True.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -133,12 +144,12 @@ def getSectionBalancedAnet(section: SectionConcrete, deff: float = None,
     
     if not deff :
         print('No depth provided. Depth is estimated as 80% of h')
-        deff = section.getDepth(yForce, posForce, lunit)
+        deff = section.getDepth(yDir, posDir, lunit)
         # deff  =
     
     eyConc = section.concrete.mat.ey
     c  = getBalancedNA(deff, eyConc, eySteel)
-    Cr = getSectionCr(section, c, yForce, posForce)
+    Cr = getSectionCr(section, c, yDir, posDir)
  
     return Cr / (phiS * fySteel)
 
@@ -320,12 +331,12 @@ def getdveff(dv: float, h: float):
 
 
 
-def getSectiondveff(section: SectionConcrete, yForce, posForce, 
-                    dvEstimate: float = None, lUnit = 'mm'):
+def getSectiondveff(section: SectionConcrete, yDir, posDir, 
+                    dvEst: float = None, lUnit = 'mm'):
         
     # Manual override to dv
-    if dvEstimate:
-        dv = dvEstimate
+    if dvEst:
+        dv = dvEst
     
     # if the rebar has not been set and there is no manual override, 
     # raise exception
@@ -334,9 +345,9 @@ def getSectiondveff(section: SectionConcrete, yForce, posForce,
                         "estimate is given, Vc cannot be calcualted.")
     # Calculate dv, this is the normal thing that happens. 
     else:
-        dv = section.getRebarMaxDepth(yForce, posForce, lUnit)
+        dv = section.getRebarMaxDepth(yDir, posDir, lUnit)
         
-    h  = section.getDepth(yForce, lUnit)
+    h  = section.getDepth(yDir, lUnit)
     return getdveff(dv, h)
     
 
@@ -359,8 +370,8 @@ def getShearBeta(shearEnum: ShearConfigurations, dv:float = None) -> float:
 
 
 def getElementVrc(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True, 
-                 dvEstimate:float = None) -> float:
+                 yDir: bool = True, posDir: bool = True, 
+                 dvEst:float = None) -> float:
 
     section = element.getSection(sectionInd)
     lam     = element.designProps.lam
@@ -368,9 +379,8 @@ def getElementVrc(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     shearENum = element.designProps.shearReinforcementType
     
                         
-    # h  = section.getDepth(yForce)
-    bw = section.getWidth(yForce)
-    dveff = getSectiondveff(section, yForce, posForce, dvEstimate = dvEstimate)
+    bw = section.getWidth(yDir)
+    dveff = getSectiondveff(section, yDir, posDir, dvEst = dvEst)
     beta  = getShearBeta(shearENum, dveff)
     
     fc = section.concrete.mat.fc
@@ -390,7 +400,7 @@ def getVrc(lam: float, beta: float, fc: float,
 
 
 def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True)  -> float:
+                 yDir: bool = True, posDir: bool = True)  -> float:
     """
     Returns the maximum for an element
     
@@ -403,10 +413,15 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
         _description_
     sectionInd : int, optional
         _description_, by default 0
-    yForce : bool, optional
-        _description_, by default True
-    posForce : bool, optional
-        _description_, by default True
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
 
     Returns
     -------
@@ -425,7 +440,7 @@ def getElementVrs(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     Av = section.stirrups.getAvNet()
     s  = section.stirrups.getSpacing()
 
-    dveff = getSectiondveff(section, yForce, posForce)
+    dveff = getSectiondveff(section, yDir, posDir)
    
     return getVrs(Av, fy, dveff, theta, s)
 
@@ -462,8 +477,9 @@ def getVrs(Av: float, fy: float, dv: float, theta: float, s: float) -> float:
 
 def getElementSminForVrs(element: BeamColumnConcreteCsa24, Vrs: float, 
                          sectionInd: int = 0, barType: str = '10M', 
-                         Nlegs: int = 2, dvEstimate = None,
-                         yForce: bool = True, posForce: bool = True)  -> float:
+                         Nlegs: int = 2, dvEst = None,
+                         yDir: bool = True, 
+                         posDir: bool = True)  -> float:
     """
     Returns the maximum for an element
     
@@ -476,10 +492,15 @@ def getElementSminForVrs(element: BeamColumnConcreteCsa24, Vrs: float,
         _description_
     sectionInd : int, optional
         _description_, by default 0
-    yForce : bool, optional
-        _description_, by default True
-    posForce : bool, optional
-        _description_, by default True
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
 
     Returns
     -------
@@ -495,7 +516,7 @@ def getElementSminForVrs(element: BeamColumnConcreteCsa24, Vrs: float,
     Av = Nlegs * rebar.A
 
 
-    dveff = getSectiondveff(section, yForce, posForce, dvEstimate=dvEstimate)
+    dveff = getSectiondveff(section, yDir, posDir, dvEst=dvEst)
    
     return getSminForVrs(Av, fy, dveff, theta, Vrs)
 
@@ -556,13 +577,13 @@ def getVmax(fc: float, bw: float, dveff: float) -> float:
     return 0.25 * phiC * fc * bw * dveff
 
 def getElementVmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True,
-                 dvEstimate: float = None):
+                 yDir: bool = True, posDir: bool = True,
+                 dvEst: float = None):
     
     section = element.getSection(sectionInd)
 
-    dveff = getSectiondveff(section, yForce, posForce, dvEstimate)
-    bw = section.getWidth(yForce)
+    dveff = getSectiondveff(section, yDir, posDir, dvEst)
+    bw = section.getWidth(yDir)
     
     sConvert = section.concrete.mat.sConvert('MPa')
     fc = section.concrete.mat.fc * sConvert
@@ -571,8 +592,8 @@ def getElementVmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
 
 
 def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                 yForce: bool = True, posForce: bool = True,
-                 dvEstimate: float = None):
+                 yDir: bool = True, posDir: bool = True,
+                 dvEst: float = None):
     """_summary_
 
     Parameters
@@ -581,10 +602,15 @@ def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
         _description_
     sectionInd : int, optional
         _description_, by default 0
-    yForce : bool, optional
-        _description_, by default True
-    posForce : bool, optional
-        _description_, by default True
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
 
     Returns
     -------
@@ -605,11 +631,8 @@ def getElementVr(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     Av = section.stirrups.getAvNet()
     s  = section.stirrups.getSpacing()
 
-    bw = section.getWidth(yForce)
-    dveff = getSectiondveff(section, yForce, posForce, dvEstimate)
-    # dv = section.getRebarMaxDepth(yForce, posForce)
-    # h  = section.getDepth(yForce)
-    # dveff = getdveff(dv, h)
+    bw = section.getWidth(yDir)
+    dveff = getSectiondveff(section, yDir, posDir, dvEst)
    
     shearENum = element.designProps.shearReinforcementType
     beta  = getShearBeta(shearENum, dveff)   
@@ -655,7 +678,7 @@ def getSmaxGeom(dveff: float, Vf: float = 0, Vrmax: float = 0) -> float:
         return sMax
        
 def getElementSmaxGeom(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
-                     yForce: bool = True, posForce: bool = True, 
+                     yDir: bool = True, posDir: bool = True, 
                      dvEst: float = None,
                      Vf: float = 0, Vrmax: float = 0):
     """
@@ -663,7 +686,7 @@ def getElementSmaxGeom(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
     """
     section = element.getSection(sectionInd)
 
-    dveff = getSectiondveff(section, yForce, posForce, dvEst)
+    dveff = getSectiondveff(section, yDir, posDir, dvEst)
 
     return getSmaxGeom(dveff, Vf, Vrmax)
      
@@ -730,7 +753,7 @@ def getStirrupSmax(fc: float, bw: float, fy: float, Av: float) -> float:
 
 def getElementSmaxStirrup(element: BeamColumnConcreteCsa24, 
                           sectionInd: int = 0, barType: str = '10M', 
-                          Nleg: int = 2, fy = 400, yForce = True):
+                          Nleg: int = 2, fy = 400, yDir = True):
     """
     The maximum spacing possible with a given bar
     """
@@ -740,7 +763,7 @@ def getElementSmaxStirrup(element: BeamColumnConcreteCsa24,
     scConvert = section.concrete.mat.sConvert('MPa')
     fc = section.concrete.mat.fc * scConvert    
         
-    bw = section.getWidth(yForce)
+    bw = section.getWidth(yDir)
     
     rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
     Av = rebar.A * Nleg
@@ -750,25 +773,25 @@ def getElementSmaxStirrup(element: BeamColumnConcreteCsa24,
 
 def getElementSmax(element: BeamColumnConcreteCsa24, sectionInd: int = 0,
                    barType: str = '10M', Nleg: int = 2, fy = 400,
-                     yForce: bool = True, posForce: bool = True, 
+                     yDir: bool = True, posDir: bool = True, 
                      dvEst: float = None, Vf: float = 0, Vrmax: float = 0):
 
-    S1 = getElementSmaxStirrup(element, sectionInd, barType, Nleg, fy, yForce)
-    S2 = getElementSmaxGeom(element, sectionInd, yForce, posForce, 
+    S1 = getElementSmaxStirrup(element, sectionInd, barType, Nleg, fy, yDir)
+    S2 = getElementSmaxGeom(element, sectionInd, yDir, posDir, 
                             dvEst, Vf, Vrmax)
     
     return min(S1, S2)
 
 # def getSminForBar(Vs, sectionInd: int = 0,
 #                    barType: str = '10M', 
-#                    Nleg: int = 2, fy = 400, yForce = True):
+#                    Nleg: int = 2, fy = 400, yDir = True):
     
 #     section = element.getSection(sectionInd)
 
 #     scConvert = section.concrete.mat.sConvert('MPa')
 #     fc = section.concrete.mat.fc * scConvert    
         
-#     bw = section.getWidth(yForce)
+#     bw = section.getWidth(yDir)
     
 #     rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
 #     Av = rebar.A * Nleg

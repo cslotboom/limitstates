@@ -36,8 +36,8 @@ def test_section():
     """
     # barType = '30M'
     # # Nbar = 6
-    # yForce = True
-    # posForce = True
+    # yDir = True
+    # posDir = True
     # # lUnit = 'mm'
     # Mf = 800
     # deffsol = 1.4*25
@@ -55,18 +55,18 @@ def test_section():
     assert deff == 900 - 30 - 25/2 - 10
     
     # Top bars
-    deff = section.getRebarMaxDepth(yForce=True, posForce=False)
+    deff = section.getRebarMaxDepth(yDir=True, posDir=False)
     assert deff ==  30 + 25/2 + 10
 
     # left / right directions
-    deff = section.getdeff(yForce=False, posForce=True)
+    deff = section.getdeff(yDir=False, posDir=True)
     coords = section.rebar.getxCoords(flatten = True)
     assert deff == np.average(coords[2:4])
-    deff = section.getRebarMaxDepth(yForce=False, posForce=True)
+    deff = section.getRebarMaxDepth(yDir=False, posDir=True)
     assert deff == 450 - 30 - 25/2 - 10
     
     # # Top Side Bars
-    deff = section.getRebarMaxDepth(yForce=False, posForce=False)
+    deff = section.getRebarMaxDepth(yDir=False, posDir=False)
     # assert deff ==  30 + 25/2 + 10
     assert deff == 450 - 30 - 25/2 - 10
 

@@ -41,15 +41,15 @@ def _add_rebar(ele: c24.BeamColumnConcreteCsa24):
     designProps = ele.designProps
 
     barType = '25M'
-    Nbar = 6
-    includeRadius = False
+    Nbar = 4
+    includeRadius = True
     placer = c24.RebarPlacerRowCSA24(section, designProps)
     placer.place(Nbar, barType, 1, includeRadius=includeRadius)
     placer.place(2, barType, 2, includeRadius=includeRadius)
    
 def _add_stirrups(ele: c24.BeamColumnConcreteCsa24):
-    # c24.placeStirrupRowInElement(ele, 2, '15M', dshift = 40)
-    c24.placeStirrupRowInElement(ele, 1, '15M')
+    c24.placeStirrupRowInElement(ele, 2, '10M', dshift = 40)
+    # c24.placeStirrupRowInElement(ele, 1, '15M')
 
 
 def test_section_rebar():

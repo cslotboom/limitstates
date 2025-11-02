@@ -47,8 +47,8 @@ def test_deff_overwrite_bottom():
 
     section = _init_beam_vertical_placer()
     # plt.show()
-    assert 430 == section.getRebarMaxDepth(posForce = True)
-    assert 450 == section.getRebarMaxDepth(posForce = False)
+    assert 430 == section.getRebarMaxDepth(posDir = True)
+    assert 450 == section.getRebarMaxDepth(posDir = False)
 
 def test_section_bottom_bar_status():
 
@@ -59,7 +59,7 @@ def test_section_bottom_bar_status():
     assert np.all(solution == output)
 
     solution = np.array([False, False, False, False, False, True, True])
-    output = section.getBottomBarStatus(posForce = False)
+    output = section.getBottomBarStatus(posDir = False)
     assert np.all(solution == output)
 
 
@@ -71,7 +71,7 @@ def test_section_deff():
     assert solution == approx(section.getdeff())
 
     solution = 450
-    assert solution == approx(section.getdeff(posForce = False))
+    assert solution == approx(section.getdeff(posDir = False))
 
 
 if __name__ == '__main__':

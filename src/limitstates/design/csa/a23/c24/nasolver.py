@@ -11,11 +11,10 @@ from typing import Union
 
 import numpy as np
 
-# from .material import MaterialRebarCSA24
-from .element import phiC, phiS
-
 from limitstates import SectionConcrete
 from limitstates.objects.section.concrete import SectionNASolver
+
+from .element import phiC, phiS
 
 def getEndStrain(d: float, NAtrial: float, eConc: float):
 
@@ -63,8 +62,8 @@ def getSteelStrains(d:float, y:Union[float, np.ndarray],
     return y * (eEnd + eConc) / d - eConc
     
 def getSectionSr(section: SectionConcrete, NAlocation: float, 
-                 yForce: bool = True,
-                 posForce: bool = True):
+                 yDir: bool = True,
+                 posDir: bool = True):
     """
     Gets gets an array with the force in each rebar. By default assumes
     that the rebars have yielded.
@@ -75,17 +74,16 @@ def getSectionSr(section: SectionConcrete, NAlocation: float,
         The concrete section to check.
     NAlocation : float
         The neutral axis location from the tension edge of the beam in mm.
-    yForce : bool, optional
-        A flag that specifies if moment is about the y axis, i.e. the strong
-        axis. The default is True, setting up strong axis bending.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
-        
-        If set to true, then the NA will be measured from the "bottom" of the
-        section, which will be assumed to be in compression.
-        
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
+                
         The default is True.
 
     Raises
@@ -104,7 +102,7 @@ def getSectionSr(section: SectionConcrete, NAlocation: float,
     rebar = section.rebar
 
     lfactor = section.concrete.lConvert(lunit)
-    if yForce:
+    if yDir:
         h = section.concrete.d * lfactor
         coords = section.rebar.getyCoords(lunit, True)
     else:
@@ -113,7 +111,7 @@ def getSectionSr(section: SectionConcrete, NAlocation: float,
 
     # the strains are measured from the tension face
     # Reverse the coordinates if the moment is negative
-    if posForce:
+    if posDir:
         coords = h - coords
     
     eConc = section.concrete.mat.ey
@@ -137,8 +135,8 @@ def getSectionSr(section: SectionConcrete, NAlocation: float,
     return T
 
 def getSectionCr(section: SectionConcrete, NAlocation: float, 
-                 yForce: bool = True,
-                 posForce = True):
+                 yDir: bool = True,
+                 posDir = True):
     """
     Gets the concrete compressive force at a section, given a NA location.
     Alpha and beta for the concrete are set at at the material.
@@ -149,13 +147,15 @@ def getSectionCr(section: SectionConcrete, NAlocation: float,
         The concrete section to check.
     NAlocation : float
         The neutral axis location from the compression face of of the beam in mm.
-    yForce : bool, optional
-        A flag that specifies if moment is about the y axis, i.e. the strong
-        axis. The default is True, setting up strong axis bending.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -173,7 +173,7 @@ def getSectionCr(section: SectionConcrete, NAlocation: float,
     lunit = 'mm'
     sunit = 'MPa'    
     
-    b = section.getWidth(yForce, lunit)
+    b = section.getWidth(yDir, lunit)
 
     sconvert = section.concrete.mat.sConvert(sunit)
     fc = section.concrete.mat.fc * sconvert
@@ -183,32 +183,65 @@ def getSectionCr(section: SectionConcrete, NAlocation: float,
                 
     return phiC * alpha * beta * NAlocation * fc * b
 
-def getSectionMr(section: SectionConcrete, NAlocation: float = None, 
-                 yForce: bool = True,
-                 posForce:bool = True):
+def getSectionMr(section: SectionConcrete, 
+                 NAlocation: float = None, 
+                 yDir: bool = True,
+                 posDir:bool = True) -> float:
     """
+    Calculates the Mr for a given concrete section. Rebar must be set
+    within the section.
+    
     NA is measured from the compression face of the section 
     while coordinates are measured from the bottom of the section.
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The section to evaluate.
+    NAlocation : float, optional
+        The neutral axis location for the section. If one is not
+        provided, the NA will be solved for. The default is None.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
+
+    Returns
+    -------
+    Moment : float
+        The capacity of the section in Nm.
+
     """
+
     
     if not NAlocation:
         # The section could have no rebar, if so return 0
         if not section.rebar or len(section.rebar) == 0:
             return 0        
-        NAlocation    = solveForNA(section, yForce, posForce)
+        NAlocation    = solveForNA(section, yDir, posDir)
     
-    Sr = getSectionSr(section, NAlocation, yForce, posForce)
-    Cr = getSectionCr(section, NAlocation, yForce, posForce)
+    Sr = getSectionSr(section, NAlocation, yDir, posDir)
+    Cr = getSectionCr(section, NAlocation, yDir, posDir)
     
-    if yForce:
+    if yDir:
         coords = section.rebar.getyCoords('mm', flatten=True)
     else:
         coords = section.rebar.getxCoords('mm', flatten=True)
-    d = section.getDepth(yForce, 'mm')
+    d = section.getDepth(yDir, 'mm')
     
     # NAlocation is measured from the tension edge of the beam
     # coordinates are measured in an absolute position.
-    if posForce:
+    if posDir:
         rebarCoords = (d - coords) - NAlocation
     else:
         rebarCoords = coords - NAlocation
@@ -230,13 +263,15 @@ class SectionNASolverCSA24(SectionNASolver):
         The concrete section to solve the NA of.        
     Pf : float, optional
         A axial force applied to the section. The default is 0.
-    yForce : bool, optional
-        A flag that specifies if moment is applied in the y or x direction. 
-        The default is True, for moment being applied about the x axis.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -258,15 +293,15 @@ class SectionNASolverCSA24(SectionNASolver):
 
     """
     def __init__(self, section: SectionConcrete, Pf:float = 0, 
-                 yForce: bool = True, posForce: bool = True, 
+                 yDir: bool = True, posDir: bool = True, 
                  NAtrial: float = None, tol: float = 1e-3, 
                  maxIter: float = 100, logging: bool = True):
         super().__init__(section, getSectionCr, getSectionSr,
-                         Pf, yForce, posForce, 
+                         Pf, yDir, posDir, 
                          NAtrial, tol, maxIter, logging)
         
-def solveForNA(section: SectionConcrete, Pf: float = 0, yForce: bool = True, 
-             posForce: bool = True, NAtrial: float = None, tol: float = 1e-3, 
+def solveForNA(section: SectionConcrete, Pf: float = 0, yDir: bool = True, 
+             posDir: bool = True, NAtrial: float = None, tol: float = 1e-3, 
              maxIter: float = 100):
     """
     Attempts to solves for the neutral axis of a section. Assumes all 
@@ -281,13 +316,15 @@ def solveForNA(section: SectionConcrete, Pf: float = 0, yForce: bool = True,
         The concrete section to solve the NA of.        
     Pf : float, optional
         A axial force applied to the section. The default is 0.
-    yForce : bool, optional
-        A flag that specifies if moment is applied in the y or x direction. 
-        The default is True, for moment being applied about the x axis.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -309,7 +346,7 @@ def solveForNA(section: SectionConcrete, Pf: float = 0, yForce: bool = True,
 
     """
     
-    naSolver = SectionNASolverCSA24(section, Pf, yForce, posForce, NAtrial,
+    naSolver = SectionNASolverCSA24(section, Pf, yDir, posDir, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()

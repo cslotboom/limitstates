@@ -32,101 +32,183 @@ class SectionConcrete:
     
     def __init__(self, concrete: SectionRectangle,
                         rebar: RebarCollection = None,
-                        stirrups: StirrupGroup = None):        
+                        stirrups: StirrupGroup = None):   
+        """
+        Represents a concrete section. Concrete sections will have the base 
+        section geometry, which currently.
+
+        Parameters
+        ----------
+        concrete : SectionRectangle
+            The concrete in the section, must be a rectangle.
+        rebar : RebarCollection, optional
+            The longditudinal rebar in the section. Rebar collections contain
+            a number of groups, i.e. top bars and bottom bars.
+            The default is None.
+        stirrups : StirrupGroup, optional
+            The a group of stirrups in the section. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         self.concrete = concrete
         self.rebar    = rebar
         self.stirrups = stirrups
 
-    # TODO: DOCUMENT
-    def addBars(self, rebar:RebarCollection):
+    def addBars(self, rebar: RebarCollection):
+        """
+        Adds a new set of longditudinal bars to the current rebar collection.
+
+        Parameters
+        ----------
+        rebar : RebarCollection
+            The rebar colection to add to the group. Any bars from the original
+            collection will be merged with the new collection.
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.rebar:
             self.rebar = rebar
         else:
             self.rebar.addBars(rebar.groups)
 
-    def getdMax(self, xDirection:bool=False, 
-                posForce:bool=True):
-        pass
-        if xDirection:
-            positions = self.rebar.getxCoords()
-        else:
-            positions = self.rebar.getyCoords()
-        return positions
+    # def getdMax(self, yDir: bool=True, posDir: bool=True, 
+    #             lunit: str = 'mm'):
+    #     """
+    #     Gets the maximum depth of the section, i.e. the distance from the top
+    #     of the section to the lowest longditudinal bar. 
 
-    def getWidth(self, 
-                 yDirection: bool = True, 
-                 lunit: str = 'mm'):
+    #     Parameters
+    #     ----------
+    #     yDir : bool, optional
+    #         A flag that specifies if the x or y direction will be used. 
+    #         The default is True, leading to y.
+    #     posDir : bool, optional
+    #         A flag that specifies if force should be positive or negative. 
+    #         Positive is defined as force or moment that creates tension at the 
+    #         "bottom" of the beam. e.g. a simply supported beam has positive 
+    #         bending.
+            
+    #         The default is True.
+
+    #     Returns
+    #     -------
+    #     dmax : float
+    #         The distance from the top of the section to the lowest 
+    #         longditudinal bar
+
+    #     """
+                
+    #     d = self.getDepth(yDir, lunit)
+    #     if yDir:
+    #         positions = self.rebar.getyCoords(lunit)
+    #     else:
+    #         positions = self.rebar.getxCoords(lunit)
+
+    #     if posDir:
+    #         dbar = min(positions)
+    #     else:
+    #         dbar = max(positions)
+        
+    #     return d - dbar
+
+    def getWidth(self, yDir: bool = True, lunit: str = 'mm') -> float:
         """
+        Gets the width of the section in the orientation specified, i.e. y/x. 
         The default units are mm
 
         Parameters
         ----------
-        yForce : bool, optional
-            DESCRIPTION. The default is True.
-        posForce : bool, optional
-            A flag that specifies if moment is positive or negative. Positive
-            moment is defined as moment that creates tension at the "bottom"
-            of the beam. e.g. a simply supported beam has positive bending.
-            
-            If set to true, then the NA will be measured from the "bottom" of the
-            section, which will be assumed to be in compression.
-            
-            The default is True.
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
         lunit : str, optional
-            DESCRIPTION. The default is None.
+            The output units. The default is 'mm'.
 
         Returns
         -------
-        b : TYPE
+        b : float
             The width of the beam in the input set of units.
 
         """          
         
         lfactor = self.concrete.lConvert(lunit)
-        if yDirection:
+        if yDir:
             b = self.concrete.b * lfactor
         else:
             b = self.concrete.d * lfactor
         return b
 
-    # TODO, rename to get section depth?
-    def getDepth(self, yDirection: bool = True, 
-                 lUnit: str = 'mm'):
+    def getDepth(self, yDir: bool = True, 
+                 lUnit: str = 'mm') -> float:
+        """
+        Gets the depth of the section in the orientation specified, i.e. y/x. 
+        The default units are mm
+
+        Parameters
+        ----------
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+        lunit : str, optional
+            The output units. The default is 'mm'.
+
+        Returns
+        -------
+        b : float
+            The width of the beam in the input set of units.
+
+        """          
+        
                 
         lfactor = self.concrete.lConvert(lUnit)
-        if yDirection:
+        if yDir:
             d = self.concrete.d * lfactor
         else:
             d = self.concrete.b * lfactor
         return d
     
-    def getRebarMaxDepth(self, yForce: bool = True, 
-                        posForce: bool = True, 
-                        lUnit: str = 'mm'):
+    def getRebarMaxDepth(self, yDir: bool = True, 
+                        posDir: bool = True, 
+                        lUnit: str = 'mm') -> float:
         """
         Returns the depth from the compression face to the furthest away rebar.
 
         Parameters
         ----------
-        yForce : bool, optional
-            DESCRIPTION. The default is True.
-        posForce : bool, optional
-            DESCRIPTION. The default is True.
-        lUnit : str, optional
-            DESCRIPTION. The default is 'mm'.
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+        posDir : bool, optional
+            A flag that specifies if force should be positive or negative. 
+            Positive is defined as force or moment that creates tension at the 
+            "bottom" of the beam. e.g. a simply supported beam has positive 
+            bending, a downards shear force is positive.
+            The default is True.
+        lunit : str, optional
+            The output units. The default is 'mm'.
 
         Returns
         -------
-        dv : TYPE
-            DESCRIPTION.
+        dv : float
+            The maximum depth from the compression face to the furthest away
+            rebar.
 
         """
-        if yForce:
+        if yDir:
             coords = self.rebar.getyCoords(lUnit, flatten=True)
         else:
             coords = self.rebar.getxCoords(lUnit, flatten=True)
-        if posForce:
-            dbeam = self.getDepth(yForce, lUnit)
+        if posDir:
+            dbeam = self.getDepth(yDir, lUnit)
             drebar = min(coords)
             dv = dbeam - drebar
         else:
@@ -135,26 +217,29 @@ class SectionConcrete:
     
     
     
-    def _get_rebar_depths(self, yForce: bool = True, 
-                          posForce: bool = True, 
+    def _get_rebar_depths(self, yDir: bool = True, 
+                          posDir: bool = True, 
                           lUnit: str = 'mm'):
             
-        d = self.getDepth(yForce, lUnit)
+        d = self.getDepth(yDir, lUnit)
 
-        if yForce:
+        if yDir:
             depths = self.rebar.getyCoords(lUnit, True)
         else:
             depths = self.rebar.getxCoords(lUnit, True)
         
-        if posForce:
+        if posDir:
             depths = d - depths
             
         return depths
     
     def getBottomBarStatus(self, NAlocation:float = None, 
-                            yForce: bool = True, posForce: bool = True,
-                            lUnit: str = 'mm') -> float:
+                            yDir: bool = True, posDir: bool = True,
+                            lUnit: str = 'mm') -> list[bool]:
         """
+        For each bar in the section, return a flag that specifies if it is in
+        compression or not, given a assumed NA location.
+        
         Bottom bar status depends on wether the bar is in tension or 
         compression. Bars in tension will be considered bottom bars, while
         bars in compression are considered top bars.
@@ -170,21 +255,28 @@ class SectionConcrete:
             The location of the neutral axis, measured from the compression
             face of the. The default is None, which results in half the depth
             of the beam in the direction of interest.
-        yForce : bool, optional
-            DESCRIPTION. The default is True.
-        posForce : bool, optional
-            DESCRIPTION. The default is True.
-        lUnit : str, optional
-            DESCRIPTION. The default is 'mm'.
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+        posDir : bool, optional
+            A flag that specifies if force should be positive or negative. 
+            Positive is defined as force or moment that creates tension at the 
+            "bottom" of the beam. e.g. a simply supported beam has positive 
+            bending, a downards shear force is positive.
+            The default is True.
+        lunit : str, optional
+            The output units. The default is 'mm'.
 
         Returns
         -------
-        None.
+        status: list[boolean]
+            A list of boolean variables for the output status of each bar.
 
         """
         
-        d = self.getDepth(yForce, lUnit)
-        depths = self._get_rebar_depths(yForce, posForce, lUnit)
+        d = self.getDepth(yDir, lUnit)
+        depths = self._get_rebar_depths(yDir, posDir, lUnit)
         
         if not NAlocation:
             NAlocation = d / 2
@@ -192,49 +284,52 @@ class SectionConcrete:
         return depths > NAlocation
     
     
-
-    # # TODO: test
-    def getdeff(self, yForce: bool = True, posForce: bool = True,
-                NAlocation:float = None, lUnit: str = 'mm'):
+    def getdeff(self, yDir: bool = True, posDir: bool = True,
+                NAlocation:float = None, lUnit: str = 'mm') -> float:
         """
-        Gets the effective depth in the input direction of interest.
+        Gets the effective depth in the input direction of interest. The 
+        effective depth is the depth to the centroid of the tension bar group.
+        If only one layer of bars is used, then the effective depth will be
+        equal to the maximum depth.
         
         The NA location in the direction of interst is used to exclued bars 
-        from the depth calucation. The effective depth be to the centroid of 
-        the tension bar group.
+        from the depth calucation. 
         
 
         Parameters
         ----------
-        yForce : bool, optional
-            A flag that specifies if moment is applied in the y or x direction. 
-            The default is True, for moment being applied about the x axis.
-        posForce : bool, optional
-            A flag that specifies if moment is positive or negative. Positive
-            moment is defined as moment that creates tension at the "bottom"
-            of the beam. e.g. a simply supported beam has positive bending.
+        
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+        posDir : bool, optional
+            A flag that specifies if force should be positive or negative. 
+            Positive is defined as force or moment that creates tension at the 
+            "bottom" of the beam. e.g. a simply supported beam has positive 
+            bending, a downards shear force is positive.
             
             If set to true, then the NA will be measured from the "bottom" of the
             section, which will be assumed to be in compression.
             
             The default is True.
         lUnit : str, optional
-            DESCRIPTION. The default is 'mm'.
+            The output units. The default is 'mm'.
 
         Returns
         -------
-        deff : TYPE
-            DESCRIPTION.
+        deff : float
+            The effective depth, i.e. the depth to the centroid of the bottom
+            bars.
 
         """
         
         # Notes, this function seems like it should happen in rebar, however,
         # the rebar will not know the section depth, which is needed
         
-        d = self.getDepth(yForce, lUnit)
-        depths = self._get_rebar_depths(yForce, posForce, lUnit)
+        d = self.getDepth(yDir, lUnit)
+        depths = self._get_rebar_depths(yDir, posDir, lUnit)
         areas  = np.array(self.rebar.getAreas(lUnit, True))
-        
         if not NAlocation:
             NAlocation = d / 2
     
@@ -281,13 +376,15 @@ class SectionNASolver:
         
     Pf : float, optional
         A axial force applied to the section. The default is 0.
-    yForce : bool, optional
-        A flag that specifies if moment is applied in the y or x direction. 
-        The default is True, for moment being applied about the x axis.
-    posForce : bool, optional
-        A flag that specifies if moment is positive or negative. Positive
-        moment is defined as moment that creates tension at the "bottom"
-        of the beam. e.g. a simply supported beam has positive bending.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
         
         If set to true, then the NA will be measured from the "bottom" of the
         section, which will be assumed to be in compression.
@@ -310,8 +407,8 @@ class SectionNASolver:
     """
     def __init__(self, section: SectionConcrete, 
                  concreteFunction, steelFunction,
-                 Pf:float = 0, yForce: bool = True, 
-                 posForce: bool = True,
+                 Pf:float = 0, yDir: bool = True, 
+                 posDir: bool = True,
                  NAtrial = None,
                  tol: float = 1e-3, maxIter: int = 100,
                  logging:bool = True):
@@ -323,10 +420,10 @@ class SectionNASolver:
         self.compressiveFunction = concreteFunction
         self.steelFunction = steelFunction
         
-        self.yForce = yForce
-        self.posForce = posForce
+        self.yDir = yDir
+        self.posDir = posDir
         
-        if yForce:
+        if yDir:
             self.rebarCoords = self.rebar.getyCoords(flatten=True)
             self.d = section.concrete.d
             self.b = section.concrete.b
@@ -336,7 +433,7 @@ class SectionNASolver:
             self.b = section.concrete.d
 
         # If the moment isn't positive, flip the orientation of the rebar
-        if not posForce:
+        if not posDir:
             self.rebarCoords = self.d - self.rebarCoords
         
         if not NAtrial:
@@ -351,29 +448,55 @@ class SectionNASolver:
 
     def getCr(self, NAtrial):
         return self.compressiveFunction(self.section, NAtrial, 
-                                        self.yForce, self.posForce)
+                                        self.yDir, self.posDir)
     
     def getFsteel(self, NAtrial):
         return self.steelFunction(self.section, NAtrial, 
-                                        self.yForce, self.posForce)
+                                        self.yDir, self.posDir)
 
         
-    def checkEqulibrium(self, NAtrial):
+    def checkEqulibrium(self, NAtrial: float) -> float:
         """
-        Checks the equlibrium at the current state.
+        The ratio between tension and compression force for a given input 
+        NAtrial value.
+
+        Parameters
+        ----------
+        NAtrial : TYPE
+            The trial value for the neutral axis.
+
+        Returns
+        -------
+        ratio : float
+            The ratio between the net tension force, and the 
+            net compression force.
 
         """
         Cr     = self.getCr(NAtrial)
         Fsteel = self.getFsteel(NAtrial)        
         Fnet = np.sum(Fsteel)
-        # ratio = float(Fnet/Cr)
+
         ratio = abs(Fnet/Cr)
 
         return ratio
     
-    def calcNA(self, root = 0.4):
+    def calcNA(self, root:float = 0.4) -> float:
+        """
+        Calculates a trial value for the NA, given a particular "root".
+        The root affects the solver and how quickly it converges.
 
+        Parameters
+        ----------
+        root : float
+            The root to use in the solver.
 
+        Returns
+        -------
+        NAtrial : float
+            The ratio between the net tension force, and the 
+            net compression force.
+
+        """
         NAtrial, Niters = self._run_analysis(root)
 
         if Niters == self.maxIter:
@@ -382,8 +505,6 @@ class SectionNASolver:
             root = root / 2
             NAtrial, Niters = self._run_analysis(root)
 
-        # diff = np.diff(self.trials)
-        # if 0.0001 < abs(diff[-1]):
         if Niters == self.maxIter:
             raise Exception('Convergence not reached. Try a smaller root in the solver.')
         
@@ -413,13 +534,13 @@ class SectionNASolver:
         return NAtrial, nn
 
 def solveForNA(section: SectionConcrete, 
-             Pf:float = 0, yForce: bool = True, 
-             posForce: bool = True,
+             Pf:float = 0, yDir: bool = True, 
+             posDir: bool = True,
              NAtrial: float = None,
              tol: float = 1e-3, maxIter: float = 100):
     
     
-    naSolver = SectionNASolver(section, Pf, yForce, posForce, NAtrial,
+    naSolver = SectionNASolver(section, Pf, yDir, posDir, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()
@@ -429,11 +550,22 @@ def solveForNA(section: SectionConcrete,
 # =============================================================================
 
 class RebarPlacementStrategyEnum(IntEnum):
+    """
+    A enumeration that represents possible placement strategies for. 
+    rebar placers. Face places the rebar along a single face in a row.
+    FaceWithRadius places rebar along a single face, but takes into acount the 
+    bend of the accompanying stirrups.
+    Perimeter distributes rebar along the edge of the section evenly.
+    """
     Face = 1
     FaceWithRadius = 2
     Perimeter = 3
 
 class RebarLocationEnum(IntEnum):
+    """
+    A enumeration that represents where the bars can be placed in square or
+    rectangular section.
+    """
     Bottom = 1
     Top = 2
     Left = 3
@@ -445,25 +577,31 @@ placementDict = {(True,  True):  RebarLocationEnum.Bottom,
                  (False, True):  RebarLocationEnum.Left, 
                  (False, False): RebarLocationEnum.Right }
 
-def getRebarLocationEnum(yForce:bool = True, 
-                         posForce:bool = True) -> RebarLocationEnum:
+def getRebarLocationEnum(yDir:bool = True, 
+                         posDir:bool = True) -> RebarLocationEnum:
     """
-    
+    Returns the appropriate placement enumeration for a direction and pos/neg 
+    direction combination.
 
     Parameters
     ----------
-    yForce : bool, optional
-        DESCRIPTION. The default is True.
-    posForce : bool, optional
-        DESCRIPTION. The default is True.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
 
     Returns
     -------
     RebarLocationEnum
-        DESCRIPTION.
+        The location enumeration for the given input parameters.
 
     """
-    return placementDict[(yForce, posForce)]
+    return placementDict[(yDir, posDir)]
 
 # =============================================================================
 # 
@@ -471,14 +609,48 @@ def getRebarLocationEnum(yForce:bool = True,
 
 @dataclass
 class   RebarSpacingConfig:
+    """
+    A configuraton class that specifies the information needed to place rebar
+    within a section.
+        
+    Parameters
+    ----------
+    clearSpacing : float
+        The clear distance between longditudinal rebar
+    cover : float
+        The the clear cover to either the bars or stirrups.
+    dstir : float, optional
+        The stirrup diameter.
+    stirrupCurveRadius : float, optional
+        The curve radius of the stirrups.
+    lUnit : string, optional
+        The length units.
+
+    
+    """
     clearSpacing: float
     cover: float
     dstir: float
     stirrupCurveRadius: float = 0
     lUnit:str = None
 
-# TODO, restructure
-class RebarPlacer(ABC):
+class RebarPlacerAbstract(ABC):
+    """
+    The an abstract class to use for the rebarplacer, contains some useful 
+    interfaces
+    
+    Parameters
+    ----------
+    section : SectionConcrete
+        The section to place rebar in.
+    rebarFactory : RebarFactory
+        The factory object which will be used to produce rebar.
+    spacingConfig : RebarSpacingConfig, optional
+        A spacing configuration object. Rules specified by the spacing 
+        configuration will be used to change rebar spacing. 
+        The default is None.
+
+    """    
     
     def __init__(self, section: SectionConcrete,
                  rebarFactory:  RebarFactory,
@@ -502,43 +674,67 @@ class RebarPlacer(ABC):
 
 
 class RebarPlacerManual():
-    def __init__(self, factory:RebarFactory):
+    """
+    A rebar placer, where the user manually specifies the position of
+    the bars from the top / side of the section. Rebar spacing rules according
+    to building codes are not enforced.
+    enforced.
+    
+    Parameters
+    ----------
+    factory : RebarFactory
+        The initialized rebar factory used to produce bars.
+
+    Returns
+    -------
+    RebarLayer
+        The layer of rebar created at the input "position".
+
+    """     
+    def __init__(self, factory:RebarFactory):        
         self.factory = factory
         
     def getRebarLayer(self, Nbars: int, barType: str, 
                      position: float, width: float, offset:float = 0, 
-                     yDirection: bool = True) -> RebarLayer:
+                     yDir: bool = True) -> RebarLayer:
         """
-        Evenly distributes Nbars of the given type within a row width wide, 
-        and centered around "position".
+        Evenly distributes Nbars of the given type within a row "width" wide, 
+        and at "position" within the section. Bars will be linearly distributed 
+        from centerline to centerline across this width.
         
-        "position" is measured from the bottom of the section for the rebar 
-        placed in the y axis, or from the left wall for rebar placed in the 
-        x axis.
+        "position" is 
 
         Parameters
         ----------
         Nbars : int
-            DESCRIPTION.
+            The number of bars to place in the section.
         barType : str
-            DESCRIPTION.
+            The bar type to place in the section. Must 
         position : float
-            DESCRIPTION.
+            The depth to place the rebar in, measured from the bottom of the 
+            section for the rebar placed in the y axis, or from the left wall 
+            for rebar placed in the x axis.
         width : float
-            DESCRIPTION.
+            The width to place bars across. 
         offset : float, optional
-            DESCRIPTION. The default is 0.
-        yDirection : bool, optional
-            DESCRIPTION. The default is True.
+            The offset from the edge of the beam for the first bar. 
+            The default is 0.
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+            If true position is to measured from the top (i.e. from strong 
+            axis bending), if false from the left. 
+            The default is True, resulting in strong axis bending.
 
         Returns
         -------
         RebarLayer
-            DESCRIPTION.
+            The layer of rebar created at the input "position".
 
         """
 
-        if yDirection:
+        if yDir:
             positions = self._getBarPositon(Nbars, width, offset)
             xyOut = [(x, position) for x in positions]
         else:
@@ -560,7 +756,7 @@ class RebarPlacerManual():
         
 
 # TODO: document
-class RebarPlacerRow(RebarPlacer):
+class RebarPlacerRow(RebarPlacerAbstract):
     
     def __init__(self, section: SectionConcrete, 
                  rebarFactory,
@@ -689,7 +885,7 @@ class RebarPlacerRow(RebarPlacer):
     
  
     
-def RebarPlacerFactory(placementStrategy: RebarPlacementStrategyEnum) -> RebarPlacer:
+def RebarPlacerFactory(placementStrategy: RebarPlacementStrategyEnum) -> RebarPlacerAbstract:
     # pass
     if placementStrategy == RebarPlacementStrategyEnum.BeamBottomBars:
         return RebarPlacerRow
@@ -733,15 +929,15 @@ class StirrupPlacer:
 
 
 # TODO: rename into box?
-class StirrupPlacerRow(RebarPlacer):
+class StirrupPlacerRow(RebarPlacerAbstract):
     
     def __init__(self, section: SectionConcrete, 
                          placementConfig: RebarSpacingConfig = None,
                          rebarFactory: RebarFactory = None):
         super().__init__(section, rebarFactory, placementConfig)
     
-    def _setDimensions(self, yForce):
-        if yForce:
+    def _setDimensions(self, yDir):
+        if yDir:
             self.h = self.section.concrete.d
             self.b = self.section.concrete.b
         else:
@@ -755,11 +951,11 @@ class StirrupPlacerRow(RebarPlacer):
         self.hRow = self.h - self.clCover*2
     
  
-    def _initPlacement(self, yForce:bool):        
-        self._setDimensions(yForce)
+    def _initPlacement(self, yDir:bool):        
+        self._setDimensions(yDir)
         self._setCenterLineCover()
    
-    def _getStirrupPositions(self, Nstirrup, yForce, dshift = None):
+    def _getStirrupPositions(self, Nstirrup, yDir, dshift = None):
         """
         The stirrup position is to the C.L. of a rectangle
 
@@ -774,7 +970,7 @@ class StirrupPlacerRow(RebarPlacer):
         # We start at the smallest and increase in size.
         for ii in range(Nstirrup):
             
-            if yForce:
+            if yDir:
                 dB = self.bRow / Nrows
                 hStirrup = self.hRow
                 # Expand all interior except for the outside
@@ -790,7 +986,7 @@ class StirrupPlacerRow(RebarPlacer):
                 
         return positions
     
-    def _set(self, yForce: bool, dshift) -> list[StirrupPositionBox]:
+    def _set(self, yDir: bool, dshift) -> list[StirrupPositionBox]:
         section = self.section
         
         if not dshift:
@@ -798,9 +994,9 @@ class StirrupPlacerRow(RebarPlacer):
         
         Nstirrup = len(section.stirrups)
                     
-        return self._getStirrupPositions(Nstirrup, yForce, dshift)
+        return self._getStirrupPositions(Nstirrup, yDir, dshift)
        
-    def setPosition(self, yForce: bool = True, dshift = None):      
+    def setPosition(self, yDir: bool = True, dshift = None):      
         """
         Sets the position of stirrups.
         
@@ -815,8 +1011,8 @@ class StirrupPlacerRow(RebarPlacer):
             and 4 for right.
 
         """
-        self._initPlacement(yForce)
-        positions = self._set(yForce)
+        self._initPlacement(yDir)
+        positions = self._set(yDir, dshift)
 
         for pos, stirrup in zip(positions, self.section.stirrups):
             stirrup.setPosition(pos)
@@ -824,11 +1020,11 @@ class StirrupPlacerRow(RebarPlacer):
             
         
     def _place(self, NStirrups: int, barType: str, 
-               yForce: bool, spacing:float, Nleg: int,
+               yDir: bool, spacing:float, Nleg: int,
                dshift: float) -> StirrupGroup:   
     
-        self._initPlacement(yForce)
-        positions = self._getStirrupPositions(NStirrups, yForce, dshift)
+        self._initPlacement(yDir)
+        positions = self._getStirrupPositions(NStirrups, yDir, dshift)
 
         stirrups = []
         for ii in range(NStirrups):
@@ -840,7 +1036,7 @@ class StirrupPlacerRow(RebarPlacer):
     
         return stirrups
        
-    def place(self, NStirrups:int, barType:str, yForce: bool = True,
+    def place(self, NStirrups:int, barType:str, yDir: bool = True,
               Nleg = 2, spacing = 200, dshift = None):      
         """
         Place Nbars of the type "barType" within the rebar section. The location
@@ -866,7 +1062,7 @@ class StirrupPlacerRow(RebarPlacer):
         if not self.factory:
             raise Exception('A rebar Factor has to be set to place rebar.')
         
-        stirrups= self._place(NStirrups, barType, yForce, Nleg, spacing, dshift)
+        stirrups= self._place(NStirrups, barType, yDir, Nleg, spacing, dshift)
         self.section.setStirrups(stirrups)
      
     

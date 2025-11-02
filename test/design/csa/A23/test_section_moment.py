@@ -58,17 +58,17 @@ def test_element_rho():
 def test_element_Mr_top():
     barType = '30M'
 
-    posForce = False
+    posDir = False
 
     Mf = 800
 
     deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    c24.designBottomSteelForMr(Mf, ele, barType, posForce=posForce)
+    c24.designBottomSteelForMr(Mf, ele, barType, posDir=posDir)
     section = ele.getSection()
     assert section.rebar.Nbars == 5
-    assert section.getdeff(posForce=posForce) == deff
+    assert section.getdeff(posDir=posDir) == deff
 
     
 
@@ -76,25 +76,25 @@ def test_element_Mr_right():
     barType = '30M'
     Mf = 700
     deffsol = 450 - 30 - 10 - 30/2
-    yForce = False
-    posForce = True
+    yDir = False
+    posDir = True
 
     ele = _init_element()
-    c24.designBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
+    c24.designBottomSteelForMr(Mf, ele, barType, yDir=yDir, posDir=posDir)
     # ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11
-    assert section.getdeff(yForce) == deffsol
+    assert section.getdeff(yDir) == deffsol
 
 def test_element_Mr_left():
     barType = '30M'
-    yForce = False
-    posForce = False
+    yDir = False
+    posDir = False
     Mf = 700
-    deff = 900 - 30 - 10 - 30/2
+    # deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
-    OR = c24.designBottomSteelForMr(Mf, ele, barType, yForce=yForce, posForce=posForce)
+    OR = c24.designBottomSteelForMr(Mf, ele, barType, yDir=yDir, posDir=posDir)
     ls.plotSection(ele.section)
     section = ele.getSection()
     assert section.rebar.Nbars == 11

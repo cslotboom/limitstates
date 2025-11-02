@@ -174,6 +174,8 @@ class GeomModelClt(GeomModel):
         y = [hmin, hmax , hmax, hmin, hmin]
         return x, y
     
+    def getPerimeterVerticies(self):
+        return self.getVerticies()
         
     def getFillVerticies(self):
         
@@ -474,7 +476,7 @@ class GeomModelStirrup(GeomModelRoundedTube):
 
     dx0:float = 0
     dy0:float = 0
-    NradiusPoints:int = 6
+    NradiusPoints:int = 8
 
     
     def __post_init__(self):
