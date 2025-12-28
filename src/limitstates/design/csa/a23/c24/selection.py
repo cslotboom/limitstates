@@ -1,22 +1,28 @@
 """
-Contains the code designc clauses
+Author: CS
+Description:
+    Classes and functions used to figure out how much rebar is needed to 
+    resist an input design force.
 """
 from enum import IntEnum
 from math import ceil, floor
 
+# Import from object libraries etc.
 import limitstates as ls
 from limitstates.objects.section.concrete import  getRebarLocationEnum
 
+# Import from A23.3
 from .element import BeamColumnConcreteCsa24, ShearConfigurations, phiC, phiS
 from .section import REBARFACTORY, loadRebarFactory, Rebar
 from .material import MaterialRebarCSA24, MaterialConcreteCSA24
-from .rebarPlacers import RebarPlacerRowCSA24, placeRebarInElement
-# from limitstates import DesignDiagram, SectionConcrete
+from .rebarPlacers import (RebarPlacerRowCSA24, placeRebarInElement, 
+                           StirrupPlacerRowCSA24)
 from .beamColumn import (getSectionBalancedRho, getSectionAsmin, getElementVrc,
                          getElementVrs, getElementVmax, getElementVr, 
                          getElementSmax, getElementSminForVrs,
                          getElementSmaxGeom, getElementSmaxStirrup)
 from .nasolver import getSectionMr, solveForNA
+
 
 
 def getRequiredSteelForMr(Mr:float, 
@@ -101,14 +107,15 @@ def designBottomSteelForMr(Mr: float,
                         matRebar: MaterialRebarCSA24 = None,
                         addTopSteel: bool = True, 
                         runDesignItertion: bool = True,
+                        includeRadius: bool = True,
                         placementStrategy: int = 1, 
                         lUnit: str = 'mm'):
 
-
     """
-    Places bottom steel in a section. The rebar will be placed such that
-    the section has a moment capacity larger than the input moment, if it is 
-    possible to find a solution.
+    Finds the quanity of rebar required to resist a moment, then places the
+    bottom rebar in that section. 
+    The rebar will be placed such that the section has a moment capacity larger 
+    than the input moment, if it is possible to find a solution.
     
     The minimum steel will be used for the section, if it is larger than the
     required steel.
@@ -151,6 +158,9 @@ def designBottomSteelForMr(Mr: float,
         A flag that specifies if, once top steel is set, an additional design
         iteration should be run to see if the bottom steel can be reduced. 
         The default is True.
+    includeRadius : bool, optional
+        A flag that specifies whether or not longditudinal bars should consider
+        the stirrup rebar bend radius when being placed.
     placementStrategy : int, optional
         The enumeration for how bars are placed within the secton. 
         XXX CURRENTLY UNUSED XXX
@@ -170,7 +180,7 @@ def designBottomSteelForMr(Mr: float,
         rebar = REBARFACTORY.getRebar(barType, lUnit)    
     else:
         factory = loadRebarFactory(matRebar, lUnit)
-        rebar = factory.getRebar(barType, lUnit) 
+        rebar   = factory.getRebar(barType, lUnit) 
     
     # Get the section, and reset the rebar in the section.
     section = element.getSection(sectionInd)
@@ -187,7 +197,7 @@ def designBottomSteelForMr(Mr: float,
     
     location = getRebarLocationEnum(yDir, posDir)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-    placer.place(NbarReq, barType, location)
+    placer.place(NbarReq, barType, location, includeRadius = includeRadius)
     
     Nrow  = len(section.rebar)
     bottomBarInds = list(range(Nrow))
@@ -202,16 +212,18 @@ def designBottomSteelForMr(Mr: float,
     if isOverReinforced:
         drho  = rhoNet - rhoBA
         _placeTopBarIfOverreinforced(element, sectionInd, yDir, posDir,  
-                                     drho, barType, rebar, lUnit)   
+                                     drho, barType, rebar, includeRadius, 
+                                     lUnit)   
 
     if runDesignItertion:
         _runDesignIteration(Mr, element, barType, NbarReq, bottomBarInds,
-                            rebar,sectionInd, yDir, posDir, lUnit)
+                            rebar,sectionInd, yDir, posDir, includeRadius, 
+                            lUnit)
        
     return isOverReinforced
 
 def _initalBottomBarPlacement(Mr, element, sectionInd, yDir, posDir,  
-                                 barType, rebar, lUnit):
+                                 barType, rebar, includeRadius, lUnit):
     """
     Places top bars in the section.
     """
@@ -231,10 +243,10 @@ def _initalBottomBarPlacement(Mr, element, sectionInd, yDir, posDir,
     
     location = getRebarLocationEnum(yDir, posDir)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-    placer.place(NbarReq, barType, location)
+    placer.place(NbarReq, barType, location, includeRadius = includeRadius)
 
 def _placeTopBarIfOverreinforced(element, sectionInd, yDir, posDir,  
-                                 drho, barType, rebar, lUnit):
+                                 drho, barType, rebar, includeRadius, lUnit):
     """
     Places top bars in the section.
     """
@@ -251,7 +263,7 @@ def _placeTopBarIfOverreinforced(element, sectionInd, yDir, posDir,
     
     location = getRebarLocationEnum(yDir, not posDir)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-    placer.place(NbarReqTop, barType, location)
+    placer.place(NbarReqTop, barType, location, includeRadius)
 
 def _runDesignIteration(Mr: float, 
                         element: BeamColumnConcreteCsa24, 
@@ -262,6 +274,7 @@ def _runDesignIteration(Mr: float,
                         sectionInd: int = 0,
                         yDir: bool = True,
                         posDir: bool = True,
+                        includeRadius:bool = True,
                         lUnit: str = 'mm'):
        
     """
@@ -307,7 +320,7 @@ def _runDesignIteration(Mr: float,
             
         location = getRebarLocationEnum(yDir, posDir)
         placer   = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-        placer.place(NbarReq, barType, location)
+        placer.place(NbarReq, barType, location, includeRadius = includeRadius)
         
         if not hasTopBars:
             # XXX: Consider recalculating NA Nocation
@@ -398,7 +411,7 @@ class StirrupDesigner:
     NlegMax : int, optional
         The maximum number of legs to be used in the section. 
         The default is 8.
-    dvEstManual : float, optional
+    dEstManual : float, optional
         An mannual override for dv in mm. This value will be taken 
         instead of any internal calculations / estimates on dv.
         The default is None, resulting in the calculated value of dv being
@@ -419,11 +432,11 @@ class StirrupDesigner:
                         ds: float = 50,
                         smin: float = 100,
                         NlegMax: int = 8,
-                        dvEstManual: float = None,
+                        dEstManual: float = None,
                         logging = False,
                         logFunction = print):
         
-        self.Vr = Vr 
+        self.Vr = Vr  * 1000
         self.element = element
         self.sectionInd = sectionInd
         self.designSection = element.getSection(sectionInd)
@@ -435,9 +448,8 @@ class StirrupDesigner:
         self.smin = smin
         self.NlegMax  = NlegMax
         
-        self.dvEst = dvEstManual
+        self.dEst = dEstManual
 
-        
         self.barType = barType
 
         self.rebar = REBARFACTORY.getRebar(barType, lUnit = 'mm')
@@ -456,8 +468,8 @@ class StirrupDesigner:
         dbar = self.rebar.d
         
         
-        if self.dvEst:
-            dvEst = self.dvEst
+        if self.dEst:
+            dEst = self.dEst
             self.log('Using manual dv estimate.')
         elif section.rebar:
             dvEst = None
@@ -471,20 +483,20 @@ class StirrupDesigner:
         
         return dvEst
 
-    def VcCalc(self, dvEst):
+    def VcCalc(self, dEst):
         return getElementVrc(self.element, self.sectionInd, self.yDir, 
-                           self.posDir, dvEst = dvEst)
+                           self.posDir, dEst = dEst)
 
 
     def _roundSmin(self, sminTrial):
         return floor( sminTrial / self.ds) * self.ds
 
 
-    def runTrial(self, VsReq, NlegTrial, sMaxGeom, dvEst):
+    def runTrial(self, VsReq, NlegTrial, sMaxGeom, dEst):
         
         smin = self.smin       
         sminTrial = getElementSminForVrs(self.element, VsReq, self.sectionInd,
-                                         self.barType, NlegTrial, dvEst,
+                                         self.barType, NlegTrial, dEst,
                                          self.yDir, self.posDir)
         
         sMaxRebar = getElementSmaxStirrup(self.element, self.sectionInd, 
@@ -584,6 +596,11 @@ class StirrupDesigner:
                                           self.yDir, self.posDir, 
                                           dvEst, Vr, Vrmax)
         
+        if isSol:
+            placer = StirrupPlacerRowCSA24(self.element.section,
+                                           self.element.designProps)
+            placer.setPosition(self.yDir)
+        
         if not isSol:
             self.log(f'The maximum capacity found is less than the design ,\
                   shear, with VrReq = {round(Vr)} > VrOut = {round(VrOut)}')
@@ -599,10 +616,11 @@ def designStirrupsForVr(Vr: float,
                         yDir: bool = True,
                         posDir: bool = True,
                         ds: float = 50,
+                        smin: float = 100,
+                        NlegMax = 8,
                         dvEstManual: float = None,
-                        matRebar: MaterialRebarCSA24 = None,
-                        lUnit: str = 'mm',
-                        logging = True) -> ShearResultEnum:
+                        logging = True,
+                        logFunction = print) -> ShearResultEnum:
     """
     A function used to place stirrups within a section to resist the an input 
     load. Spacing rules according to A23.3 will be respected for bars.
@@ -618,7 +636,7 @@ def designStirrupsForVr(Vr: float,
     ----------
     Vr : float
         The required shear the section stirrups will attempt to be designed
-        for.
+        for. Input units are assumed to be in kN.
     element : BeamColumnConcreteCsa24
         The design element to be used in design.
     barType : str
@@ -659,8 +677,8 @@ def designStirrupsForVr(Vr: float,
     
     """
     designer = StirrupDesigner(Vr, element, barType, sectionInd,
-                            yDir, posDir, ds, dvEstManual, matRebar,
-                            lUnit, logging)
+                            yDir, posDir, ds, smin, NlegMax, dvEstManual,
+                            logging, logFunction)
     
     return designer.design()
     

@@ -29,7 +29,8 @@ Mf = 1100
 mat         = a23.MaterialConcreteCSA24(fc)
 section     = ls.SectionRectangle(mat, b, h)
 stirrupBar  = a23.getStandardRebar('10M')
-stirrups    = ls.StirrupGroup(stirrupBar)
+stirrup     = a23.Stirrup(stirrupBar)
+stirrups    = ls.StirrupGroup([stirrup])
 concreteSection = ls.SectionConcrete(section, stirrups = stirrups)
 
 """

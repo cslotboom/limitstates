@@ -1,5 +1,7 @@
 """
-Contains functions for managing sections specific to CSAo86-19
+Author: CS
+Description:
+    Classes and functions used to place rebar according to A23.3.
 """
 
 from typing import Union
@@ -30,11 +32,34 @@ def _initRebarFactory(rebarMat, lUnit) -> RebarFactory:
     return  rebarFactory
 
 class RebarPlacerRowCSA24(RebarPlacerRow):
-        
+    """
+    Places Rebar in rows in the given section. If the row fills up, the
+    rebar will be shifted to the next row. Spacing rules will be respected.
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The concrete secton to place rebar in.
+    designProps : DesignPropsConcrete24
+        The concrete design propreties. Cover is read from them and assumed
+        to have the same units as the section.
+    rebarMat : Union[MaterialRebarCSA24, None], optional
+        The material to use for the rebar. The default is None, which will
+        default to 400MPa steel.
+    lUnit : str, optional
+        The length units to use. All produced rebar will take on these
+        input units, and default to mm. 
+
+    Returns
+    -------
+    None.
+
+    """        
     def __init__(self, section: SectionConcrete, 
                  designProps: DesignPropsConcrete24, 
                  rebarMat: Union[MaterialRebarCSA24, None] = None, 
                  lUnit: str = None):
+
         
         rebarFactory =  _initRebarFactory(rebarMat, lUnit)
         
@@ -50,8 +75,8 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
               dstirOverwrite:float = None, includeRadius:bool = True): 
         
         bar = self._getBar(barType)
-        config = getSectionSpacingRules(bar, self.section, self.c, includeRadius,
-                                        lUnit = 'mm')
+        config = getSectionSpacingRules(bar, self.section, self.c, 
+                                        includeRadius, lUnit = 'mm')
         self.setSpacingConfig(config)
 
         self.section.addBars(self._place(Nbars, barType, location, 
@@ -64,7 +89,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
                         Nbars: int, barType: str,
                         sectionInd: int = 0,
                         placementStrategy: RebarPlacementStrategyEnum = 1,
-                        includeRadius:bool = False,
+                        includeRadius : bool = False,
                         placementKwargs: dict = None,
                         rebarMat: Union[MaterialRebarCSA24, None] = None, 
                         lUnit: str = 'mm'):
@@ -75,7 +100,7 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
     
     Currently only one strategy is supported, RebarPlacementStrategyEnum = 1.
     See RebarPlacementStrategyEnum for a more detailed review of what each 
-    strategy reqires
+    strategy reqires.
 
 
     Parameters
@@ -85,8 +110,8 @@ def placeRebarInElement(element: BeamColumnConcreteCsa24,
     Nbars : int
         The number of bars to place,in the section.
     barType : str
-        The type of bar to place e.g. 10M..
-    sectionInd : TYPE, optional
+        The type of bar to place e.g. 10M.
+    sectionInd : int, optional
         The index of the section used to place rebar in. The default is 0, 
         which is the first section / only section if there is just one section.
     placementStrategy : RebarPlacementStrategyEnum, optional
@@ -193,7 +218,7 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
     
             
     def _place(self, NStirrups: int, barType: str, 
-               yDir: bool, spacing:float, Nleg: int,
+               yDir: bool, Nleg: int, spacing:float,
                dshift) -> StirrupGroup:   
     
         self._initPlacement(barType, yDir)
@@ -205,7 +230,7 @@ class StirrupPlacerRowCSA24(StirrupPlacerRow):
             stirrup = Stirrup(rebar, Nleg = Nleg, spacing = spacing, 
                               position = positions[ii])
             stirrups.append(stirrup)
-        return stirrups
+        return StirrupGroup(stirrups)
 
 
     def place(self,  NStirrups:int, barType:str, yDir: bool = True,
@@ -250,27 +275,37 @@ def placeStirrupRowInElement(element: BeamColumnConcreteCsa24,
                             rebarMat: Union[MaterialRebarCSA24, None] = None, 
                             lUnit: str = 'mm'):
     """
-    Places lognditudinal rebar in a concerete Element by row. The number and 
-    type of bars is placed in the section in rows, until the row is filled up.
+    Places a group of stirrups concerete Element by row. The number of stirrups
+    is placed in the section in rows, until it fills up.
 
     Parameters
     ----------
     element : BeamColumnConcreteCsa24
         The element to place rebar in.
-    Nbars : int
-        The number of bars to place.
+    NStirrups : int
+        The number of stirrups to place.
     barType : str
         The type of bar to place, e.g. 10M.
     sectionInd : TYPE, optional
         The index of the section used to place rebar in. The default is 0, 
         which is the first section / only section if there is just one section.
-    location : RebarLocationEnum, optional
-        The face to place the rebar on: Bottom = 1, Top = 2, Left = 3, 
-        Right = 4
+    
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    Nleg : int, optional
+        The number of legs each stirrup has. Currently only two legs are 
+        supported per stirrup.
+    spacing : float, optional
+        The spacing between stirrups longditudinally in the section.
+    dshift : float, optional
+        
     rebarMat : Union[MaterialRebarCSA24, None], optional
         The rebar material to use, if specified this will overwrite the default
         material specified.
-
+    lUnit : str
+        The length units to use when creating and placing rebar in the section.
     """
 
     if sectionInd != 0:

@@ -19,10 +19,25 @@ from .rebar import (RebarFactory, RebarCollection, StirrupGroup, RebarLayer,
 class SectionConcrete:
     """
     Represents a concrete section. The concrete is composed of longditudinal 
-    rebar (top / bottom bars), and transverse rebar ()
+    rebar (top / bottom bars), and transverse rebar (stirrups)
     
     Special sections, such as T-beams cannot be repersented using this section.
-    
+
+    Parameters
+    ----------
+    concrete : SectionRectangle
+        The concrete in the section, must be a rectangle.
+    rebar : RebarCollection, optional
+        The longditudinal rebar in the section. Rebar collections contain
+        a number of groups, i.e. top bars and bottom bars.
+        The default is None.
+    stirrups : StirrupGroup, optional
+        The a group of stirrups in the section. The default is None.
+
+    Returns
+    -------
+    None.
+
     
     """
     concrete: SectionRectangle
@@ -33,26 +48,7 @@ class SectionConcrete:
     def __init__(self, concrete: SectionRectangle,
                         rebar: RebarCollection = None,
                         stirrups: StirrupGroup = None):   
-        """
-        Represents a concrete section. Concrete sections will have the base 
-        section geometry, which currently.
 
-        Parameters
-        ----------
-        concrete : SectionRectangle
-            The concrete in the section, must be a rectangle.
-        rebar : RebarCollection, optional
-            The longditudinal rebar in the section. Rebar collections contain
-            a number of groups, i.e. top bars and bottom bars.
-            The default is None.
-        stirrups : StirrupGroup, optional
-            The a group of stirrups in the section. The default is None.
-
-        Returns
-        -------
-        None.
-
-        """
         self.concrete = concrete
         self.rebar    = rebar
         self.stirrups = stirrups
@@ -76,46 +72,6 @@ class SectionConcrete:
             self.rebar = rebar
         else:
             self.rebar.addBars(rebar.groups)
-
-    # def getdMax(self, yDir: bool=True, posDir: bool=True, 
-    #             lunit: str = 'mm'):
-    #     """
-    #     Gets the maximum depth of the section, i.e. the distance from the top
-    #     of the section to the lowest longditudinal bar. 
-
-    #     Parameters
-    #     ----------
-    #     yDir : bool, optional
-    #         A flag that specifies if the x or y direction will be used. 
-    #         The default is True, leading to y.
-    #     posDir : bool, optional
-    #         A flag that specifies if force should be positive or negative. 
-    #         Positive is defined as force or moment that creates tension at the 
-    #         "bottom" of the beam. e.g. a simply supported beam has positive 
-    #         bending.
-            
-    #         The default is True.
-
-    #     Returns
-    #     -------
-    #     dmax : float
-    #         The distance from the top of the section to the lowest 
-    #         longditudinal bar
-
-    #     """
-                
-    #     d = self.getDepth(yDir, lunit)
-    #     if yDir:
-    #         positions = self.rebar.getyCoords(lunit)
-    #     else:
-    #         positions = self.rebar.getxCoords(lunit)
-
-    #     if posDir:
-    #         dbar = min(positions)
-    #     else:
-    #         dbar = max(positions)
-        
-    #     return d - dbar
 
     def getWidth(self, yDir: bool = True, lunit: str = 'mm') -> float:
         """
@@ -198,7 +154,7 @@ class SectionConcrete:
 
         Returns
         -------
-        dv : float
+        dmax : float
             The maximum depth from the compression face to the furthest away
             rebar.
 
@@ -313,6 +269,12 @@ class SectionConcrete:
             section, which will be assumed to be in compression.
             
             The default is True.
+        NAlocation : float, optional
+            A manual overwrite, which can be used to specify the neutral axis
+            location. This is used to determine which bars should be used
+            when calculating deff. By default, the centerline of the beam is
+            used.  This will exclude top bars, but may include skin reinforcing 
+            if there is any.
         lUnit : str, optional
             The output units. The default is 'mm'.
 
@@ -757,9 +719,34 @@ class RebarPlacerManual():
 
 # TODO: document
 class RebarPlacerRow(RebarPlacerAbstract):
+    """
+    A generic rebar placer. It takes in a factor object used to produce rebar,
+    and a placement configuration that has the spacing rules used to place
+    rebar.
     
+
+    Rebar is placed in the section using rules defined in the placementConfig
+    If the row fills up, the rebar will be shifted to the next row.
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The concrete secton to place rebar in.
+    rebarFactory : RebarFactory
+        The the rebar factory to use - all rebar will be created using this
+        object.
+    placementConfig : RebarSpacingConfig
+        The placement config class, which contains spacing rules.
+    
+    Returns
+    -------
+    None.
+
+    """
+    
+
     def __init__(self, section: SectionConcrete, 
-                 rebarFactory,
+                 rebarFactory: RebarFactory,
                  placementConfig: RebarSpacingConfig = None):
         super().__init__(section, rebarFactory, placementConfig)
     
@@ -786,7 +773,6 @@ class RebarPlacerRow(RebarPlacerAbstract):
     def getMaxBarsInRow(self):
         
         Nbars = (self.bRow - self.dbar) / (self.dbar + self.s)
-        # Nbars = (self.bRow - self.dbar - 2*self.rcurve)/(self.dbar + self.s)
         
         return math.ceil(Nbars)
      
@@ -909,8 +895,7 @@ def _getBarPositon(self, Nbars:int, width:float, cover):
     else:
         return list(np.linspace(0,1, Nbars)*width + cover)
 
-
-class StirrupPlacer:
+class StirrupPlacer(ABC):
     
     def __init__(self, section, spacingConfig: RebarSpacingConfig = None):
         self.section = section         
@@ -930,10 +915,27 @@ class StirrupPlacer:
 
 # TODO: rename into box?
 class StirrupPlacerRow(RebarPlacerAbstract):
-    
+    """
+    Places stirrups in rows in the given section. 
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The concrete secton to place rebar in.
+    rebarFactory : RebarFactory
+        The the rebar factory to use - all rebar will be created using this
+        object.
+    placementConfig : RebarSpacingConfig
+        The placement config class, which contains spacing rules.
+
+    Returns
+    -------
+    None.
+
+    """  
     def __init__(self, section: SectionConcrete, 
-                         placementConfig: RebarSpacingConfig = None,
-                         rebarFactory: RebarFactory = None):
+                         rebarFactory: RebarFactory = None,
+                        placementConfig: RebarSpacingConfig = None):
         super().__init__(section, rebarFactory, placementConfig)
     
     def _setDimensions(self, yDir):
@@ -1039,7 +1041,8 @@ class StirrupPlacerRow(RebarPlacerAbstract):
     def place(self, NStirrups:int, barType:str, yDir: bool = True,
               Nleg = 2, spacing = 200, dshift = None):      
         """
-        Place Nbars of the type "barType" within the rebar section. The location
+        Place NStirrups of the type "barType" within the rebar section. 
+        The direction
         enumeration is used to specify where the section the bars are placed,
         i.e. at the bottom, top, left or right. By default the bars are placed
         in the bottom layer.
@@ -1053,10 +1056,19 @@ class StirrupPlacerRow(RebarPlacerAbstract):
             The number of bars to place.
         barType : str
             The type of bar to place.
-        location : RebarLocationEnum
-            The location bars are placed. 1 for bottom, 2 for top, 3 for left,
-            and 4 for right.
-
+        yDir : bool, optional
+            A flag that specifies if the direction of interest is in the 
+            sections vertical (y) direction. The default value is true, leading
+            to vertical outputs, i.e. y axis outputs.
+        Nleg : int, optional
+            The number of legs each stirrup has. Currently only two legs are 
+            supported per stirrup.
+        spacing : float, optional
+            The spacing between stirrups longditudinally in the section.
+        dshift: float, optional
+            A variable that can be used to manually shift where the stirrup
+            legs are within the section. The shift will be towards the outside 
+            edges of the section. This variable affects only interior bars.
         """
         
         if not self.factory:

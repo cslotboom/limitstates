@@ -32,85 +32,74 @@ class ShearConfigurations(IntEnum):
 @dataclass
 class DesignPropsConcrete24:
     """
-    Design propreties specifically for a glulam beamcolumn element.
-    Beams will either be single span or multi-span. For multi-span beams,
-    Lx and Ly need to be set.
-    
-    Note Lx is the design length of an element. Lex is the effective design
-    length, which is Lx * kx
-    
-    There are different design factors set for bending and compression design.
-    This is because sometimes the top bracing for bending does not brace
-    the full member in compression.
-    
+    Design propreties specifically for a concrete beamcolumn element.   
 
     Parameters
     ----------
-    lateralSupport : bool, optional
-        A flag that is set equal to true if the beamcolumn has continuous
-        lateral support for bending.
-        For single spans beams. For multi-segment beams.
-    Lx : float, list[float]
-        The beam column's unsupported length in the section's x direction, which
-        is typically the strong direction.
-        If the beam is mult-segment, this is a list of the beam length, multiplied
-        by the factor ke from table 
-    Ly : float, list[float]
-        The beam column's unsupported length in the section's y direction, which
-        is typically the weak direction.
-    kexB : float
-        A factor that converts the actual span length into the effective span
-        length. See table 7.4 for guidance. 
-        If the beam is multispan, it must have the same number of entries 
-        as Lx and Ly. 
-    kexC : float
-        A factor that converts the actual span length into the effective span
-        length for compression. See table A.4 for guidance. 
-    keyC : float
-        A factor that converts the actual span length into the effective span
-        length for compression. See table A.4 for guidance. 
+    cover : bool, optional
+        The cover to use in the concrete element. Units will match the section
+        units
+    lam : float, optional
+        The concrete density factor. Taken as 1 for normal density concrete.
+        See c.l. 8.6.5
+    shearReinforcementType : ShearConfigurations, list[float]
+        The condition used for shear reinforcement, this affects the beta value
+        that gets set by the user. See cl 11.3.6.3
+    theta : float
+        The angle of diagonal compressive stress along the cross section, 
+        taken as 35 degrees by default. See cl 11.3.6.3
+    sectionRegions : None
+        A list of regions each section will apply to, set in units of the 
+        concrete elment. This only applys to concrete elements that have 
+        multiple sectons. 
+
     """
     
     
     cover: float = None
     lam: float = 1
-    shearReinforcementType: float = 1
+    shearReinforcementType: ShearConfigurations = 1
     theta: float = radians(35)
     sectionRegions:list[list[float]] = None
-    
-    
-    # lateralSupport:Union[bool,list[bool]] = True
-    
-    # Lx:Union[float,list[float]] = None
-    # Ly:Union[float,list[float]] = None
-    
-    # kexB:Union[float,list[float]] = None
-    # kexC:float = None
-    # keyC:float = None
-    
-    # def setkexB(self, kexB):
-    #     self.kexB  = kexB
-    #     self.Lexb = self.Lx * self.kexB 
-        
-    # def setkexC(self, kexC):
-    #     self.kexC  = kexC
-    #     self.LexC = self.Lx * self.kexC 
-        
-    # def setkeyC(self, keyC):
-    #     self.keyC  = keyC
-    #     self.LeyC = self.Ly * self.keyC
-        
+            
 
 @dataclass
 class EleDisplayPropsConcrete24(EleDisplayProps):
     """
-    The plot indicie is only needed if no section is provided. A provided
-    section will overwrite the 
+    A class that aggregates all propreties which will be used to visualize
+    outputs from elements.
+
+    The plot indicie is only needed if no section is provided. If a section 
+    has been set, the plot index will be ingored. 
+    
+    Parameters
+    ----------
+    section : str, SectionAbstract
+        The section that will be used for plotting/display. 
+        This can be different than design section.
+    member : str, SectionAbstract
+        The member used for plotting/display. This can be different than the
+        design section..
+    configCanvas : str, PlotConfigCanvas
+        A configuration object that stores the canvas's . 
+    configObject : str, PlotConfigObject
+        A configuration object that stores the objects display propreties,
+        i.e. colour linestyle etc. 
+    fillColorLines : str, SectionAbstract
+        The colour used for internal fill objects, in this case stee.
+    sectionInd : str, PlotConfigCanvas
+        The index of the section to plot. If a section has been set, the plot 
+        index will be ingored. 
+    cover : str, PlotConfigObject
+        The cover to be used in the plots. When not set, this defaults to the
+        cover defined in DesignPropsConcrete24.
+        
     """
+
 
     fillColorLines: str = MATCOLOURS['steel']
     sectionInd: int = 0
-    cover: float = 0
+    cover: float = None
             
     def __post_init__(self):
         if self.configCanvas == None:
@@ -123,32 +112,22 @@ class EleDisplayPropsConcrete24(EleDisplayProps):
                                                  originLocation = 2,
                                                  patchType = 2)
     
-
-
         
 class BeamColumnConcreteCsa24(BeamColumn):
     """
-    Design propreties for a glulam beam element.
+    Design propreties for a A23.3 concrete beam element. The element can
+    have multiple sections assigned to it, with different rebar configurations
+    in each.
     
-    Glulam Beam columns can either be single span or multi-span. 
-    The span lengths are required to be set manually
-    
-    
-    Multi-span members with compression loads are not supported.
-    
-    For multi-span beams, Lx and Ly need to be set.
-    
-    When setting plot displays, the section.
-    If a section is manually set, the index is ignored.
-
+    Multispan beams are currently not supported.
 
     Parameters
     ----------
     member : Member
         The the structural member used to represent the beam's position,
         orientation and support conditions.
-    section : SectionRectangle
-        The section for the beamcolumn.
+    section : Union[SectionConcrete, list[SectionConcrete]]
+        The section, or section group for the beamcolumn.
     designProps : DesignPropsGlulam19, optional
         The inital design propreties. The default is None, which creates 
         a empty DesignPropsGlulam19 object.
@@ -178,7 +157,6 @@ class BeamColumnConcreteCsa24(BeamColumn):
         
         self.member = member
         self.section = section
-        # self._initMain(member, section)
         
         # Initialize the design propreties if none are given.        
         if designProps is None:
@@ -234,6 +212,3 @@ class BeamColumnConcreteCsa24(BeamColumn):
            eleDisplayProps.member  = self.member
         
         return eleDisplayProps
-
-class SectionNASolverCsa24:
-    pass

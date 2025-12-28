@@ -1,6 +1,5 @@
 """
 Author: CS
-Date: 202050803
 Description:
     Checks if rebar is palced correctly 
 """

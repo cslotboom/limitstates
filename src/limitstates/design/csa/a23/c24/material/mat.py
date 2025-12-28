@@ -4,17 +4,30 @@ The material library contains material models
 
 from limitstates import MaterialElastic
 from limitstates.units import ConverterLength
-from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, DBConfig, _sortCLTMatDict
 
 __all__ = ["MaterialConcreteCSA24", "MaterialRebarCSA24"]
 
-_glulamConfig = DBConfig('csa', 'glulam', 'csa_o86_2019')
-
 class MaterialConcreteCSA24(MaterialElastic):
-
     """
     An elastic material that has design strengths for concrete.
+    The elastic modulus is set using the provided fc input value.
+
+    Parameters
+    ----------
+    fc : float
+        The compressive strength of the concrete.
+    amax : float, optional
+        The maximum aggregate size in units lUnit.
+    ey : float, optional
+        The yield strain of the concrete.
+    sUnit : str, optional
+        The stress units to use for the material. The default is 'MPa'.
+    rhoUnit : str, optional
+        The density units to use for the material. The default is 'kg/m3'.
+    lUnit : str, optional
+        An optional name for the material. By default is 'Elastic Material'.
     """
+    
     type:str = "concrete"
     code:str = "A23-24"
     fc:float
@@ -25,11 +38,11 @@ class MaterialConcreteCSA24(MaterialElastic):
     alpha:float = 0.8
     beta:float = 0.9
 
-    def __init__(self, fc:float, amax = 20, ey = 0.0035,
-                 sUnit:str='MPa', rhoUnit='kg/m3', lUnit:str='mm'):
+    def __init__(self, fc: float, amax: float = 20, ey: float = 0.0035,
+                 sUnit: str = 'MPa', rhoUnit: str = 'kg/m3', 
+                 lUnit: str = 'mm'):
         self._initUnits(sUnit, rhoUnit)
         self._initLUnit(lUnit)
-        # self.__dict__.update(matDict)
         self.ey = ey
         
         self.fc = fc
@@ -82,10 +95,28 @@ class MaterialConcreteCSA24(MaterialElastic):
         return self.lConverter.getConversionFactor(self.lUnit, outputUnit)
 
 class MaterialRebarCSA24(MaterialElastic):
-
     """
-    An elastic material that has design strengths for glulam. Propreties are
-    read from a dictionary
+    An CSA A23.3-24 elastic material that has design strengths for steel.
+
+    Parameters
+    ----------
+    fy : float, optional
+        The yield stress of the steel in Sunit. The default is 400.
+    E : float, optional
+        The elastic modulus for the steel in Sunit. The default is 200000.
+    E : float, optional
+        The shear modulus for the steel in Sunit. The default is 80000.
+    ey : float, optional
+        The yeild strain for the steel. The default is 0.0002.
+    sUnit : str, optional
+        The stress units used. The default is 'MPa'.
+    rhoUnit : TYPE, optional
+        The density units used. The default is 'kg/m3'.
+
+    Returns
+    -------
+    None.
+
     """
     type:str = "rebar"
     code:str = "A23-24"
@@ -94,16 +125,16 @@ class MaterialRebarCSA24(MaterialElastic):
     fv:float
     ey:float
 
-    def __init__(self, fy:float = 350, E:float = 200000, ey:float = 0.002, 
+    def __init__(self, fy:float = 400, E:float = 200000, G:float = 80000, 
+                 ey:float = 0.002, 
                  sUnit:str='MPa', rhoUnit='kg/m3'):
+
         self._initUnits(sUnit, rhoUnit)
-        # self.__dict__.update(matDict)
-        
         self.fy = fy
         self.E  = E
+        self.G  = G
         self.ey = ey
-        # if 'G' not in self.__dict__:
-        #     self.setG()
+
             
     @property
     def name(self):
