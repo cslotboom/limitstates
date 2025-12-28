@@ -41,7 +41,8 @@ def _init_placer():
     dstir = 10
     configPlacement = ls.RebarSpacingConfig(s, c, dstir)
     
-    return ls.StirrupPlacerRow(concreteSection, configPlacement)
+    return ls.StirrupPlacerRow(concreteSection, 
+                               placementConfig = configPlacement)
     
 def _init_placer_no_stirrup():
     h = 500
@@ -63,7 +64,7 @@ def _init_placer_no_stirrup():
     dstir = 10
     configPlacement = ls.RebarSpacingConfig(s, c, dstir)
     
-    return ls.StirrupPlacerRow(concreteSection, configPlacement, rebarFactory)
+    return ls.StirrupPlacerRow(concreteSection, rebarFactory, configPlacement)
 
 def test_placement_init():
     strategy = _init_placer()

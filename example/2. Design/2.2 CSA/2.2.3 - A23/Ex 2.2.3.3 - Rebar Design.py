@@ -12,7 +12,7 @@ import limitstates.design.csa.a23.c24 as a23
 Next the beam section is defined. A concrete material is created, as well as
 a section and set of stirrups.
 """
-kN = 1
+kN = 1000
 m = 1
 
 h = 900

@@ -11,10 +11,14 @@ import pytest
 def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
     """
     Example 5.2 john Pao
+    
+    the bars don't actially fit in the JP example - a width of 305 is needed.
+    Some adjustments are made
+
     """
 
     fc = 25
-    c = 40
+    c = 35 # use cover less than the example to force bars to fit
 
     mat         = c24.MaterialConcreteCSA24(fc)
     section     = ls.SectionRectangle(mat, b, h)
@@ -28,8 +32,10 @@ def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
 
     barType = '25M'
     Nbar = 4
+    
+    depthOverwrite = 500 - 437.5 # Force the depth, to account for the cover change
     placer = c24.RebarPlacerRowCSA24(concreteSection, designProps)
-    placer.place(Nbar, barType, 1)
+    placer.place(Nbar, barType, 1, depthOverwrite = depthOverwrite)
     placer.place(2, barType, 2)
 
 

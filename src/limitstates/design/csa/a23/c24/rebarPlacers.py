@@ -72,7 +72,7 @@ class RebarPlacerRowCSA24(RebarPlacerRow):
         
     def place(self, Nbars: int, barType: str, 
               location: RebarLocationEnum, depthOverwrite: float = None,
-              dstirOverwrite:float = None, includeRadius:bool = True): 
+              dstirOverwrite:float = None, includeRadius:bool = False): 
         
         bar = self._getBar(barType)
         config = getSectionSpacingRules(bar, self.section, self.c, 

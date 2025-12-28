@@ -228,7 +228,7 @@ def getSectionMr(section: SectionConcrete,
         # The section could have no rebar, if so return 0
         if not section.rebar or len(section.rebar) == 0:
             return 0        
-        NAlocation    = solveForNA(section, yDir, posDir)
+        NAlocation    = solveForNACSA24(section, yDir, posDir)
     
     Sr = getSectionSr(section, NAlocation, yDir, posDir)
     Cr = getSectionCr(section, NAlocation, yDir, posDir)
@@ -300,7 +300,7 @@ class SectionNASolverCSA24(SectionNASolver):
                          Pf, yDir, posDir, 
                          NAtrial, tol, maxIter, logging)
         
-def solveForNA(section: SectionConcrete, Pf: float = 0, yDir: bool = True, 
+def solveForNACSA24(section: SectionConcrete, Pf: float = 0, yDir: bool = True, 
              posDir: bool = True, NAtrial: float = None, tol: float = 1e-3, 
              maxIter: float = 100):
     """

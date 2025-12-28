@@ -496,13 +496,64 @@ class SectionNASolver:
         return NAtrial, nn
 
 def solveForNA(section: SectionConcrete, 
+                concreteFunction, steelFunction,
              Pf:float = 0, yDir: bool = True, 
              posDir: bool = True,
              NAtrial: float = None,
              tol: float = 1e-3, maxIter: float = 100):
+    """
+    Attempts to solves for the neutral axis of a section. Assumes all 
+    bars use the same material.
+    
+    Solves for the neutral axis within a section.
+    The neutral axis is measured from the top of the section.
+
+    Parameters
+    ----------
+    section : SectionConcrete
+        The concrete section to solve the NA of.
+    concreteFunction : function
+        A function that returns the compressive force in the concrete, 
+        given the section and neutral axis location.
+    steelFunction : function
+        A function that returns the tensile force in the steel, 
+        
+    Pf : float, optional
+        A axial force applied to the section. The default is 0.
+    yDir : bool, optional
+        A flag that specifies if the direction of interest is in the 
+        sections vertical (y) direction. The default value is true, leading
+        to vertical outputs, i.e. y axis outputs.
+    posDir : bool, optional
+        A flag that specifies if force should be positive or negative. 
+        Positive is defined as force or moment that creates tension at the 
+        "bottom" of the beam. e.g. a simply supported beam has positive 
+        bending, a downards shear force is positive.
+        
+        If set to true, then the NA will be measured from the "bottom" of the
+        section, which will be assumed to be in compression.
+        
+        The default is True.
+    tol : float, optional
+        The tolerance required for convergence, i.e. the difference between
+        the calcualted concrete and steel force. The default is 1e-3.
+    maxIter : float, optional
+        The maximum number of iterations needed before convergence is 
+        reached. The default is 100.
+    logging : bool, optional
+        A flag that turns on or off logging. Currently is inactive. 
+        The default is True.
+
+    Returns
+    -------
+    None.
+
+    """
     
     
-    naSolver = SectionNASolver(section, Pf, yDir, posDir, NAtrial,
+    naSolver = SectionNASolver(section, 
+                               concreteFunction, steelFunction,
+                               Pf, yDir, posDir, NAtrial,
                                tol, maxIter)
 
     return naSolver.calcNA()

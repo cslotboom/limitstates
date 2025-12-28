@@ -32,7 +32,7 @@ def _init_element(h = 900, b = 450) -> c24.BeamColumnConcreteCsa24:
 
 def test_element_Mr():
     barType = '30M'
-    Mf = 800
+    Mf = 800000
     deffsol = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
@@ -44,7 +44,7 @@ def test_element_Mr():
     assert section.getdeff() == deffsol
     # ls.plotSection(ele.section)
     
-    assert 800 < c24.getSectionMr(section) / 1000
+    assert Mf < c24.getSectionMr(section)
 
 def test_element_rho():
     
@@ -60,7 +60,7 @@ def test_element_Mr_top():
 
     posDir = False
 
-    Mf = 800
+    Mf = 800000
 
     deff = 900 - 30 - 10 - 30/2
 
@@ -74,7 +74,7 @@ def test_element_Mr_top():
 
 def test_element_Mr_right():
     barType = '30M'
-    Mf = 700
+    Mf = 700000
     deffsol = 450 - 30 - 10 - 30/2
     yDir = False
     posDir = True
@@ -90,7 +90,7 @@ def test_element_Mr_left():
     barType = '30M'
     yDir = False
     posDir = False
-    Mf = 700
+    Mf = 700000
     # deff = 900 - 30 - 10 - 30/2
 
     ele = _init_element()
@@ -102,7 +102,7 @@ def test_element_Mr_left():
     
 def test_element_Mr_over_reinforced():
     barType = '30M'
-    Mf = 800
+    Mf = 800000
     deffsol = 900 - 30 - 10 - 30/2
 
     ele = _init_element(650, 400)
@@ -112,7 +112,7 @@ def test_element_Mr_over_reinforced():
     section = ele.getSection()
 
     assert ele.section.rebar.Nbars == 10
-    assert Mf < c24.getSectionMr(ele.section) / 1000
+    assert Mf < c24.getSectionMr(ele.section)
 
     # assert section.getdeff() == deffsol
 

@@ -21,7 +21,7 @@ from .beamColumn import (getSectionBalancedRho, getSectionAsmin, getElementVrc,
                          getElementVrs, getElementVmax, getElementVr, 
                          getElementSmax, getElementSminForVrs,
                          getElementSmaxGeom, getElementSmaxStirrup)
-from .nasolver import getSectionMr, solveForNA
+from .nasolver import getSectionMr, solveForNACSA24
 
 
 
@@ -63,7 +63,7 @@ def getRequiredSteelForMr(Mr:float,
     alpha = mat.alpha    
     
     # get the discriminant of the sections rebar. 
-    discriminant =  (dEst**2 - 1e6 *2*Mr / (phiC*alpha*fc*b))
+    discriminant =  (dEst**2 - 1e3 *2*Mr / (phiC*alpha*fc*b))
     
     # If the discriminant is less than zero, no amount of rebar will fufil the
     # section requirements.
@@ -78,7 +78,7 @@ def getRequiredSteelForMr(Mr:float,
     return As   
 
 def _checkMr(section: ls.SectionConcrete, yDir: bool, posDir: bool):
-    NA    = solveForNA(section, yDir, posDir)
+    NA    = solveForNACSA24(section, yDir, posDir)
     MrSol = getSectionMr(section, NA, yDir, posDir)
     return MrSol
 
@@ -192,7 +192,8 @@ def designBottomSteelForMr(Mr: float,
     d = section.getDepth(yDir, lUnit)
     
     # estimate where the rebar in the section is placed
-    dEstBot = d*0.9    
+    dEstBot = d*0.9
+    # Mr = Mr
     NbarReq = _getNbarReq(Mr, dEstBot, section, rebar, b)
     
     location = getRebarLocationEnum(yDir, posDir)
@@ -263,7 +264,7 @@ def _placeTopBarIfOverreinforced(element, sectionInd, yDir, posDir,
     
     location = getRebarLocationEnum(yDir, not posDir)
     placer = RebarPlacerRowCSA24(section, designProps, rebar.mat, lUnit)
-    placer.place(NbarReqTop, barType, location, includeRadius)
+    placer.place(NbarReqTop, barType, location, includeRadius = includeRadius)
 
 def _runDesignIteration(Mr: float, 
                         element: BeamColumnConcreteCsa24, 
@@ -294,8 +295,8 @@ def _runDesignIteration(Mr: float,
     b = section.getWidth(yDir, lUnit)    
 
 
-    NA    = solveForNA(section, yDir = yDir, posDir = posDir)
-    MrSol = getSectionMr(section, NA, yDir, posDir) / 1000
+    NA    = solveForNACSA24(section, yDir = yDir, posDir = posDir)
+    MrSol = getSectionMr(section, NA, yDir, posDir)
     momentLow = MrSol < Mr
 
     hasTopBars = len(bottomBarInds) != len(section.rebar)
@@ -344,8 +345,8 @@ def _runDesignIteration(Mr: float,
         Ngroups = len(section.rebar)
         bottomBarInds = list(range(NgroupsTop, Ngroups))
 
-        NA = solveForNA(section, yDir, posDir, NAtrial=NA)
-        MrSol = getSectionMr(section, NA, yDir, posDir)  / 1000
+        NA = solveForNACSA24(section, yDir, posDir, NAtrial=NA)
+        MrSol = getSectionMr(section, NA, yDir, posDir)
         
         momentLow = MrSol < Mr
         if momentLow:
@@ -436,7 +437,7 @@ class StirrupDesigner:
                         logging = False,
                         logFunction = print):
         
-        self.Vr = Vr  * 1000
+        self.Vr = Vr
         self.element = element
         self.sectionInd = sectionInd
         self.designSection = element.getSection(sectionInd)
