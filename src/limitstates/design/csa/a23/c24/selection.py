@@ -459,11 +459,11 @@ class StirrupDesigner:
         self.logFunction = logFunction
         
 
-    def log(self, string):
+    def _log(self, string):
         if self.logging:
             self.logFunction(string)
         
-    def getdvEst(self):
+    def getdEst(self):
         element = self.element
         section = self.designSection
         dbar = self.rebar.d
@@ -471,20 +471,35 @@ class StirrupDesigner:
         
         if self.dEst:
             dEst = self.dEst
-            self.log('Using manual dv estimate.')
+            self._log('Using manual dv estimate.')
         elif section.rebar:
-            dvEst = None
-            self.log('Using dv calculated from rebar.')
+            dEst = None
+            self._log('Using dv calculated from rebar.')
         else:
-            self.log("No longditudinal bars found, and no manual dv estimate"\
+            self._log("No longditudinal bars found, and no manual dv estimate"\
                      " given, estimating dv.")
             h = section.getDepth(self.yDir, 'mm')
-            dvEst = h - (element.designProps.cover + dbar + 25)
-            self.log(f'dv estimated as: {dvEst}')
+            dEst = h - (element.designProps.cover + dbar + 25)
+            self._log(f'dv estimated as: {dEst}')
         
-        return dvEst
+        return dEst
 
     def VcCalc(self, dEst):
+        """
+        Calculates the shear force given a depth estimate. Outputs in N.
+
+        Parameters
+        ----------
+        dEst : float
+            The estimate for the effective depth of the rebar in the section.
+
+        Returns
+        -------
+        float
+            The shear capacity.
+
+        """
+
         return getElementVrc(self.element, self.sectionInd, self.yDir, 
                            self.posDir, dEst = dEst)
 
@@ -493,7 +508,10 @@ class StirrupDesigner:
         return floor( sminTrial / self.ds) * self.ds
 
 
-    def runTrial(self, VsReq, NlegTrial, sMaxGeom, dEst):
+    def _runTrial(self, VsReq, NlegTrial, sMaxGeom, dEst):
+        """
+        Checks if a single solution, i.e. a spacing / area combination, works.
+        """
         
         smin = self.smin       
         sminTrial = getElementSminForVrs(self.element, VsReq, self.sectionInd,
@@ -515,13 +533,19 @@ class StirrupDesigner:
         else:
             return sBar, False
 
-    def runDesignIteration(self, VsReq, dvEst, SMaxgeom):
+    def _runDesignIteration(self, VsReq, dvEst, SMaxgeom):
+        """
+        Runs one iteration where we attampt to find a solution that works with
+        the minimum permitted spacing and a set number of stirrups.
+        The number of stirrups is increased until either the maximum is reached
+        or a working solution is found.
+        """
         
 
         NlegTrial = 2
         solution = False
         while not solution and (NlegTrial <= self.NlegMax):           
-            spacing, solution = self.runTrial(VsReq, NlegTrial, SMaxgeom, dvEst)
+            spacing, solution = self._runTrial(VsReq, NlegTrial, SMaxgeom, dvEst)
             if not solution:
                 NlegTrial += 2
                 
@@ -534,24 +558,35 @@ class StirrupDesigner:
         return ls.StirrupGroup(stirrups)
 
     def design(self) -> (float, ShearResultEnum):
+        """
+        Runs the design iteration, and finds a solution. If a solution is found
+        the stirrups will also be placed within the element.
+
+        Returns
+        -------
+        (float, ShearResultEnum)
+            The output resistance, and an output flag showing if the design
+            was sucessful..
+
+        """
         designProps = self.element.designProps
         designProps.shearReinforcementType = ShearConfigurations.NoTransverse
         # dbar  = self.rebar.d
         
         Vr    = self.Vr
-        dvEst = self.getdvEst()
+        dEst = self.getdEst()
         
         
         # Case 1: the section needs no reinforcing.
-        Vc    = self.VcCalc(dvEst)
+        Vc    = self.VcCalc(dEst)
         if Vr < Vc:
             return Vc, ShearResultEnum.noRebarPlaced
         
         # Case 2: Vrmax is exceeded.
         Vrmax = getElementVmax(self.element, self.sectionInd, 
-                               self.yDir, self.posDir, dvEst)
+                               self.yDir, self.posDir, dEst)
         if Vr > Vrmax:
-            self.log(f'No stirrup design possible for {self.designSection},\
+            self._log(f'No stirrup design possible for {self.designSection},\
                   Vr = {round(Vr)} > Vrmax = {round(Vrmax)}')
             return Vc, ShearResultEnum.noSolutionPossible
 
@@ -559,14 +594,14 @@ class StirrupDesigner:
         # TODO: update so this is not tied to a section,
         designProps = self.element.designProps
         designProps.shearReinforcementType = ShearConfigurations.MinTransverse
-        Vc    = self.VcCalc(dvEst)
+        Vc    = self.VcCalc(dEst)
         
         VsReq = Vr - Vc
         SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
                                         self.yDir, self.posDir, 
-                                        dvEst, Vr, Vrmax)
+                                        dEst, Vr, Vrmax)
 
-        s, isSol, Nleg = self.runDesignIteration(VsReq, dvEst, SMaxgeom)
+        s, isSol, Nleg = self._runDesignIteration(VsReq, dEst, SMaxgeom)
         
         # Set the solution and do some final clean up
         if isSol:
@@ -575,27 +610,27 @@ class StirrupDesigner:
             self.designSection.stirrups = self._getStirrups(Nstirrup, s)
 
             VrOut = getElementVr(self.element, self.sectionInd, 
-                                 self.yDir, self.posDir, dvEst)
+                                 self.yDir, self.posDir, dEst)
         
             # If we are now greater than Vmax/2, the maximum spacing has changed.
             # TODO: add iteration if greater than new smax
             SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
                                           self.yDir, self.posDir, 
-                                          dvEst, Vr, Vrmax)
+                                          dEst, Vr, Vrmax)
             
         if SMaxgeom < s:
-            s, isSol, Nleg = self.runDesignIteration(VsReq, dvEst, SMaxgeom)
+            s, isSol, Nleg = self._runDesignIteration(VsReq, dEst, SMaxgeom)
             Nstirrup = int(Nleg / 2)
 
             self.designSection.stirrups = self._getStirrups(Nstirrup, s)
 
             VrOut = getElementVr(self.element, self.sectionInd, 
-                                 self.yDir, self.posDir, dvEst)
+                                 self.yDir, self.posDir, dEst)
         
             # If we are now greater than Vmax/2, the maximum spacing has changed.
             SMaxgeom = getElementSmaxGeom(self.element, self.sectionInd, 
                                           self.yDir, self.posDir, 
-                                          dvEst, Vr, Vrmax)
+                                          dEst, Vr, Vrmax)
         
         if isSol:
             placer = StirrupPlacerRowCSA24(self.element.section,
@@ -603,7 +638,7 @@ class StirrupDesigner:
             placer.setPosition(self.yDir)
         
         if not isSol:
-            self.log(f'The maximum capacity found is less than the design ,\
+            self._log(f'The maximum capacity found is less than the design ,\
                   shear, with VrReq = {round(Vr)} > VrOut = {round(VrOut)}')
             return VrOut, ShearResultEnum.designFailed
         else:
