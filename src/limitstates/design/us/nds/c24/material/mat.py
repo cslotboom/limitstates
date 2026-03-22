@@ -5,19 +5,19 @@ The material library contains material models
 from limitstates import MaterialElastic
 from limitstates.objects.read import _loadMaterialDBDict, _loadMaterialDB, DBConfig, _sortCLTMatDict
 
-__all__ = ["MaterialGlulamCSA19", "MaterialCLTLayerCSA19", 
+__all__ = ["MaterialGlulamNds24", "MaterialCLTLayerNds24", 
            "loadGlulamMaterialDB", "loadGlulamMaterial", "loadCltMatDB"]
 
 _glulamConfig = DBConfig('csa', 'glulam', 'csa_o86_2019')
 
-class MaterialGlulamCSA19(MaterialElastic):
+class MaterialGlulamNds24(MaterialElastic):
 
     """
     An elastic material that has design strengths for glulam. Propreties are
     read from a dictionary
     """
     type:str = "glulam"
-    code:str = "CSAo86-19"
+    code:str = "Nds-24"
     species:str = "" # needs to be empty for the repr
     grade:str   = "" # needs to be empty for the repr
     E:float
@@ -50,14 +50,14 @@ class MaterialGlulamCSA19(MaterialElastic):
     def setG(self):
         self.G = self.E / 16
 
-class MaterialCLTLayerCSA19(MaterialElastic):
+class MaterialCLTLayerNds24(MaterialElastic):
     """
     Material is loaded as file
     See table 8.2 for standard values. Transverse layers are approximated per
     suggestions from notes in the table..
     """
-    type:str='clt'
-    code:str = "csa086-19"
+    type:str = "clt"
+    code:str = "Nds-24"
     E:float
     G:float
     fb:float
@@ -95,7 +95,7 @@ class MaterialCLTLayerCSA19(MaterialElastic):
         """ See Table 8.2 note 5"""
         self.G90 = self.G / 10     
 
-def loadGlulamMaterialDB() -> list[MaterialGlulamCSA19]:
+def loadGlulamMaterialDB() -> list[MaterialGlulamNds24]:
     """
     Returns all CSAo86-19 glulam materials as defined in CSAo86, 
     Strengths are as defined in table 7-2 in the units of MPa. 
@@ -114,10 +114,10 @@ def loadGlulamMaterialDB() -> list[MaterialGlulamCSA19]:
     """
     sUnit = 'MPa'
     rhoUnit = 'kg/m3'
-    mats = _loadMaterialDB(_glulamConfig, MaterialGlulamCSA19, sUnit, rhoUnit)
+    mats = _loadMaterialDB(_glulamConfig, MaterialGlulamNds24, sUnit, rhoUnit)
     return mats
 
-def loadGlulamMaterial(species:str, grade:str) -> MaterialGlulamCSA19:
+def loadGlulamMaterial(species:str, grade:str) -> MaterialGlulamNds24:
 
     """
     Returns a specific CSAo86-19 glulam materials as defined in CSAo86.
@@ -149,7 +149,7 @@ def loadGlulamMaterial(species:str, grade:str) -> MaterialGlulamCSA19:
     
     return matOut
 
-def loadCltMatDB(cltDBname:str = "prg320_2019") -> list[list[MaterialCLTLayerCSA19, MaterialCLTLayerCSA19]]:
+def loadCltMatDB(cltDBname:str = "prg320_2019") -> list[list[MaterialCLTLayerNds24, MaterialCLTLayerNds24]]:
     """
     Loads a set of CLT material from a database. For each material grade, two
     seperate CLT materials are loaded, one for the strong axis, and one for 
@@ -183,6 +183,6 @@ def loadCltMatDB(cltDBname:str = "prg320_2019") -> list[list[MaterialCLTLayerCSA
     mats = []
     for cltGrade in sortedMatDict.keys():
         tempMatDict = sortedMatDict[cltGrade]
-        mats.append([MaterialCLTLayerCSA19(tempMatDict[0], 'MPa', 'kg/m3'), 
-                     MaterialCLTLayerCSA19(tempMatDict[1], 'MPa', 'kg/m3')])
+        mats.append([MaterialCLTLayerNds24(tempMatDict[0], 'MPa', 'kg/m3'), 
+                     MaterialCLTLayerNds24(tempMatDict[1], 'MPa', 'kg/m3')])
     return mats

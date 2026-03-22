@@ -8,13 +8,12 @@ import numpy as np
 from numpy import ndarray
 from copy import deepcopy
 
+from limitstates.design.common.fire import exposureConditons, FireConditions, getFireDemands
 
-from limitstates.design.common.fire import exposureConditons, FireConditions, getFRRfromFireConditions, getFireDemands
 from .....objects import BeamColumn, SectionRectangle, SectionCLT, LayerClt, LayerGroupClt
 from .....objects.fireportection import FirePortection
-from .fireportection import GypusmFlatCSA19, GypusmRectangleCSA19
-from .element import BeamColumnGlulamCsa19, BeamColumnCltCsa19
-from enum import IntEnum
+from .fireportection import GypusmFlatNds24, GypusmRectangleNds24
+from .element import BeamColumnGlulamNds24, BeamColumnCltCsa19
 
 
 # =============================================================================
@@ -24,10 +23,9 @@ from enum import IntEnum
 kfi = {'timber':1.5, 'glulam':1.35, 'cltE':1.25, 'cltV':1.5, 'SCL':1.25 }
 kdfi = 1.15
 beta0 = 0.65
-betaN = {'timber':0.8, 'glulam':0.7, 'clt':0.8,'SCL':0.7 }
+betaN = 1.5  # Char rate in mm
 
-
-def _findPortectionType(condition:FireConditions, portection:str):
+def _findPortectionType(condition: FireConditions, portection: str):
     """
     Parameters
     ----------
@@ -40,11 +38,11 @@ def _findPortectionType(condition:FireConditions, portection:str):
 
     """
     if condition == FireConditions.beamColumn:
-        return GypusmRectangleCSA19(portection)
+        return GypusmRectangleNds24(portection)
     elif condition == FireConditions.beamWithPanel:
-        return GypusmRectangleCSA19(['exposed', portection, portection, portection])
+        return GypusmRectangleNds24(['exposed', portection, portection, portection])
     elif condition == FireConditions.panel:
-        return GypusmFlatCSA19(portection)
+        return GypusmFlatNds24(portection)
     else:
         raise Exception(f'Recived condition {condition}, expected one of {exposureConditons}')
 
@@ -68,7 +66,7 @@ def getGypsumFirePortection(condition:FireConditions,
     condition : str
         The condition of the element from a list of typical conditions.
         The FireCondition Enumeration class can be used, or an integer.
-    portection : FireConditions, int
+    portection : FireConditions, str
         The type of gypusm portection to use. 
         One of "exposed", "12.7mm", "15.9mm", "15.9mmx2", "unexposed".
 
@@ -79,8 +77,7 @@ def getGypsumFirePortection(condition:FireConditions,
     """
     return _findPortectionType(condition, portection)
 
-# TODO! add panel once it's complete
-def AssignFirePortection(element:BeamColumn, condition:FireConditions, portection:str):
+def AssignFirePortection(element: BeamColumn, condition: FireConditions, portection: str):
     """
     Assigns the fire portection to an element for some typical conditions.
     These include:
@@ -117,9 +114,8 @@ def AssignFirePortection(element:BeamColumn, condition:FireConditions, portectio
 # =============================================================================
 # 
 # =============================================================================
-
-       
-def getNetBurnTime(FRR:ndarray, portection:ndarray) -> ndarray[float]:
+    
+def getNetBurnTime(FRR: ndarray, portection: ndarray) -> ndarray[float]:
     """
     Given a input FRR demand and portection time, determines the burn 
     time on the section.
@@ -144,14 +140,12 @@ def getNetBurnTime(FRR:ndarray, portection:ndarray) -> ndarray[float]:
     burnTime[burnTime<0] = 0
     return burnTime
 
-def getBurnDimensions(netFireTime:ndarray[float], 
-                      Bn:float = 0.7) -> ndarray[float]:
+def getBurnDimensions(netFireTime: ndarray[float], 
+                      Bn0: float = 1.5) -> ndarray[float]:
     """
-    Calcualtes the amount burned on each face of a section using B.4 and 
-    B.5.
-    The zero-strength layer is culated according to B5, and uses 7mm or a 
-    linear interpolation if the burn time is less than 20min
-    Time units are in minutes, length units are in mm.
+    Calcualtes the amount burned on each face of a section using c.l. 3.2.
+
+    Time units are in minutes, length units are in inch.
 
     For a rectangular section fire portection is input 
     in: [top, right, bottom, left]  
@@ -159,24 +153,21 @@ def getBurnDimensions(netFireTime:ndarray[float],
     Parameters
     ----------
     netFireTime : ndarray
-        An array of the input fire time per face.
-    Bn : TYPE, optional
-        The char rate to use, review c.l. B.4.1 to choose. The default is 0.7.
+        An array of the input fire time per face in minutes.
+    Bn : float, optional
+        The 1hr nominal char rate to use in in/hour. 
+        Has default value of 1.5 inch/hour, see FDS c.l. 3.2.1
 
     Returns
     -------
-    None.
+    faceBurn : ndarray
+        An array storing the amount of burn on each face of the element.
+    .
 
     """
     
-    xn = np.array([7]*len(netFireTime))
-    
-    # if t<20, we don't have to reduce the section by the whole amount.
-    inds = np.where(netFireTime<20)[0]
-    xn[inds] = (netFireTime/20 * xn)[inds]
-    
-    burnAmount = netFireTime*Bn + xn
-    return burnAmount
+    netFireTimeHours = (netFireTime / 60)
+    return 1.2*netFireTimeHours**0.813*Bn0
 
 def getBurntRectangularDims(burnAmount, width:float, 
                             depth:float):
@@ -184,13 +175,9 @@ def getBurntRectangularDims(burnAmount, width:float,
     Gets the burn dimensions for a rectangle from a input burn time. Burn time
     is input in: [top, right, bottom, left]  
     
-    Calculates the amount burned on each face of a section using clauses B.4 
-    and B.5.
-    
-    The zero-strength layer is culated according to B5, and uses 7mm or a 
-    linear interpolation if the burn time is less than 20min
-    Time units are in minutes, length units are in mm.
-    
+    Calcualtes the amount burned on each face of a section using c.l. 3.2.
+
+    Time units are in minutes, length units are in inch.
 
     Parameters
     ----------
@@ -300,11 +287,11 @@ def _getRemainingCLTLayers(sectionCLT:SectionCLT, burnAmount):
 
 def _convertUnits(section):
     convertBack = False
-    oldUnits = 'mm'
-    if section.lUnit != 'mm':
+    oldUnits = 'in'
+    if section.lUnit != 'in':
         convertBack = True
         oldUnits = section.lUnit
-        section.convertUnits('mm')
+        section.convertUnits('in')
     return convertBack, oldUnits
 
 def _convertBack(section, burnSection,  oldUnits):
@@ -312,18 +299,15 @@ def _convertBack(section, burnSection,  oldUnits):
     burnSection.convertUnits(oldUnits)
 
 def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float], 
-                               portection:GypusmRectangleCSA19, 
-                               Bn:float = 0.7) -> SectionRectangle:
+                               portection:GypusmRectangleNds24, 
+                               Bn:float = 1.5) -> SectionRectangle:
     """
     Returns a burnt rectangular section, with burn dimensions for a rectangle 
     from a input burn time.
     
-    Calculates the amount burned on each face of a section using clauses B.4 
-    and B.5.
-    The zero-strength layer is calculated according to B5, and uses 7mm or a 
-    linear interpolation if the exposed time is less than 20min
-    Time units are in minutes.
-    
+    Calcualtes the amount burned on each face of a section using c.l. 3.2.
+
+    Time units are in minutes, length units are in inch.
 
     Parameters
     ----------
@@ -335,8 +319,8 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     portection : GypusmRectangleCSA19
         The fire portection object applied to the section.
     Bn : float, optional
-        The char rate for the section. 
-        The default is 0.7, which is the notional char rate.
+        The 1hr nominal char rate to use in in/hour. 
+        Has default value of 1.5 inch/hour, see FDS c.l. 3.2.1
 
     Returns
     -------
@@ -365,7 +349,7 @@ def getBurntRectangularSection(section:SectionRectangle, FRR:ndarray[float],
     return burnSection, burnAmount
 
 def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float], 
-                       portection:GypusmFlatCSA19, 
+                       portection:GypusmFlatNds24, 
                        Bn:float = 0.8) -> SectionCLT:
     """
     Returns a burnt rectangular section, with burn dimensions for a rectangle 
@@ -427,25 +411,9 @@ def getBurntCLTSection(section:SectionCLT, FRR:ndarray[float],
 The majority of functions exposed to the user are in this section.
 """
 
-def getFRRfromFireConditions(FRR:float, fireCon:FireConditions = 2):
-    """
-    A helper function used to get the appropriate FRR list from a set of 
-    typical conditions.
-    """
-    
-    if fireCon == FireConditions.beamWithPanel:
-        FRR = np.array([0,FRR,FRR,FRR])
-    elif fireCon == FireConditions.beamColumn:
-        FRR = np.array([FRR,FRR,FRR,FRR])
-    else:
-        vals = [e.value for e in FireConditions]
-        raise Exception(f'recieved {fireCon}, expected one of {vals} from FireConditions Enum')
-        
-    return FRR
-
-def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19, 
+def setFireSectionGlulamNDS(element:BeamColumnGlulamNds24, 
                             FRR:Union[list[float],ndarray[float]],
-                            Bn:float = 0.7):
+                            Bn:float = 1.5):
     """
     Sets the burnt section for a glulam element.
     If the element does not have fire portection assigned to it, it is assumed
@@ -466,8 +434,8 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19,
         For a rectangular section fire portection is input 
         in: [top, right, bottom, left]  
     Bn : float, optional
-        The burn rate for the section. 
-        The default is 0.7, which is the notional char rate.
+        The 1hr nominal char rate to use in in/hour. 
+        Has default value of 1.5 inch/hour, see FDS c.l. 3.2.1
     fireCondition : FireConditions
         The fire condition used. See the FireConditions enumeration for 
         possible values
@@ -482,14 +450,14 @@ def setFireSectionGlulamCSA(element:BeamColumnGlulamCsa19,
     
     # If the section is not set, assume the beam is exposed.
     if not firePort:
-        firePort = GypusmRectangleCSA19('exposed')
+        firePort = GypusmRectangleNds24('exposed')
             
     sectionFire, burnDims = getBurntRectangularSection(section, FRR, firePort)
     element.setSectionFire(sectionFire, burnDims)    
 
 
 # TODO: this needs to updated when we do walls.
-def setFireSectionCltCSA(element:BeamColumnGlulamCsa19, 
+def setFireSectionCltCSA(element:BeamColumnCltCsa19, 
                          FRR:Union[float, list[float], ndarray[float]],
                          Bn:float = 0.8):
     """
@@ -526,7 +494,7 @@ def setFireSectionCltCSA(element:BeamColumnGlulamCsa19,
     
     # If the section is not set, assume the beam is exposed.
     if not firePort:
-        firePort = GypusmFlatCSA19('exposed')
+        firePort = GypusmFlatNds24('exposed')
     
     if isinstance(FRR, int) or isinstance(FRR, float):
         FRR = np.array([FRR])
